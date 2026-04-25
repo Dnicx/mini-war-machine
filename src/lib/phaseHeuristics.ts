@@ -85,8 +85,16 @@ export function applyHeuristics(ability: Ability): Ability {
   const oncePerBattle = detectOncePerBattle(ability.description)
   const oncePerRound = detectOncePerRound(ability.description)
 
+  // Hard-coded check for Invulnerable Save - always suggest Shooting and Fight phases
+  let finalPhases = phases
+  if (ability.name === 'Invulnerable Save') {
+    const invulnPhases: Phase[] = ['Shooting', 'Fight']
+    // Merge with detected phases, avoiding duplicates
+    finalPhases = [...new Set([...phases, ...invulnPhases])]
+  }
+
   console.log(`[Phase Detection] "${ability.name}":`, {
-    phases: phases.length > 0 ? phases : 'None',
+    phases: finalPhases.length > 0 ? finalPhases : 'None',
     timing: timing || 'None',
     isReactive,
     oncePerBattle,
@@ -96,7 +104,7 @@ export function applyHeuristics(ability: Ability): Ability {
   return {
     ...ability,
     autoDetectedPhase: phase,
-    autoDetectedPhases: phases,
+    autoDetectedPhases: finalPhases,
     autoDetectedTiming: timing,
     isReactive,
     oncePerBattle,

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Save, Plus, Play, ChevronLeft } from 'lucide-react'
-import type { Roster, Ability, Phase, Timing, Keyword } from '../types/roster'
+import { Save, Plus, Play, ChevronLeft, ChevronDown, ChevronUp } from 'lucide-react'
+import type { Roster, Ability, Phase, Timing, Keyword, Weapon } from '../types/roster'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
 import { savePlan, loadPlan } from '../lib/storage'
 
@@ -19,6 +19,7 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
   const [newStratagemName, setNewStratagemName] = useState('')
   const [newStratagemDesc, setNewStratagemDesc] = useState('')
   const [saved, setSaved] = useState(false)
+  const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     // Load saved plan
@@ -198,28 +199,36 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
           ))}
 
           <h2 className="text-lg font-semibold text-text mt-6">Unit Abilities</h2>
-          {roster.units.map(unit => (
-            <div key={unit.id} className="mb-4">
-              <h3 className="text-md font-semibold text-text2 mb-2">{unit.name}</h3>
-              {allAbilities.filter(a => a.sourceUnit === unit.name).map(ability => (
-                <AbilityCard
-                  key={ability.id}
-                  ability={ability}
+          {roster.units.map(unit => {
+            const unitAbilities = allAbilities.filter(a => a.sourceUnit === unit.name)
+            if (unitAbilities.length === 0 && unit.keywords.length === 0 && unit.weapons.length === 0) return null
+            return (
+              <div key={unit.id} className="mb-4">
+                <UnitAbilityCard
+                  unitName={unit.name}
+                  unitId={unit.id}
+                  abilities={unitAbilities}
+                  keywords={unit.keywords}
+                  weapons={unit.weapons}
+                  isCollapsed={collapsedUnits.has(unit.id)}
+                  onToggleCollapse={(unitId) => {
+                    setCollapsedUnits(prev => {
+                      const next = new Set(prev)
+                      if (next.has(unitId)) {
+                        next.delete(unitId)
+                      } else {
+                        next.add(unitId)
+                      }
+                      return next
+                    })
+                  }}
                   onPhaseToggle={handlePhaseToggle}
                   onTimingChange={handleTimingChange}
                   onNotesChange={handleNotesChange}
                 />
-              ))}
-              {unit.keywords.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  <h4 className="text-sm font-semibold text-text2">Keywords</h4>
-                  {unit.keywords.map(keyword => (
-                    <KeywordCard key={keyword.id} keyword={keyword} />
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+              </div>
+            )
+          })}
 
           {customStratagems.length > 0 && (
             <>
@@ -320,19 +329,127 @@ function AbilityCard({ ability, onPhaseToggle, onTimingChange, onNotesChange }: 
   )
 }
 
-interface KeywordCardProps {
-  keyword: Keyword
+interface UnitAbilityCardProps {
+  unitName: string
+  unitId: string
+  abilities: Ability[]
+  keywords: Keyword[]
+  weapons: Weapon[]
+  isCollapsed: boolean
+  onToggleCollapse: (unitId: string) => void
+  onPhaseToggle: (id: string, phase: Phase) => void
+  onTimingChange: (id: string, timing: Timing) => void
+  onNotesChange: (id: string, notes: string) => void
 }
 
-function KeywordCard({ keyword }: KeywordCardProps) {
+function UnitAbilityCard({ unitName, unitId, abilities, keywords, weapons, isCollapsed, onToggleCollapse, onPhaseToggle, onTimingChange, onNotesChange }: UnitAbilityCardProps) {
   return (
-    <div className="bg-surface p-3 rounded-lg border-l-4 border-surface2/50">
-      <div className="flex items-center gap-2">
-        <h4 className="font-semibold text-text2">{keyword.name}</h4>
-        <span className="text-xs bg-surface2/50 text-text2 px-2 py-1 rounded">Keyword</span>
+    <div className="bg-surface p-4 rounded-lg border-l-4 border-surface2">
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={() => onToggleCollapse(unitId)}
+          className="text-md font-semibold text-text hover:text-accent transition-colors text-left"
+        >
+          {unitName}
+        </button>
+        <button
+          onClick={() => onToggleCollapse(unitId)}
+          className="text-text2 hover:text-accent transition-colors"
+        >
+          {isCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+        </button>
       </div>
-      {keyword.sourceUnit && (
-        <p className="text-text2 text-xs mt-1">{keyword.sourceUnit}</p>
+      {!isCollapsed && (
+        <>
+          {keywords.length > 0 && (
+            <div className="mb-4 p-3 bg-surface2/50 rounded-lg">
+              <h4 className="text-sm font-semibold text-text2 mb-2">Keywords</h4>
+              <div className="flex flex-wrap gap-2">
+                {keywords.map((keyword, index) => (
+                  <span key={`${keyword.id}-${index}`} className="text-xs bg-surface2 text-text2 px-2 py-1 rounded">
+                    {keyword.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {weapons.length > 0 && (
+            <div className="mb-4 p-3 bg-surface2/50 rounded-lg">
+              <h4 className="text-sm font-semibold text-text2 mb-2">Weapons</h4>
+              <div className="space-y-2">
+                {weapons.map((weapon, index) => (
+                  <div key={index} className="text-xs text-text2">
+                    <span className="font-semibold text-text">{weapon.name}</span>
+                    <span className="ml-2">Rng: {weapon.range}</span>
+                    <span className="ml-2">A: {weapon.attacks}</span>
+                    <span className="ml-2">D: {weapon.damage}</span>
+                    <span className="ml-2">AP: {weapon.ap}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="space-y-4">
+            {abilities.map(ability => (
+              <div key={ability.id} className="border-b border-surface2/50 pb-4 last:border-0 last:pb-0">
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-semibold text-text">{ability.name}</h4>
+                  <div className="flex gap-2">
+                    {ability.isReactive && (
+                      <span className="text-xs bg-yellow-600/30 text-yellow-200 px-2 py-1 rounded">Reactive</span>
+                    )}
+                    {(ability.userPhases || ability.autoDetectedPhases || []).length > 0 && (
+                      <span className="text-xs bg-surface2 text-text2 px-2 py-1 rounded">
+                        {(ability.userPhases || ability.autoDetectedPhases || []).join(', ')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <p className="text-text2 text-sm mb-3">{ability.description}</p>
+
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div>
+                    <label className="text-xs text-text2 block mb-1">Phases</label>
+                    <div className="space-y-1">
+                      {PHASES.map(phase => (
+                        <label key={phase} className="flex items-center gap-2 text-sm text-text">
+                          <input
+                            type="checkbox"
+                            checked={(ability.userPhases || ability.autoDetectedPhases || []).includes(phase)}
+                            onChange={() => onPhaseToggle(ability.id, phase)}
+                            className="accent-accent"
+                          />
+                          {phase}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-text2 block mb-1">Timing</label>
+                    <select
+                      value={ability.userTiming || ability.autoDetectedTiming || ''}
+                      onChange={(e) => onTimingChange(ability.id, e.target.value as Timing)}
+                      className="w-full px-2 py-1 bg-surface2 border border-surface2 rounded text-text text-sm focus:outline-none focus:border-accent"
+                    >
+                      <option value="">Auto ({ability.autoDetectedTiming || 'None'})</option>
+                      {TIMINGS.map(timing => (
+                        <option key={timing} value={timing}>{timing}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <input
+                  type="text"
+                  value={ability.notes || ''}
+                  onChange={(e) => onNotesChange(ability.id, e.target.value)}
+                  placeholder="Add notes..."
+                  className="w-full px-3 py-1 bg-surface2 border border-surface2 rounded text-text placeholder-text2 text-sm focus:outline-none focus:border-accent"
+                />
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   )

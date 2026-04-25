@@ -24,7 +24,11 @@ export async function parseRosFile(file: File): Promise<Roster> {
 
   selections.forEach((selection) => {
     const name = selection.getAttribute('name')
+    const type = selection.getAttribute('type')
     if (!name) return
+
+    // Skip upgrade selections (wargear, warlord traits, etc.) - they should not appear as units
+    if (type === 'upgrade') return
 
     const unitId = selection.getAttribute('id') || `${rosterId}-${name}`
     const unitPoints = parseInt(selection.getAttribute('points') || '0')

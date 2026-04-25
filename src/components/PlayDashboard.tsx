@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Shield, Swords } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Shield, Swords, ChevronDown, ChevronUp } from 'lucide-react'
 import type { Roster, Phase, Timing, Ability, GameState } from '../types/roster'
 import { loadPlan, saveGameState, loadGameState } from '../lib/storage'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
@@ -33,6 +33,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
 
   const [allAbilities, setAllAbilities] = useState<Ability[]>([])
   const [customStratagems, setCustomStratagems] = useState<Ability[]>([])
+  const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     // Load saved game state
@@ -328,17 +329,23 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
           </div>
           <div className="space-y-4">
             {Object.entries(reactiveAbilities).map(([unitName, abilities]) => (
-              <div key={unitName}>
-                <h4 className="text-sm font-semibold text-accent mb-2">{unitName}</h4>
-                <div className="space-y-2">
-                  {abilities.map(ability => (
-                    <PlayAbilityCard
-                      key={ability.id}
-                      ability={ability}
-                    />
-                  ))}
-                </div>
-              </div>
+              <CollapsibleUnitSection
+                key={unitName}
+                unitName={unitName}
+                abilities={abilities}
+                isCollapsed={collapsedUnits.has(unitName)}
+                onToggle={() => {
+                  setCollapsedUnits(prev => {
+                    const next = new Set(prev)
+                    if (next.has(unitName)) {
+                      next.delete(unitName)
+                    } else {
+                      next.add(unitName)
+                    }
+                    return next
+                  })
+                }}
+              />
             ))}
           </div>
         </div>
@@ -355,17 +362,23 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
                   <p className="text-text2 text-center py-4 text-sm">No abilities for this timing</p>
                 ) : (
                   Object.entries(abilitiesByTiming[timing]).map(([unitName, abilities]) => (
-                    <div key={unitName}>
-                      <h4 className="text-sm font-semibold text-accent mb-2">{unitName}</h4>
-                      <div className="space-y-2">
-                        {abilities.map(ability => (
-                          <PlayAbilityCard
-                            key={ability.id}
-                            ability={ability}
-                          />
-                        ))}
-                      </div>
-                    </div>
+                    <CollapsibleUnitSection
+                      key={unitName}
+                      unitName={unitName}
+                      abilities={abilities}
+                      isCollapsed={collapsedUnits.has(unitName)}
+                      onToggle={() => {
+                        setCollapsedUnits(prev => {
+                          const next = new Set(prev)
+                          if (next.has(unitName)) {
+                            next.delete(unitName)
+                          } else {
+                            next.add(unitName)
+                          }
+                          return next
+                        })
+                      }}
+                    />
                   ))
                 )}
               </div>
@@ -415,6 +428,37 @@ function PlayAbilityCard({ ability }: PlayAbilityCardProps) {
           <p className="text-accent text-xs mt-1 italic">Note: {ability.notes}</p>
         )}
       </div>
+    </div>
+  )
+}
+
+interface CollapsibleUnitSectionProps {
+  unitName: string
+  abilities: Ability[]
+  isCollapsed: boolean
+  onToggle: () => void
+}
+
+function CollapsibleUnitSection({ unitName, abilities, isCollapsed, onToggle }: CollapsibleUnitSectionProps) {
+  return (
+    <div>
+      <button
+        onClick={onToggle}
+        className="flex items-center gap-2 text-sm font-semibold text-accent mb-2 hover:text-accent/80 transition-colors"
+      >
+        {isCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+        {unitName}
+      </button>
+      {!isCollapsed && (
+        <div className="space-y-2 ml-6">
+          {abilities.map(ability => (
+            <PlayAbilityCard
+              key={ability.id}
+              ability={ability}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
