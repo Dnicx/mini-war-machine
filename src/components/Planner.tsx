@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Save, Plus, Play, ChevronLeft } from 'lucide-react'
-import type { Roster, Ability, Phase, Timing } from '../types/roster'
+import type { Roster, Ability, Phase, Timing, Keyword } from '../types/roster'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
 import { savePlan, loadPlan } from '../lib/storage'
 
@@ -210,6 +210,14 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
                   onNotesChange={handleNotesChange}
                 />
               ))}
+              {unit.keywords.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  <h4 className="text-sm font-semibold text-text2">Keywords</h4>
+                  {unit.keywords.map(keyword => (
+                    <KeywordCard key={keyword.id} keyword={keyword} />
+                  ))}
+                </div>
+              )}
             </div>
           ))}
 
@@ -251,16 +259,6 @@ function AbilityCard({ ability, onPhaseToggle, onTimingChange, onNotesChange }: 
   const currentPhases = ability.userPhases || ability.autoDetectedPhases || []
   const currentTiming = ability.userTiming || ability.autoDetectedTiming || ''
 
-  // Check if this is a keyword (weapon keywords, passive rules, etc.) - these don't need phase selection
-  // Only check the ability name, not the description, to avoid false positives
-  const isKeyword = /^(pistol|torrent|heavy|rapid fire|assault|melta|plasma|lance|devastating wounds|lethal hits|sustained hits|anti-|blast|indirect fire|precision|twin-linked|silent hunter|stealth|deep strike|scout|infiltrate|obsec|objective secured|icon bearer|chapter master|character|monster|vehicle|battleline|core|leader|epic hero|fly|hover|jet pack|swarm|titanic|transport|open-topped|deadly demise|explodes|fire points|assault vehicle|crush them|merciless|ignores cover|feel no pain|fnp|invulnerable|invuln|save|wounds|attacks|movement|leadership|ld|oc|objective control)$/i.test(ability.name)
-
-  // Check if this is a special item that needs manual phase selection
-  const isSpecialItem = /smoke|grenade|grenades/i.test(ability.name + ' ' + ability.description)
-
-  // Show phase/timing selectors for abilities and special items, but not for keywords
-  const showSelectors = !isKeyword || isSpecialItem
-
   return (
     <div className="bg-surface p-4 rounded-lg border-l-4 border-surface2">
       <div className="flex justify-between items-start mb-2">
@@ -269,10 +267,7 @@ function AbilityCard({ ability, onPhaseToggle, onTimingChange, onNotesChange }: 
           {ability.isReactive && (
             <span className="text-xs bg-yellow-600/30 text-yellow-200 px-2 py-1 rounded">Reactive</span>
           )}
-          {isKeyword && (
-            <span className="text-xs bg-surface2/50 text-text2 px-2 py-1 rounded">Keyword</span>
-          )}
-          {currentPhases.length > 0 && showSelectors && (
+          {currentPhases.length > 0 && (
             <span className="text-xs bg-surface2 text-text2 px-2 py-1 rounded">{currentPhases.join(', ')}</span>
           )}
         </div>
@@ -281,49 +276,63 @@ function AbilityCard({ ability, onPhaseToggle, onTimingChange, onNotesChange }: 
         <p className="text-text2 text-xs mb-2">{ability.sourceUnit}</p>
       )}
       <p className="text-text2 text-sm mb-3">{ability.description}</p>
-      
-      {showSelectors && (
-        <div className="grid grid-cols-2 gap-2 mb-3">
-          <div>
-            <label className="text-xs text-text2 block mb-1">Phases</label>
-            <div className="space-y-1">
-              {PHASES.map(phase => (
-                <label key={phase} className="flex items-center gap-2 text-sm text-text">
-                  <input
-                    type="checkbox"
-                    checked={currentPhases.includes(phase)}
-                    onChange={() => onPhaseToggle(ability.id, phase)}
-                    className="accent-accent"
-                  />
-                  {phase}
-                </label>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="text-xs text-text2 block mb-1">Timing</label>
-            <select
-              value={currentTiming || ''}
-              onChange={(e) => onTimingChange(ability.id, e.target.value as Timing)}
-              className="w-full px-2 py-1 bg-surface2 border border-surface2 rounded text-text text-sm focus:outline-none focus:border-accent"
-            >
-              <option value="">Auto ({ability.autoDetectedTiming || 'None'})</option>
-              {TIMINGS.map(timing => (
-                <option key={timing} value={timing}>{timing}</option>
-              ))}
-            </select>
+
+      <div className="grid grid-cols-2 gap-2 mb-3">
+        <div>
+          <label className="text-xs text-text2 block mb-1">Phases</label>
+          <div className="space-y-1">
+            {PHASES.map(phase => (
+              <label key={phase} className="flex items-center gap-2 text-sm text-text">
+                <input
+                  type="checkbox"
+                  checked={currentPhases.includes(phase)}
+                  onChange={() => onPhaseToggle(ability.id, phase)}
+                  className="accent-accent"
+                />
+                {phase}
+              </label>
+            ))}
           </div>
         </div>
-      )}
+        <div>
+          <label className="text-xs text-text2 block mb-1">Timing</label>
+          <select
+            value={currentTiming || ''}
+            onChange={(e) => onTimingChange(ability.id, e.target.value as Timing)}
+            className="w-full px-2 py-1 bg-surface2 border border-surface2 rounded text-text text-sm focus:outline-none focus:border-accent"
+          >
+            <option value="">Auto ({ability.autoDetectedTiming || 'None'})</option>
+            {TIMINGS.map(timing => (
+              <option key={timing} value={timing}>{timing}</option>
+            ))}
+          </select>
+        </div>
+      </div>
 
-      {showSelectors && (
-        <input
-          type="text"
-          value={ability.notes || ''}
-          onChange={(e) => onNotesChange(ability.id, e.target.value)}
-          placeholder="Add notes..."
-          className="w-full px-3 py-1 bg-surface2 border border-surface2 rounded text-text placeholder-text2 text-sm focus:outline-none focus:border-accent"
-        />
+      <input
+        type="text"
+        value={ability.notes || ''}
+        onChange={(e) => onNotesChange(ability.id, e.target.value)}
+        placeholder="Add notes..."
+        className="w-full px-3 py-1 bg-surface2 border border-surface2 rounded text-text placeholder-text2 text-sm focus:outline-none focus:border-accent"
+      />
+    </div>
+  )
+}
+
+interface KeywordCardProps {
+  keyword: Keyword
+}
+
+function KeywordCard({ keyword }: KeywordCardProps) {
+  return (
+    <div className="bg-surface p-3 rounded-lg border-l-4 border-surface2/50">
+      <div className="flex items-center gap-2">
+        <h4 className="font-semibold text-text2">{keyword.name}</h4>
+        <span className="text-xs bg-surface2/50 text-text2 px-2 py-1 rounded">Keyword</span>
+      </div>
+      {keyword.sourceUnit && (
+        <p className="text-text2 text-xs mt-1">{keyword.sourceUnit}</p>
       )}
     </div>
   )

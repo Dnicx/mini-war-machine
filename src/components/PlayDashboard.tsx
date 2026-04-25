@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Check, Shield, Swords } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Shield, Swords } from 'lucide-react'
 import type { Roster, Phase, Timing, Ability, GameState } from '../types/roster'
 import { loadPlan, saveGameState, loadGameState } from '../lib/storage'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
@@ -12,10 +12,10 @@ interface PlayDashboardProps {
 const PHASES: Phase[] = ['Start of Game', 'Start of Battle Round', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight', 'Morale']
 const TIMINGS: Timing[] = ['start', 'beforeTarget', 'afterTargeted', 'end']
 const TIMING_LABELS: Record<Timing, string> = {
-  start: 'Start of phase',
-  beforeTarget: 'During phase (before choosing target)',
-  afterTargeted: 'During phase (after being targeted)',
-  end: 'End of phase'
+  start: 'Start of Phase',
+  beforeTarget: 'During Phase (Before Choosing Target)',
+  afterTargeted: 'During Phase (After Being Targeted)',
+  end: 'End of Phase'
 }
 
 export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
@@ -86,58 +86,16 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     saveGameState(newState)
   }
 
-  const nextTiming = () => {
-    const currentIndex = TIMINGS.indexOf(gameState.currentTiming || 'start')
-    if (currentIndex < TIMINGS.length - 1) {
-      updateGameState({ currentTiming: TIMINGS[currentIndex + 1] })
-    } else {
-      // Move to next phase
-      nextPhase()
-    }
-  }
-
-  const prevTiming = () => {
-    const currentIndex = TIMINGS.indexOf(gameState.currentTiming || 'start')
-    if (currentIndex > 0) {
-      updateGameState({ currentTiming: TIMINGS[currentIndex - 1] })
-    } else {
-      // Move to previous phase
-      prevPhase()
-    }
-  }
-
   const nextPhase = () => {
     const currentIndex = PHASES.indexOf(gameState.currentPhase)
-    if (currentIndex < PHASES.length - 1) {
-      updateGameState({ 
-        currentPhase: PHASES[currentIndex + 1],
-        currentTiming: 'start'
-      })
-    } else {
-      // End of turn - switch to opponent
-      updateGameState({
-        turnOwner: 'opponent',
-        currentPhase: 'Command',
-        currentTiming: 'start'
-      })
-    }
+    const nextIndex = (currentIndex + 1) % PHASES.length
+    updateGameState({ currentPhase: PHASES[nextIndex] })
   }
 
   const prevPhase = () => {
     const currentIndex = PHASES.indexOf(gameState.currentPhase)
-    if (currentIndex > 0) {
-      updateGameState({ 
-        currentPhase: PHASES[currentIndex - 1],
-        currentTiming: 'start'
-      })
-    } else {
-      // Start of turn - switch to other player
-      updateGameState({
-        turnOwner: gameState.turnOwner === 'yours' ? 'opponent' : 'yours',
-        currentPhase: 'Command',
-        currentTiming: 'start'
-      })
-    }
+    const prevIndex = (currentIndex - 1 + PHASES.length) % PHASES.length
+    updateGameState({ currentPhase: PHASES[prevIndex] })
   }
 
   const nextTurn = () => {
@@ -160,30 +118,15 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     }
   }
 
-  const markAbilityUsed = (abilityId: string) => {
-    updateGameState({
-      usedAbilities: {
-        ...gameState.usedAbilities,
-        [abilityId]: gameState.battleRound
-      }
-    })
-  }
-
   const getActiveAbilities = () => {
     const currentPhase = gameState.currentPhase
-    const currentTiming = gameState.currentTiming
 
     return [...allAbilities, ...customStratagems].filter(ability => {
       const abilityPhases = ability.userPhases || ability.autoDetectedPhases || []
-      const abilityTiming = ability.userTiming || ability.autoDetectedTiming
 
       // Show if phase matches (any of the selected phases)
       // If no phases are set, show in all phases (fallback)
       const phaseMatch = abilityPhases.length === 0 || abilityPhases.includes(currentPhase)
-
-      // For Start of Game and Start of Battle Round, don't check timing
-      const isSpecialPhase = currentPhase === 'Start of Game' || currentPhase === 'Start of Battle Round'
-      const timingMatch = isSpecialPhase || !abilityTiming || abilityTiming === currentTiming
 
       // For reactive abilities, show during opponent's turn
       if (ability.isReactive && gameState.turnOwner === 'opponent') {
@@ -192,38 +135,82 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
 
       // For non-reactive, only show during your turn
       if (!ability.isReactive && gameState.turnOwner === 'yours') {
-        return phaseMatch && timingMatch
+        return phaseMatch
       }
 
       return false
     })
   }
 
-  const getReactiveAbilities = () => {
-    if (gameState.turnOwner !== 'opponent') return []
+  const getAbilitiesByTiming = () => {
+    const abilities = getActiveAbilities()
+    const byTiming: Record<Timing, Record<string, Ability[]>> = {
+      start: {},
+      beforeTarget: {},
+      afterTargeted: {},
+      end: {}
+    }
 
-    return [...allAbilities, ...customStratagems].filter(ability => {
+    abilities.forEach(ability => {
+      const timing = ability.userTiming || ability.autoDetectedTiming
+      const sourceUnit = ability.sourceUnit || 'Army Abilities'
+
+      if (timing) {
+        if (!byTiming[timing][sourceUnit]) {
+          byTiming[timing][sourceUnit] = []
+        }
+        // Deduplicate by name within the unit
+        const existing = byTiming[timing][sourceUnit].find(a => a.name === ability.name)
+        if (!existing) {
+          byTiming[timing][sourceUnit].push(ability)
+        }
+      } else {
+        // If no timing specified, show in all sections
+        Object.keys(byTiming).forEach(t => {
+          if (!byTiming[t as Timing][sourceUnit]) {
+            byTiming[t as Timing][sourceUnit] = []
+          }
+          // Deduplicate by name within the unit
+          const existing = byTiming[t as Timing][sourceUnit].find(a => a.name === ability.name)
+          if (!existing) {
+            byTiming[t as Timing][sourceUnit].push(ability)
+          }
+        })
+      }
+    })
+
+    return byTiming
+  }
+
+  const getReactiveAbilities = () => {
+    if (gameState.turnOwner !== 'opponent') return {}
+
+    const abilities = [...allAbilities, ...customStratagems].filter(ability => {
       const abilityPhases = ability.userPhases || ability.autoDetectedPhases || []
       // If no phases are set, show in all phases (fallback)
       const phaseMatch = abilityPhases.length === 0 || abilityPhases.includes(gameState.currentPhase)
       return ability.isReactive && phaseMatch
     })
-  }
 
-  const isAbilityUsed = (abilityId: string) => {
-    const usedRound = gameState.usedAbilities[abilityId]
-    if (usedRound === undefined) return false
+    // Group by unit and deduplicate by name
+    const byUnit: Record<string, Ability[]> = {}
+    abilities.forEach(ability => {
+      const sourceUnit = ability.sourceUnit || 'Army Abilities'
+      if (!byUnit[sourceUnit]) {
+        byUnit[sourceUnit] = []
+      }
+      // Deduplicate by name within the unit
+      const existing = byUnit[sourceUnit].find(a => a.name === ability.name)
+      if (!existing) {
+        byUnit[sourceUnit].push(ability)
+      }
+    })
 
-    const ability = [...allAbilities, ...customStratagems].find(a => a.id === abilityId)
-    if (!ability) return false
-
-    if (ability.oncePerBattle) return true
-    if (ability.oncePerBattleRound && usedRound < gameState.battleRound) return false
-
-    return usedRound === gameState.battleRound
+    return byUnit
   }
 
   const activeAbilities = getActiveAbilities()
+  const abilitiesByTiming = getAbilitiesByTiming()
   const reactiveAbilities = getReactiveAbilities()
 
   return (
@@ -272,7 +259,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
             {PHASES.map(phase => (
               <button
                 key={phase}
-                onClick={() => updateGameState({ currentPhase: phase, currentTiming: 'start' })}
+                onClick={() => updateGameState({ currentPhase: phase })}
                 className={`px-3 py-1 mx-1 rounded text-sm ${
                   gameState.currentPhase === phase
                     ? 'bg-accent text-white'
@@ -290,27 +277,6 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
             <ChevronRight size={20} />
           </button>
         </div>
-
-        {/* Timing Navigation */}
-        {gameState.turnOwner === 'yours' && gameState.currentPhase !== 'Start of Game' && gameState.currentPhase !== 'Start of Battle Round' && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={prevTiming}
-              className="p-1 text-text2 hover:text-accent"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <div className="flex-1 text-center text-sm text-text2">
-              {gameState.currentTiming && TIMING_LABELS[gameState.currentTiming]}
-            </div>
-            <button
-              onClick={nextTiming}
-              className="p-1 text-text2 hover:text-accent"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Score & CP Tracker */}
@@ -354,85 +320,100 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
       </div>
 
       {/* Reactive Panel (Opponent's Turn) */}
-      {gameState.turnOwner === 'opponent' && reactiveAbilities.length > 0 && (
+      {gameState.turnOwner === 'opponent' && Object.keys(reactiveAbilities).length > 0 && (
         <div className="bg-surface2 p-4 rounded-lg mb-4 border-l-4 border-yellow-500">
           <div className="flex items-center gap-2 mb-3">
             <Shield className="text-yellow-500" size={20} />
             <h3 className="font-semibold text-text">Reactive Abilities</h3>
           </div>
-          <div className="space-y-2">
-            {reactiveAbilities.map(ability => (
-              <PlayAbilityCard
-                key={ability.id}
-                ability={ability}
-                isUsed={isAbilityUsed(ability.id)}
-                onMarkUsed={() => markAbilityUsed(ability.id)}
-              />
+          <div className="space-y-4">
+            {Object.entries(reactiveAbilities).map(([unitName, abilities]) => (
+              <div key={unitName}>
+                <h4 className="text-sm font-semibold text-accent mb-2">{unitName}</h4>
+                <div className="space-y-2">
+                  {abilities.map(ability => (
+                    <PlayAbilityCard
+                      key={ability.id}
+                      ability={ability}
+                    />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Active Abilities Panel */}
-      <div className="bg-surface p-4 rounded-lg">
-        <div className="flex items-center gap-2 mb-3">
-          <Swords className="text-accent" size={20} />
-          <h3 className="font-semibold text-text">
-            {gameState.turnOwner === 'yours' ? 'Active Abilities' : 'Opponent Phase'}
-          </h3>
+      {/* Active Abilities Panel - Grouped by Timing */}
+      {gameState.turnOwner === 'yours' && gameState.currentPhase !== 'Start of Game' && gameState.currentPhase !== 'Start of Battle Round' ? (
+        <div className="space-y-4">
+          {TIMINGS.map(timing => (
+            <div key={timing} className="bg-surface p-4 rounded-lg">
+              <h3 className="font-semibold text-text mb-3">{TIMING_LABELS[timing]}</h3>
+              <div className="space-y-4">
+                {Object.keys(abilitiesByTiming[timing]).length === 0 ? (
+                  <p className="text-text2 text-center py-4 text-sm">No abilities for this timing</p>
+                ) : (
+                  Object.entries(abilitiesByTiming[timing]).map(([unitName, abilities]) => (
+                    <div key={unitName}>
+                      <h4 className="text-sm font-semibold text-accent mb-2">{unitName}</h4>
+                      <div className="space-y-2">
+                        {abilities.map(ability => (
+                          <PlayAbilityCard
+                            key={ability.id}
+                            ability={ability}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          ))}
         </div>
-        <div className="space-y-2">
-          {activeAbilities.length === 0 ? (
-            <p className="text-text2 text-center py-4">No abilities for this phase/timing</p>
-          ) : (
-            activeAbilities.map(ability => (
-              <PlayAbilityCard
-                key={ability.id}
-                ability={ability}
-                isUsed={isAbilityUsed(ability.id)}
-                onMarkUsed={() => markAbilityUsed(ability.id)}
-              />
-            ))
-          )}
+      ) : (
+        <div className="bg-surface p-4 rounded-lg">
+          <div className="flex items-center gap-2 mb-3">
+            <Swords className="text-accent" size={20} />
+            <h3 className="font-semibold text-text">
+              {gameState.turnOwner === 'yours' ? 'Active Abilities' : 'Opponent Phase'}
+            </h3>
+          </div>
+          <div className="space-y-2">
+            {activeAbilities.length === 0 ? (
+              <p className="text-text2 text-center py-4">No abilities for this phase</p>
+            ) : (
+              activeAbilities.map(ability => (
+                <PlayAbilityCard
+                  key={ability.id}
+                  ability={ability}
+                />
+              ))
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
 
 interface PlayAbilityCardProps {
   ability: Ability
-  isUsed: boolean
-  onMarkUsed: () => void
 }
 
-function PlayAbilityCard({ ability, isUsed, onMarkUsed }: PlayAbilityCardProps) {
+function PlayAbilityCard({ ability }: PlayAbilityCardProps) {
   return (
-    <div className={`p-3 rounded-lg border-l-4 ${
-      isUsed ? 'bg-surface2/50 border-text2 opacity-60' : 'bg-surface2 border-accent'
-    }`}>
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <h4 className={`font-semibold ${isUsed ? 'text-text2' : 'text-text'}`}>{ability.name}</h4>
-          {ability.sourceUnit && (
-            <p className="text-text2 text-xs">{ability.sourceUnit}</p>
-          )}
-          <p className="text-text2 text-sm mt-1 whitespace-pre-wrap">{ability.description}</p>
-          {ability.notes && (
-            <p className="text-accent text-xs mt-1 italic">Note: {ability.notes}</p>
-          )}
-        </div>
-        <button
-          onClick={onMarkUsed}
-          className={`ml-2 p-2 rounded ${
-            isUsed 
-              ? 'bg-green-600 text-white' 
-              : 'bg-surface text-text2 hover:bg-surface2/80'
-          }`}
-          title={isUsed ? 'Mark as unused' : 'Mark as used'}
-        >
-          <Check size={16} />
-        </button>
+    <div className="p-3 rounded-lg border-l-4 bg-surface2 border-accent">
+      <div className="flex-1">
+        <h4 className="font-semibold text-text">{ability.name}</h4>
+        {ability.sourceUnit && (
+          <p className="text-text2 text-xs">{ability.sourceUnit}</p>
+        )}
+        <p className="text-text2 text-sm mt-1 whitespace-pre-wrap">{ability.description}</p>
+        {ability.notes && (
+          <p className="text-accent text-xs mt-1 italic">Note: {ability.notes}</p>
+        )}
       </div>
     </div>
   )

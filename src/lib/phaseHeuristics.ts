@@ -1,7 +1,7 @@
 import type { Ability, Phase, Timing } from '../types/roster'
 
 const PHASE_PATTERNS: Record<Phase, RegExp[]> = {
-  'Start of Game': [/start of (the )?game/i, /before the battle/i, /pre-battle/i, /deployment/i],
+  'Start of Game': [/start of (the )?game/i, /before the battle/i, /pre-battle/i, /deployment/i, /model can be attached/i],
   'Start of Battle Round': [/start of (the )?(battle )?round/i, /start of (your )?turn/i, /beginning of (the )?(battle )?round/i],
   Command: [/command/i, /command phase/i],
   Movement: [/movement/i, /move/i, /advance/i, /movement phase/i, /during the movement phase/i],
@@ -84,6 +84,14 @@ export function applyHeuristics(ability: Ability): Ability {
   const isReactive = detectReactive(ability.description)
   const oncePerBattle = detectOncePerBattle(ability.description)
   const oncePerRound = detectOncePerRound(ability.description)
+
+  console.log(`[Phase Detection] "${ability.name}":`, {
+    phases: phases.length > 0 ? phases : 'None',
+    timing: timing || 'None',
+    isReactive,
+    oncePerBattle,
+    oncePerRound
+  })
 
   return {
     ...ability,

@@ -1,4 +1,4 @@
-import type { Roster, Unit, Ability, Weapon } from '../types/roster'
+import type { Roster, Unit, Ability, Weapon, Rule, Keyword } from '../types/roster'
 
 export async function parseRosFile(file: File): Promise<Roster> {
   const text = await file.text()
@@ -52,7 +52,7 @@ export async function parseRosFile(file: File): Promise<Roster> {
     })
 
     // Also extract abilities from nested selections (characters often have abilities in sub-selections)
-    const nestedSelections = selection.querySelectorAll('selections > selection')
+    const nestedSelections = selection.querySelectorAll('selections selection')
     nestedSelections.forEach((nested) => {
       const nestedName = nested.getAttribute('name')
       const nestedAbilityProfiles = nested.querySelectorAll('profiles > profile[typeName="Abilities"]')
@@ -107,11 +107,49 @@ export async function parseRosFile(file: File): Promise<Roster> {
       }
     })
 
+    // Extract rules
+    const rules: Rule[] = []
+    const ruleProfiles = selection.querySelectorAll('profiles > profile[typeName="Rules"]')
+    ruleProfiles.forEach((profile) => {
+      const ruleName = profile.getAttribute('name')
+      if (ruleName) {
+        const characteristics = profile.querySelectorAll('characteristics > characteristic')
+        let description = ''
+        characteristics.forEach((char) => {
+          const charName = char.getAttribute('name')
+          const charValue = char.textContent || ''
+          if (charName === 'Description') description = charValue.trim()
+        })
+        rules.push({
+          id: `${unitId}-rule-${ruleName}`,
+          name: ruleName,
+          description,
+          sourceUnit: name
+        })
+      }
+    })
+
+    // Extract keywords from categories
+    const keywords: Keyword[] = []
+    const categories = selection.querySelectorAll('categories > category')
+    categories.forEach((category) => {
+      const keywordName = category.getAttribute('name')
+      if (keywordName) {
+        keywords.push({
+          id: `${unitId}-keyword-${keywordName}`,
+          name: keywordName,
+          sourceUnit: name
+        })
+      }
+    })
+
     units.push({
       id: unitId,
       name,
       points: unitPoints,
       abilities,
+      rules,
+      keywords,
       weapons
     })
   })

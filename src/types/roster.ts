@@ -18,6 +18,19 @@ export interface Ability {
   notes?: string
 }
 
+export interface Rule {
+  id: string
+  name: string
+  description: string
+  sourceUnit?: string
+}
+
+export interface Keyword {
+  id: string
+  name: string
+  sourceUnit?: string
+}
+
 export interface Weapon {
   name: string
   range: string
@@ -31,6 +44,8 @@ export interface Unit {
   name: string
   points: number
   abilities: Ability[]
+  rules: Rule[]
+  keywords: Keyword[]
   weapons: Weapon[]
 }
 
