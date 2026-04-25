@@ -158,6 +158,80 @@ export async function parseRosFile(file: File): Promise<Roster> {
     })
   })
 
+  // Merge units with the same name
+  const mergedUnits: Unit[] = []
+  const unitsByName = new Map<string, Unit[]>()
+
+  units.forEach(unit => {
+    if (!unitsByName.has(unit.name)) {
+      unitsByName.set(unit.name, [])
+    }
+    unitsByName.get(unit.name)!.push(unit)
+  })
+
+  unitsByName.forEach((unitsWithSameName, name) => {
+    // Combine all abilities, deduplicating by name
+    const allAbilities: Ability[] = []
+    const abilityNames = new Set<string>()
+    unitsWithSameName.forEach(unit => {
+      unit.abilities.forEach(ability => {
+        if (!abilityNames.has(ability.name)) {
+          abilityNames.add(ability.name)
+          allAbilities.push(ability)
+        }
+      })
+    })
+
+    // Combine all keywords, deduplicating by name
+    const allKeywords: Keyword[] = []
+    const keywordNames = new Set<string>()
+    unitsWithSameName.forEach(unit => {
+      unit.keywords.forEach(keyword => {
+        if (!keywordNames.has(keyword.name)) {
+          keywordNames.add(keyword.name)
+          allKeywords.push(keyword)
+        }
+      })
+    })
+
+    // Combine all weapons, deduplicating by name
+    const allWeapons: Weapon[] = []
+    const weaponNames = new Set<string>()
+    unitsWithSameName.forEach(unit => {
+      unit.weapons.forEach(weapon => {
+        if (!weaponNames.has(weapon.name)) {
+          weaponNames.add(weapon.name)
+          allWeapons.push(weapon)
+        }
+      })
+    })
+
+    // Combine all rules, deduplicating by name
+    const allRules: Rule[] = []
+    const ruleNames = new Set<string>()
+    unitsWithSameName.forEach(unit => {
+      unit.rules.forEach(rule => {
+        if (!ruleNames.has(rule.name)) {
+          ruleNames.add(rule.name)
+          allRules.push(rule)
+        }
+      })
+    })
+
+    // Sum up points for all units with the same name
+    const totalPoints = unitsWithSameName.reduce((sum, unit) => sum + unit.points, 0)
+
+    mergedUnits.push({
+      id: `${rosterId}-${name}`,
+      name,
+      points: totalPoints,
+      abilities: allAbilities,
+      rules: allRules,
+      keywords: allKeywords,
+      weapons: allWeapons
+    })
+  })
+
   // Extract army-wide abilities
   const armyAbilities: Ability[] = []
   const sharedRules = doc.querySelectorAll('sharedRules > rule')
@@ -178,7 +252,7 @@ export async function parseRosFile(file: File): Promise<Roster> {
     name: rosterName,
     faction,
     points,
-    units,
+    units: mergedUnits,
     armyAbilities
   }
 }

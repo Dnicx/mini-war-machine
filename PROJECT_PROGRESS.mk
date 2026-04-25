@@ -82,3 +82,72 @@ All core features are implemented and functional. The application can:
 - Add visual indicators for once-per-battle abilities in play mode
 - Add ability to track CP usage
 - Add victory point tracking
+
+## Planned Features
+
+### Support Official Warhammer App Exports
+Add support for importing rosters exported from the official Warhammer 40k app by parsing .txt exports and enriching unit data from the BSData/wh40k-10e git repository.
+
+**Implementation Steps:**
+
+1. **Add BSData Submodule**
+   - Add `https://github.com/BSData/wh40k-10e` as a git submodule
+   - Place in `data/wh40k-10e/` directory
+   - Update .gitignore to exclude the submodule's .git directory
+   - Add submodule initialization instructions to README
+
+2. **Create BSData Parser Module**
+   - Create `src/lib/parseBsData.ts` with functions to:
+     - Load and parse .cat XML files from the submodule
+     - Build an in-memory index mapping unit names to their data
+     - Extract abilities, weapons, rules, and keywords from unit profiles
+     - Support lazy loading of .cat files (load only needed faction files)
+   - Create interface for BSData unit data structure
+   - Add caching mechanism to avoid re-parsing the same .cat files
+
+3. **Create Official App Parser**
+   - Create `src/lib/parseWarhammerApp.ts` with:
+     - `parseWarhammerAppFile(file: File): Promise<Roster>` function
+     - Parse army header (name, faction, detachment, points)
+     - Parse unit sections (CHARACTERS, DEDICATED TRANSPORTS, OTHER DATASHEETS, ALLIED UNITS)
+     - Extract unit names, points, and weapon lists
+     - Handle model counts (e.g., "3x Sanguinary Guard")
+     - Handle enhancements and upgrades
+   - Return a partial Roster with basic unit info (no abilities/rules/keywords yet)
+
+4. **Integrate BSData Lookup**
+   - Modify `parseWarhammerAppFile` to:
+     - Determine faction from the export header
+     - Load corresponding .cat file(s) from BSData submodule
+     - For each unit, perform exact name match against BSData units
+     - Enrich unit with abilities, weapons, rules, keywords from BSData
+     - Handle missing units gracefully (log warning, keep basic unit info)
+   - Add faction name mapping (official app names to BSData .cat filenames)
+
+5. **Update ImportScreen UI**
+   - Add a third import section: "Upload Warhammer App Export (.txt)"
+   - Add file input accepting .txt files
+   - Add handler calling `parseWarhammerAppFile`
+   - Display appropriate error messages for parsing failures
+   - Keep existing Yellowscribe and .ros import methods unchanged
+
+6. **Type Definitions**
+   - Add any new types needed for BSData parsing to `src/types/roster.ts` or create `src/types/bsData.ts`
+   - Ensure compatibility with existing Roster interface
+
+7. **Testing**
+   - Test with the provided Blood Angels sample export
+   - Verify unit data enrichment from BSData
+   - Test with different factions to ensure faction mapping works
+   - Test error handling for missing units or .cat files
+
+**Technical Details:**
+- BSData .cat files are XML with `<catalogue>` root, units in `<selectionEntry type="model">`, profiles in `<profiles>`, keywords in `<categoryLinks>`, rules in `<infoLinks>`
+- Official app .txt format has header (army name, faction, detachment, points), sections (CHARACTERS, DEDICATED TRANSPORTS, OTHER DATASHEETS, ALLIED UNITS), units with points and indented weapons, model counts with "Nx" prefix, enhancements with "Enhancement:" prefix
+- Faction mapping: official app names to BSData .cat filenames (e.g., "Blood Angels" → "Imperium - Adeptus Astartes - Blood Angels.cat")
+
+**Future Enhancements (Low Priority):**
+- Fuzzy matching for unit names when exact match fails
+- User selection dialog for ambiguous matches
+- Progressive loading of BSData files
+- Offline support by bundling commonly used .cat files
