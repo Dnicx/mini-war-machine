@@ -1,0 +1,109 @@
+<?xml version="1.0" ?>
+<stratagems>
+  <stratagem>
+    <name>SUPPRESSION STRAFING</name>
+    <cpCost>1CP</cpCost>
+    <type>ORBITAL ASSAULT FORCE</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>As the Space Marines storm forward, their gunships 
+and fighter craft streak overhead, hammering enemy 
+positions with hails of fire to keep the foe pinned.</lore>
+    <when>Command phase.</when>
+    <target>One Adeptus Astartes  unit from your army.</target>
+    <effect>Select one enemy unit visible to and 
+within 18&quot; of your unit. That enemy unit takes a 
+Battle‑shock test. When doing so, subtract 1 from 
+that test and, if that test is failed, until the start of 
+your next turn, that enemy unit is suppressed. While 
+a unit is suppressed, each time a model in that unit 
+makes an attack, subtract 1 from the Hit roll.</effect>
+    <restrictions>You cannot use this Stratagem more 
+than once per battle round.</restrictions>
+  </stratagem>
+  <stratagem>
+    <name>TACTICAL DECAPITATION</name>
+    <cpCost>1CP</cpCost>
+    <type>ORBITAL ASSAULT FORCE</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>By rapidly eliminating localised enemy leaders, the 
+Space Marines keep the foe off balance and hamper 
+organised resistance to their onslaught.</lore>
+    <when>Your Shooting phase or the Fight phase.</when>
+    <target>One Adeptus Astartes  unit from your 
+army that has not been selected to shoot or fight 
+this phase.</target>
+    <effect>Until the end of the phase, weapons 
+equipped by models in your unit have the  
+[PRECISION] ability and each time a model in your 
+unit makes an attack that targets a Character  unit, 
+add 1 to the Hit roll.</effect>
+  </stratagem>
+  <stratagem>
+    <name>SHOCK ONSLAUGHT</name>
+    <cpCost>1CP</cpCost>
+    <type>ORBITAL ASSAULT FORCE</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>The sheer devastating momentum of a Space 
+Marine drop assault shatters one enemy battle line 
+after another.</lore>
+    <when>Fight phase.</when>
+    <target>One Adeptus Astartes  unit from your army 
+that has not been selected to fight this phase.</target>
+    <effect>Until the end of the phase, each time a 
+model in your unit makes a Pile‑in or Consolidation 
+move, it can move up to 6&quot; instead of up to 3&quot;.</effect>
+  </stratagem>
+  <stratagem>
+    <name>AUTO‑SENSE COORDINATION</name>
+    <cpCost>1CP</cpCost>
+    <type>ORBITAL ASSAULT FORCE</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>By binding the datafeeds from their auto‑senses, 
+these battle‑brothers generate triangulated targeting 
+solutions for close‑quarters fire spreads.</lore>
+    <when>Your Shooting phase or the Fight phase.</when>
+    <target>One Adeptus Astartes  unit from your 
+army that has not been selected to shoot or fight 
+this phase.</target>
+    <effect>Select the [LETHAL HITS]  or 
+[SUSTAINED HITS 1]  ability. Until the end of the 
+phase, weapons equipped by models in your unit 
+have this ability in a turn in which they disembarked 
+from a Drop Pod  or while targeting an enemy unit 
+within 12&quot;.</effect>
+  </stratagem>
+  <stratagem>
+    <name>BLIND SCREEN</name>
+    <cpCost>1CP</cpCost>
+    <type>ORBITAL ASSAULT FORCE</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>Autolaunchers spit a precogitated spread of blind 
+grenades to baffle organic and mechanical targeting.</lore>
+    <when>Your opponent’s Shooting phase, just after an 
+enemy unit has selected its targets.</when>
+    <target>One Adeptus Astartes unit (excluding 
+Titanic  units) from your army that was selected 
+as the target of one or more of the attacking unit’s 
+attacks and one friendly Adeptus Astartes Smoke 
+Vehicle  or Drop Pod  unit within 9&quot; of it.</target>
+    <effect>Until the end of the phase, models in your 
+units have the Stealth ability and each time a ranged 
+attack targets one of your units, models in that unit 
+have the Benefit of Cover against that attack.</effect>
+  </stratagem>
+  <stratagem>
+    <name>ONWARD FOR THE EMPEROR</name>
+    <cpCost>1CP</cpCost>
+    <type>ORBITAL ASSAULT FORCE</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>There is always another battle to be fought, and the 
+Space Marines waste no time in fighting it.</lore>
+    <when>End of your opponent’s Fight phase.</when>
+    <target>One Adeptus Astartes Infantry  unit from 
+your army that was not set up on the battlefield 
+this turn and one friendly Transport  it is able to 
+embark within.</target>
+    <effect>If your Adeptus Astartes  unit is wholly 
+within 6&quot; of that Transport , it can embark within it.</effect>
+  </stratagem>
+</stratagems>

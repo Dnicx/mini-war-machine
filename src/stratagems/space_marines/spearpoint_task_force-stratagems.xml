@@ -1,0 +1,102 @@
+<?xml version="1.0" ?>
+<stratagems>
+  <stratagem>
+    <name>ARMOUR OF CONTEMPT</name>
+    <cpCost>1CP</cpCost>
+    <type>SPEARPOINT TASK FORCE</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>The belligerence of the Adeptus Astartes combined 
+with their post‑human physiology makes them 
+unyielding foes to face.</lore>
+    <when>Your opponent’s Shooting phase or the 
+Fight phase, just after an enemy unit has selected 
+its targets.</when>
+    <target>One Adeptus Astartes  unit from your army 
+that was selected as the target of one or more of the 
+attacking unit’s attacks.</target>
+    <effect>Until the end of the phase, each time an attack 
+targets your unit, worsen the Armour Penetration 
+characteristic of that attack by 1.</effect>
+  </stratagem>
+  <stratagem>
+    <name>SPEAR THRUST AND SABRE SWING</name>
+    <cpCost>1CP</cpCost>
+    <type>SPEARPOINT TASK FORCE</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>Some foes can be ended with a single charge. Others 
+require sustained savagery to fell. The White Scars are 
+adept at both methods of fighting.</lore>
+    <when>Fight phase.</when>
+    <target>One Adeptus Astartes  unit from your army 
+that has not been selected to fight this phase.</target>
+    <effect>Select either the [LANCE]  or [LETHAL HITS]  
+ability. Until the end of the phase, melee weapons 
+equipped by models in your unit have the selected 
+ability. If it is a Mounted  unit, until the end of the 
+phase, melee weapons equipped by models in 
+your unit have the  [LANCE]  and [LETHAL HITS]  
+abilities instead.</effect>
+  </stratagem>
+  <stratagem>
+    <name>MOBILE LETHALITY</name>
+    <cpCost>1CP</cpCost>
+    <type>SPEARPOINT TASK FORCE</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>The White Scars fight their wars at a furious 
+tempo, and their warriors are adept at 
+fire‑and‑manoeuvre strategies.</lore>
+    <when>Your Movement phase.</when>
+    <target>One Adeptus Astartes  unit from your army.</target>
+    <effect>Until the end of the turn, your unit is eligible to 
+shoot in a turn in which it Advanced or Fell Back.</effect>
+  </stratagem>
+  <stratagem>
+    <name>HUNTER’S INSTINCTS</name>
+    <cpCost>1CP</cpCost>
+    <type>SPEARPOINT TASK FORCE</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>The White Scars read the ebb and flow of battle with the 
+hungry cunning of raptorial predators, reacting to the 
+enemy’s movements with exceptional rapidity.</lore>
+    <when>Your opponent’s Movement phase, just after an 
+enemy unit ends a Normal, Advance or Fall Back move.</when>
+    <target>One  Adeptus Astartes Infantry  unit or 
+Adeptus Astartes Mounted  unit from your army that 
+is within 9&quot; of that enemy unit. You cannot target a 
+unit that is within Engagement Range of one or more 
+enemy units.</target>
+    <effect>Your unit can make a Normal move of up to 6&quot;.</effect>
+  </stratagem>
+  <stratagem>
+    <name>EVASIVE MANOEUVRES</name>
+    <cpCost>1CP</cpCost>
+    <type>SPEARPOINT TASK FORCE</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>Battle‑brothers of the White Scars Chapter are born and 
+raised in the saddle. Expert pilots and riders all, they 
+weave through incoming fire with instinctive skill.</lore>
+    <when>Your opponent’s Shooting phase, just after an 
+enemy unit has selected its targets.</when>
+    <target>One Adeptus Astartes Mounted  or Adeptus 
+Astartes Fly Vehicle  unit from your army that was 
+selected as the target of one or more of the attacking 
+unit’s attacks.</target>
+    <effect>Until the end of the phase, each time an 
+attack targets your unit, subtract 1 from the Hit roll and 
+subtract 1 from the Wound roll.</effect>
+  </stratagem>
+  <stratagem>
+    <name>WITHDRAW AND REGROUP</name>
+    <cpCost>1CP</cpCost>
+    <type>SPEARPOINT TASK FORCE</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>The riders and pilots sweep away as swiftly as they 
+arrive, regrouping in preparation for their next assault.</lore>
+    <when>End of your opponent’s Fight phase.</when>
+    <target>One  Adeptus Astartes Mounted  or Adeptus 
+Astartes Fly Vehicle  unit from your army that is not 
+within Engagement Range of one or more enemy units.</target>
+    <effect>Remove your unit from the battlefield and 
+place it into Strategic Reserves.</effect>
+  </stratagem>
+</stratagems>

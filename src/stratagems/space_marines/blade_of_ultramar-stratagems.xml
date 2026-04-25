@@ -1,0 +1,114 @@
+<?xml version="1.0" ?>
+<stratagems>
+  <stratagem>
+    <name>ARMOUR OF CONTEMPT</name>
+    <cpCost>1CP</cpCost>
+    <type>BLADE OF ULTRAMAR</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>The belligerence of the Adeptus Astartes combined 
+with their post‑human physiology makes them 
+unyielding foes to face.</lore>
+    <when>Your opponent’s Shooting phase or the 
+Fight phase, just after an enemy unit has selected 
+its targets.</when>
+    <target>One Adeptus Astartes  unit from your army 
+that was selected as the target of one or more of the 
+attacking unit’s attacks.</target>
+    <effect>Until the end of the phase, each time an attack 
+targets your unit, worsen the Armour Penetration 
+characteristic of that attack by 1.</effect>
+  </stratagem>
+  <stratagem>
+    <name>TACTICAL FORESIGHT</name>
+    <cpCost>1CP</cpCost>
+    <type>BLADE OF ULTRAMAR</type>
+    <subtype>EPIC DEED STRATAGEM</subtype>
+    <lore>With the enemy’s countermeasures and responses 
+predicted and allowed for in advance, the Ultramarines 
+can weather their most ferocious attacks.</lore>
+    <when>Your opponent’s Shooting phase or the 
+Fight phase, just after an enemy unit has selected 
+its targets.</when>
+    <target>One Adeptus Astartes  unit from your army 
+that was selected as the target of one or more of the 
+attacking unit’s attacks.</target>
+    <effect>Until the end of the phase, each time an 
+attack targets your unit, if the Strength characteristic 
+of that attack is greater than or equal to the Toughness 
+characteristic of that unit, subtract 1 from the 
+Wound roll.</effect>
+  </stratagem>
+  <stratagem>
+    <name>COURAGE AND HONOUR!</name>
+    <cpCost>1CP</cpCost>
+    <type>BLADE OF ULTRAMAR</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>Roaring their famed battle cry, the Ultramarines 
+hurl themselves into the fight, striving all the harder 
+to prevail beneath the unwavering eye of their 
+Chapter Master.</lore>
+    <when>Fight phase.</when>
+    <target>One Adeptus Astartes unit from your army.</target>
+    <effect>Until the end of the phase, melee weapons 
+equipped by models in your unit have the [LANCE]  
+ability. If your unit is under the effects of the Assault 
+Doctrine, until the end of the phase, improve the 
+Armour Penetration characteristic of such weapons by 
+1 as well.</effect>
+  </stratagem>
+  <stratagem>
+    <name>ULTRAMARIAN ADAPTIVITY</name>
+    <cpCost>1CP</cpCost>
+    <type>BLADE OF ULTRAMAR</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>No Chapter’s warriors know better the breadth – 
+theoretical and practical – of the Codex Astartes’ 
+teachings, and how these can and should be adapted 
+to ensure victory.</lore>
+    <when>Your Command phase.</when>
+    <target>One Adeptus Astartes unit from your army.</target>
+    <effect>Select the Devastator Doctrine, Tactical 
+Doctrine or Assault Doctrine. Until the start of your next 
+Command phase, that Combat Doctrine is active for 
+your unit instead of any other Combat Doctrine that is 
+active for your army, even if you have already selected 
+that Combat Doctrine this battle.</effect>
+  </stratagem>
+  <stratagem>
+    <name>EXEMPLARY VIGILANCE</name>
+    <cpCost>1CP</cpCost>
+    <type>BLADE OF ULTRAMAR</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>Long have the Ultramarines guarded both Ultramar 
+and the wider Imperium. No foe can hide from their 
+vengeful gaze or evade the reach of their wrath.</lore>
+    <when>Your Shooting phase.</when>
+    <target>One Adeptus Astartes  unit from your army 
+that has not been selected to shoot this phase.</target>
+    <effect>Until the end of the phase, ranged 
+weapons equipped by models in your unit have the 
+[IGNORES COVER]  ability. If your unit is under the 
+effects of the Devastator Doctrine, until the end of the 
+phase, improve the Armour Penetration characteristic 
+of such weapons by 1 as well.</effect>
+  </stratagem>
+  <stratagem>
+    <name>PRACTICAL TACTICS</name>
+    <cpCost>1CP</cpCost>
+    <type>BLADE OF ULTRAMAR</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>After rapidly making a theoretical assessment of the 
+foes’ probable next moves, the Ultramarines apply 
+practical repositioning to counter them.</lore>
+    <when>Your opponent’s Movement phase, just after an 
+enemy unit ends a Normal, Advance or Fall Back move.</when>
+    <target>One Adeptus Astartes Infantry  or Adeptus 
+Astartes Mounted  unit from your army that is not 
+within Engagement Range of one or more enemy units 
+and is within 9&quot; of the enemy unit that just ended 
+that move.</target>
+    <effect>Your unit can make a Normal move of up to 
+D6&quot;, or a Normal move of up to 6&quot; instead if it is under 
+the effects of the Tactical Doctrine.</effect>
+  </stratagem>
+</stratagems>

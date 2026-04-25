@@ -1,0 +1,104 @@
+<?xml version="1.0" ?>
+<stratagems>
+  <stratagem>
+    <name>BASH AND GRAB</name>
+    <cpCost>1CP</cpCost>
+    <type>FREEBOOTER KREW</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>Freebooterz waste no time getting violently stuck 
+into anyone unwise enough to try to keep prized loot 
+out of their grasping claws.</lore>
+    <when>The Fight phase.</when>
+    <target>One Orks  unit from your army that has not 
+been selected to fight this phase.</target>
+    <effect>Until the end of the phase, each time a 
+model in your unit makes an attack that targets an 
+enemy unit within range of the loot objective, you 
+can re‑roll the Wound roll.</effect>
+  </stratagem>
+  <stratagem>
+    <name>GRAB AND BASH</name>
+    <cpCost>1CP</cpCost>
+    <type>FREEBOOTER KREW</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>Few warriors in the galaxy fight with greater brutality 
+than a Freebooter determined to hang onto his loot.</lore>
+    <when>Your Command phase.</when>
+    <target>One Orks  unit from your army (excluding 
+Gretchin  units) that is within range of the 
+loot objective.</target>
+    <effect>Until the start of your next Command phase, 
+the Waaagh! is active for your unit, even if you have 
+already called a Waaagh! this battle.
+Designer’s Note: This means that any abilities that 
+are in effect while the Waaagh! is active for your 
+army will be in effect for your unit.</effect>
+  </stratagem>
+  <stratagem>
+    <name>BOARDIN’ RUSH</name>
+    <cpCost>1CP</cpCost>
+    <type>FREEBOOTER KREW</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>Having cut their gold‑plated fangs storming aboard 
+hostile warships, these Freebooterz are good at 
+getting stuck straight into the enemy.</lore>
+    <when>Your Movement phase.</when>
+    <target>One Orks  unit from your army that has not 
+been selected to move this phase.</target>
+    <effect>Until the end of the phase, each time your 
+unit Advances, do not make an Advance roll. Instead, 
+until the end of the phase, add 6&quot; to the Move 
+characteristic of models in your unit.</effect>
+  </stratagem>
+  <stratagem>
+    <name>DECK FRAGGERS</name>
+    <cpCost>1CP</cpCost>
+    <type>FREEBOOTER KREW</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>Invented by some sadistic Bad Mek, these 
+shrapnel‑packed rounds of kustom ammunition 
+are excellent for scything down tight‑packed 
+enemy infantry.</lore>
+    <when>Your Shooting phase.</when>
+    <target>One Orks  unit from your army that has not 
+been selected to shoot this phase.</target>
+    <effect>Until the end of the phase, each time a 
+model in your unit targets an Infantry  unit with a 
+ranged weapon, that weapon has the [BLAST]  ability.</effect>
+  </stratagem>
+  <stratagem>
+    <name>ROLLING LOOT‑HEAP</name>
+    <cpCost>1CP</cpCost>
+    <type>FREEBOOTER KREW</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>Just because an enemy vehicle is still mobile and 
+fighting doesn’t stop any suitably arrogant Flash Gitz 
+from claiming it as their loot, especially when their 
+snazzguns are more than capable of explosively 
+backing up that claim.</lore>
+    <when>Your Shooting phase.</when>
+    <target>One Flash Gitz  unit from your army that has 
+not been selected to shoot this phase.</target>
+    <effect>Until the end of the phase, ranged 
+weapons equipped by models in your unit have the 
+[ANTI‑VEHICLE 4+]  ability.</effect>
+  </stratagem>
+  <stratagem>
+    <name>KRUMP AND RUN</name>
+    <cpCost>1CP</cpCost>
+    <type>FREEBOOTER KREW</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>Freebooterz are unscrupulous pirates through and 
+through, always on the look out for new looting 
+opportunities and sometimes even willing to forgo a 
+good punch up in favour of hauling away their riches.</lore>
+    <when>Your opponent’s Movement phase, just after 
+an enemy unit falls back.</when>
+    <target>One Orks  unit from your army that was 
+within engagement range of that enemy unit at the 
+start of the phase and is not within range of one or 
+more enemy units.</target>
+    <effect>Your unit can make a Normal move of up 
+to 6&quot;.</effect>
+  </stratagem>
+</stratagems>

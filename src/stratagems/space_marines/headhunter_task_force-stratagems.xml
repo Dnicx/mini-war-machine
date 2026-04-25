@@ -1,0 +1,110 @@
+<?xml version="1.0" ?>
+<stratagems>
+  <stratagem>
+    <name>ARMOUR OF CONTEMPT</name>
+    <cpCost>1CP</cpCost>
+    <type>HEADHUNTER TASK FORCE</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>The belligerence of the Adeptus Astartes, combined 
+with their transhuman physiology, makes them 
+unyielding foes to face.</lore>
+    <when>Your opponent’s Shooting phase or the 
+Fight phase, just after an enemy unit has selected 
+its targets.</when>
+    <target>One Adeptus Astartes unit  from your army 
+that was selected as the target of one or more of the 
+attacking unit’s attacks.</target>
+    <effect>Until the end of the phase, each time 
+an attack targets your unit, worsen the Armour 
+Penetration characteristic of that attack by 1.</effect>
+  </stratagem>
+  <stratagem>
+    <name>TARGET WEAK POINT</name>
+    <cpCost>1CP</cpCost>
+    <type>HEADHUNTER TASK FORCE</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>Targeting vulnerable joints or seams between 
+armoured plates, Space Marine gunners increase the 
+effectiveness of their weapons.</lore>
+    <when>Your Shooting phase.</when>
+    <target>One Tank Ace  unit from your army that has 
+not been selected to shoot this phase.</target>
+    <effect>Until the end of the phase, each time a 
+model in your unit makes a ranged attack that 
+targets a Monster or Vehicle  unit, improve the 
+Armour Penetration characteristic of that attack by 1.</effect>
+    <restrictions>A unit cannot be targeted with this 
+and the Kill Shot Stratagem in the same phase.</restrictions>
+  </stratagem>
+  <stratagem>
+    <name>KILL SHOT</name>
+    <cpCost>1CP</cpCost>
+    <type>HEADHUNTER TASK FORCE</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>Space Marines are ruthless in culling weakened foes.</lore>
+    <when>Your Shooting phase.</when>
+    <target>One Tank Ace  unit from your army that has 
+not been selected to shoot this phase.</target>
+    <effect>Until the end of the phase, each time a 
+model in your unit makes an attack that targets a 
+Monster  or Vehicle  unit, re‑roll a Wound roll of 1. If 
+the target unit is below its Starting Strength, you can 
+re‑roll the Wound roll instead.</effect>
+    <restrictions>A unit cannot be targeted with 
+this and the Target Weak Point Stratagem in the 
+same phase.</restrictions>
+  </stratagem>
+  <stratagem>
+    <name>RAPID GUNNERY</name>
+    <cpCost>1CP</cpCost>
+    <type>HEADHUNTER TASK FORCE</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>Advanced targeting systems and the skill of 
+transhuman gunners ensure that Space Marine 
+tanks keep up a punishing rate of fire, even when 
+extracting themselves from a press of enemies.</lore>
+    <when>Your Shooting phase.</when>
+    <target>One Adeptus Astartes  unit from your army 
+that has not been selected to shoot this phase.</target>
+    <effect>Until the end of the phase, your unit is 
+eligible to shoot in a turn in which it Fell Back.</effect>
+  </stratagem>
+  <stratagem>
+    <name>REACTIVE REPOSITIONING</name>
+    <cpCost>1CP</cpCost>
+    <type>HEADHUNTER TASK FORCE</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>Reacting swiftly to enemy movements, this tank’s 
+crew reposition their vehicle, angling armour or 
+taking up an advantageous firing position.</lore>
+    <when>Your opponent’s Movement phase, just 
+after an enemy unit ends a Normal, Advance or Fall 
+Back move.</when>
+    <target>One Tank Ace  unit from your army 
+(excluding units containing one or more models with 
+a Wounds characteristic of 16+) that is within 9&quot; of 
+that enemy unit.</target>
+    <effect>Your unit can make a Normal move of up 
+to D6&quot;.</effect>
+  </stratagem>
+  <stratagem>
+    <name>MACHINE VENGEANCE</name>
+    <cpCost>1CP</cpCost>
+    <type>HEADHUNTER TASK FORCE</type>
+    <subtype>EPIC DEED STRATAGEM</subtype>
+    <lore>Bellicose in the extreme, this vehicle’s machine 
+spirit demands immediate vengeance for the hurts 
+it has incurred.</lore>
+    <when>Your opponent’s Shooting phase, just after an 
+enemy unit has shot.</when>
+    <target>One Tank Ace  unit from your army 
+(excluding units containing one or more models 
+with a Wounds characteristic of 16+) that was 
+selected as the target of one or more of the attacking 
+unit’s attacks.</target>
+    <effect>Your unit can shoot as if it were your 
+Shooting phase, but must target only that enemy 
+unit when doing so, and can only do so if that enemy 
+unit is visible and an eligible target.</effect>
+  </stratagem>
+</stratagems>

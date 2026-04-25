@@ -1,0 +1,99 @@
+<?xml version="1.0" ?>
+<stratagems>
+  <stratagem>
+    <name>DAT’S OURS</name>
+    <cpCost>1CP</cpCost>
+    <type>TAKTIKAL BRIGADE</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>A few Orks, particularly those of the Blood Axe Clan, 
+can resist their destructive urges long enough to 
+prioritise the seizing of objectives.</lore>
+    <when>Command phase.</when>
+    <target>One Orks unit from your army that is within 
+Engagement Range of one or more enemy units.</target>
+    <effect>Until the start of the next Command phase, 
+add 1 to the Objective Control characteristic of 
+models in your unit.</effect>
+  </stratagem>
+  <stratagem>
+    <name>FIGHT PROPPA</name>
+    <cpCost>1CP</cpCost>
+    <type>TAKTIKAL BRIGADE</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>Some deviant Blood Axes go so far as to practise 
+hand‑to‑hand combat, tailoring fighting styles to 
+specific types of enemies.</lore>
+    <when>Fight phase.</when>
+    <target>One Orks Infantry  or Orks Mounted  unit 
+from your army that has not been selected to fight 
+this phase.</target>
+    <effect>Select the [SUSTAINED HITS 1]  or 
+[LETHAL HITS]  ability. Until the end of the phase, 
+melee weapons equipped by models in your unit 
+have the selected  ability.</effect>
+  </stratagem>
+  <stratagem>
+    <name>TAKTIKAL RETREAT</name>
+    <cpCost>1CP</cpCost>
+    <type>TAKTIKAL BRIGADE</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>Blood Axes feel no shame in retreating from a 
+fight, particularly if the boss wants someone else 
+duffed up.</lore>
+    <when>Your Movement phase, just after an Orks  unit 
+from your army Falls Back.</when>
+    <target>That Orks  unit.</target>
+    <effect>Until the end of the turn, your unit is eligible 
+to shoot and declare a charge in a turn in which it 
+Fell Back.</effect>
+  </stratagem>
+  <stratagem>
+    <name>KRUNCHIN’ DESCENT</name>
+    <cpCost>1CP</cpCost>
+    <type>TAKTIKAL BRIGADE</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>With their rocket packs at full throttle, Stormboyz 
+plummet to smash into their foes with 
+bone‑crushing force.</lore>
+    <when>Your Charge phase, just after a Stormboyz  
+unit from your army ends a Charge move.</when>
+    <target>That Stormboyz  unit.</target>
+    <effect>Select one enemy unit within Engagement 
+Range of your unit, then roll one D6 for each model 
+in your unit that is within Engagement Range of that 
+enemy unit: for each 4+, that enemy unit suffers 1 
+mortal wound (to a maximum of 6 mortal wounds).</effect>
+  </stratagem>
+  <stratagem>
+    <name>ON TO DA NEXT</name>
+    <cpCost>1CP</cpCost>
+    <type>TAKTIKAL BRIGADE</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>Seeing little value in pursuing fleeing foes, Blood Axe 
+mobs turn their attention towards the next fight or 
+press towards whatever cache of shiny gubbinz the 
+boss desires.</lore>
+    <when>Your opponent’s Movement phase, just after 
+an enemy unit Falls Back.</when>
+    <target>One Orks  unit from your army that was 
+within Engagement Range of that enemy unit at the 
+start of the phase.</target>
+    <effect>Your unit can make a Normal move of up 
+to 6&quot;.</effect>
+  </stratagem>
+  <stratagem>
+    <name>DED SNEAKY</name>
+    <cpCost>1CP</cpCost>
+    <type>TAKTIKAL BRIGADE</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>Utilising camouflage, cover or misdirection, these 
+Orks slip away to prepare their next ambush, leaving 
+their foes staring at thin air.</lore>
+    <when>End of your opponent’s Fight phase.</when>
+    <target>One Kommandos  or Stormboyz unit from 
+your army that is not within Engagement Range of 
+one or more enemy units.</target>
+    <effect>Remove your unit from the battlefield and 
+place it into Strategic Reserves.</effect>
+  </stratagem>
+</stratagems>

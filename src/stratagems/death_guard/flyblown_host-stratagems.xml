@@ -1,0 +1,112 @@
+<?xml version="1.0" ?>
+<stratagems>
+  <stratagem>
+    <name>NAUSEATING PAROXYSMS</name>
+    <cpCost>1CP</cpCost>
+    <type>FLYBLOWN HOST</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>The contagion borne by the Death Guard and their 
+attendant swarms of winged vermin triggers bouts of 
+sickness and convulsion in those they encounter.</lore>
+    <when>Start of the Fight phase.</when>
+    <target>One Death Guard Infantry  unit from your 
+army that is within Engagement Range of one or 
+more enemy units.</target>
+    <effect>Select one enemy unit within Engagement 
+Range of your unit. That unit must take a 
+Battle‑shock test, subtracting 1 from the result.</effect>
+  </stratagem>
+  <stratagem>
+    <name>VERMIN CLOUD</name>
+    <cpCost>1CP</cpCost>
+    <type>FLYBLOWN HOST</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>The storm of insectile contagion sweeps forward, 
+dragging the Death Guard in its wake. None will 
+escape the Plague God’s embrace.</lore>
+    <when>Fight phase.</when>
+    <target>One Death Guard Infantry  unit from your 
+army that has not been selected to fight this phase.</target>
+    <effect>Until the end of the phase, each time a 
+model in this unit makes a Pile‑in or Consolidation 
+move, it can move up to 6&quot; instead of up to 3&quot;.</effect>
+  </stratagem>
+  <stratagem>
+    <name>EYE OF THE SWARM</name>
+    <cpCost>1CP</cpCost>
+    <type>FLYBLOWN HOST</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>The vermin swarms intensify as the Death Guard 
+close in upon the enemy. As their foes clutch and 
+tear their crawling skin, pitiless Plague Marines 
+unleash volleys of point‑blank fire into their 
+tormented foes.</lore>
+    <when>Your Shooting phase.</when>
+    <target>One Death Guard Infantry  unit from your 
+army that has not been selected to shoot this phase.</target>
+    <effect>Until the end of the phase, ranged weapons 
+equipped by models in your unit (excluding Blast 
+weapons) have the [PISTOL]  ability.</effect>
+  </stratagem>
+  <stratagem>
+    <name>DRONING HORROR</name>
+    <cpCost>1CP</cpCost>
+    <type>FLYBLOWN HOST</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>Clouds of droning daemon flies sweep across the 
+battlefield to envelop the enemies of the Death 
+Guard. As their victims claw and scratch at the 
+seething swarms, Mortarion’s sons pick off their 
+targets at leisure.</lore>
+    <when>Your Shooting phase.</when>
+    <target>One Death Guard Infantry  unit from your 
+army that has not been selected to shoot this phase.</target>
+    <effect>Until the end of the phase, each time a 
+model in your unit makes a ranged attack, re‑roll a 
+Hit roll of 1. If that attack targets a unit within half 
+range, you can re‑roll the Hit roll instead.</effect>
+  </stratagem>
+  <stratagem>
+    <name>ENERVATING ONSLAUGHT</name>
+    <cpCost>1CP</cpCost>
+    <type>FLYBLOWN HOST</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>Swathed in a buzzing cloak of pathogenic decay, 
+Nurgle’s chosen crash into the foe, disease dealing 
+death as surely as fist, maul and blade.</lore>
+    <when>Your Charge phase, just after a Death Guard 
+Infantry  unit from your army makes a Charge move.</when>
+    <target>That Death Guard Infantry unit.</target>
+    <effect>Select one enemy unit within Engagement 
+Range of your unit (excluding Monsters  and 
+Vehicles ). Roll one D6 for each model in your 
+unit that is within Engagement Range of that unit, 
+adding 1 to the result if that model is not a Cultist  or 
+Poxwalker  model: for each 5+, the selected enemy 
+unit suffers 1 mortal wound (to a maximum of 6 
+mortal wounds).</effect>
+  </stratagem>
+  <stratagem>
+    <name>MYPHITIC INVIGORATION</name>
+    <cpCost>1CP</cpCost>
+    <type>FLYBLOWN HOST</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>Daemon flies are drawn to and invigorated by the 
+foul miasmas surrounding Myphitic Blight‑haulers. 
+In the vicinity of these malodorous constructs, the 
+swarms gather in densities great enough to form a 
+living barrier to the foe’s attacks.</lore>
+    <when>Your opponent’s Shooting phase, just after an 
+enemy unit has selected its targets.</when>
+    <target>One Death Guard Infantry  unit from 
+your army that is within 6&quot; of one or more friendly 
+Myphitic Blight‑hauler units and that was 
+selected as the target of one or more of the attacking 
+unit’s attacks.</target>
+    <effect>Until the end of the phase, each time an 
+attack targets your unit, if the Strength characteristic 
+of that attack is greater than the Toughness 
+characteristic of this unit, subtract 1 from the 
+Wound roll.</effect>
+  </stratagem>
+</stratagems>

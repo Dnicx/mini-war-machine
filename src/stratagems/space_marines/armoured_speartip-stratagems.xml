@@ -1,0 +1,115 @@
+<?xml version="1.0" ?>
+<stratagems>
+  <stratagem>
+    <name>MACHINE WRATH</name>
+    <cpCost>1CP</cpCost>
+    <type>ARMOURED SPEARTIP</type>
+    <subtype>EPIC DEED STRATAGEM</subtype>
+    <lore>In a last act of vengeance, the doomed crew of this 
+burning transport drive into the midst of the enemy.</lore>
+    <when>Any phase, just after a Heavy Transport  unit 
+from your army is destroyed.</when>
+    <target>That Heavy Transport  unit. You can use 
+this Stratagem on that unit even though it was 
+just destroyed.</target>
+    <effect>Your unit can make a Normal or Fall Back 
+move before you roll for its Deadly Demise ability, and 
+before any embarked units perform an Emergency 
+Disembarkation. When making this move, your 
+unit can move through enemy models (excluding 
+Monsters  and Vehicles ) and can move within 
+Engagement Range of such models, but cannot end 
+that move within Engagement Range of them, and 
+any Desperate Escape test is automatically passed.</effect>
+  </stratagem>
+  <stratagem>
+    <name>ARMOUR OF CONTEMPT</name>
+    <cpCost>1CP</cpCost>
+    <type>ARMOURED SPEARTIP</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>The belligerence of the Adeptus Astartes, combined 
+with their transhuman physiology, makes them 
+unyielding foes to face.</lore>
+    <when>Your opponent’s Shooting phase or the 
+Fight phase, just after an enemy unit has selected 
+its targets.</when>
+    <target>One Adeptus Astartes  unit from your army 
+that was selected as the target of one or more of the 
+attacking unit’s attacks.</target>
+    <effect>Until the end of the phase, each time 
+an attack targets your unit, worsen the Armour 
+Penetration characteristic of that attack by 1.</effect>
+  </stratagem>
+  <stratagem>
+    <name>RAPID EMBARKATION</name>
+    <cpCost>1CP</cpCost>
+    <type>ARMOURED SPEARTIP</type>
+    <subtype>WARGEAR STRATAGEM</subtype>
+    <lore>With steely discipline, Space Marine battle‑brothers 
+mount up swiftly, even as the enemy closes in.</lore>
+    <when>End of the Fight phase.</when>
+    <target>One Adeptus Astartes  Infantry  unit from 
+your army that is not within Engagement Range of 
+one or more enemy units, and one friendly Heavy 
+Transport  it is able to embark within.</target>
+    <effect>If your Adeptus Astartes Infantry  unit 
+is wholly within 6&quot; of that Heavy Transport , it can 
+embark within it.</effect>
+  </stratagem>
+  <stratagem>
+    <name>CERAMITE SLEDGEHAMMER</name>
+    <cpCost>1CP</cpCost>
+    <type>ARMOURED SPEARTIP</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>The mightiest Space Marine transports are 
+unstoppable on the advance.</lore>
+    <when>Your Movement phase.</when>
+    <target>One Adeptus Astartes Transport  unit 
+from your army that has not been selected to move 
+this phase.</target>
+    <effect>Until the end of the phase, each time your 
+unit makes a Normal or Advance move, it can move 
+horizontally through terrain features. In addition, if 
+your unit is a Heavy Transport , when making this 
+move, your unit can move through enemy models 
+(excluding Monsters  and Vehicles ) and can 
+move within Engagement Range of such models, 
+but cannot end that move within Engagement 
+Range of them, and any Desperate Escape test is 
+automatically passed.</effect>
+  </stratagem>
+  <stratagem>
+    <name>ADVANCED DEPLOYMENT</name>
+    <cpCost>1CP</cpCost>
+    <type>ARMOURED SPEARTIP</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>Coaxing the utmost from roaring engines, transport 
+crews strive to deploy their passengers as close as 
+possible to their assigned objectives.</lore>
+    <when>Your Movement phase.</when>
+    <target>One Adeptus Astartes Transport  unit 
+from your army that has not been selected to move 
+this phase.</target>
+    <effect>Until the end of the phase, units can 
+disembark from your Transport  after it has 
+Advanced. Units that do so count as having made a 
+Normal move this phase, and cannot declare a charge 
+in the same turn (unless your Transport  has the 
+Assault Ramp ability), but can otherwise act normally.</effect>
+  </stratagem>
+  <stratagem>
+    <name>PURGATION DOCTRINE</name>
+    <cpCost>1CP</cpCost>
+    <type>ARMOURED SPEARTIP</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>Emerging from their transports, Space Marine 
+infantry ruthlessly clear enemy positions.</lore>
+    <when>Your Shooting phase.</when>
+    <target>One Adeptus Astartes  unit from your army 
+that has not been selected to shoot this phase.</target>
+    <effect>Until the end of the phase, each time a 
+model in your unit makes an attack, add 1 to the 
+Hit roll (if your unit disembarked from a Heavy 
+Transport  this turn, add 1 to the Wound roll as well).</effect>
+  </stratagem>
+</stratagems>

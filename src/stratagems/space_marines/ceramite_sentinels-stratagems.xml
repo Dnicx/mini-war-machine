@@ -1,0 +1,110 @@
+<?xml version="1.0" ?>
+<stratagems>
+  <stratagem>
+    <name>UNYIELDING MIGHT</name>
+    <cpCost>1CP</cpCost>
+    <type>CERAMITE SENTINELS</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>Knowing that this strategically vital site must be 
+secure for the defence lines to hold, Space Marines 
+stand indomitable in the face of the foe.</lore>
+    <when>Command phase.</when>
+    <target>One Adeptus Astartes  unit from your army 
+that is within Engagement Range of one or more 
+enemy units.</target>
+    <effect>Until the start of your next Command phase, 
+add 1 to the Objective Control characteristics of 
+models in your unit.</effect>
+  </stratagem>
+  <stratagem>
+    <name>PRIORITY STRIKE</name>
+    <cpCost>2CP</cpCost>
+    <type>CERAMITE SENTINELS</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>Eliminating key enemy assets is crucial to stalling 
+then reversing the foe’s momentum.</lore>
+    <when>Your Shooting phase or the Fight phase.</when>
+    <target>One Adeptus Astartes Infantry  or 
+Adeptus Astartes Mounted  unit from your 
+army that has not been selected to shoot or fight 
+this phase.</target>
+    <effect>Until the end of the phase, each time a 
+model in your unit makes an attack that targets a 
+Character , Monster  or Vehicle  unit, you can re‑roll 
+the Wound roll.</effect>
+  </stratagem>
+  <stratagem>
+    <name>ARMOUR OF CONTEMPT</name>
+    <cpCost>1CP</cpCost>
+    <type>CERAMITE SENTINELS</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>The belligerence of the Adeptus Astartes combined 
+with their post‑human physiology makes them 
+unyielding foes to face.</lore>
+    <when>Your opponent’s Shooting phase or the 
+Fight phase, just after an enemy unit has selected 
+its targets.</when>
+    <target>One Adeptus Astartes  unit from your army 
+that was selected as the target of one or more of the 
+attacking unit’s attacks.</target>
+    <effect>Until the end of the phase, each time 
+an attack targets your unit, worsen the Armour 
+Penetration characteristic of that attack by 1.</effect>
+  </stratagem>
+  <stratagem>
+    <name>STAND TO THE END</name>
+    <cpCost>1CP</cpCost>
+    <type>CERAMITE SENTINELS</type>
+    <subtype>EPIC DEED STRATAGEM</subtype>
+    <lore>Aware of how vital it is that the defence line holds, 
+these warriors fight even to their last breath.</lore>
+    <when>Fight phase, just after an enemy unit has 
+selected its targets.</when>
+    <target>One Adeptus Astartes  unit from your army 
+that was selected as the target of one or more of the 
+attacking unit’s attacks.</target>
+    <effect>Until the end of the phase, each time a 
+model in your unit is destroyed, if that model has not 
+fought this phase, roll one D6, adding 1 to the result 
+if it is an Entrenched  unit: on a 4+, do not remove it 
+from play. That destroyed model can fight after the 
+attacking unit has finished making its attacks, and is 
+then removed from play.</effect>
+  </stratagem>
+  <stratagem>
+    <name>AUGMENTED TARGETING</name>
+    <cpCost>1CP</cpCost>
+    <type>CERAMITE SENTINELS</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>Auto‑sense targeting subroutines specially adapted 
+for defensive fire patterns aid these warriors’ aim.</lore>
+    <when>Your Shooting phase.</when>
+    <target>One Adeptus Astartes  unit from your army 
+that has not been selected to shoot this phase.</target>
+    <effect>Select either the [SUSTAINED HITS 1]  or 
+[LETHAL HITS]  abilities. Until the end of the phase, 
+ranged weapons equipped by models in your unit 
+have the selected ability. If your unit is Entrenched , 
+until the end of the phase, ranged weapons equipped 
+by models in your unit have the [SUSTAINED HITS 1] 
+and [LETHAL HITS]  abilities instead.</effect>
+  </stratagem>
+  <stratagem>
+    <name>EVASIVE REPOSITIONING</name>
+    <cpCost>1CP</cpCost>
+    <type>CERAMITE SENTINELS</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>Codex doctrine when conducting an aggressive 
+defence is to swiftly take up new positions whenever 
+the foe finds your range.</lore>
+    <when>Your opponent’s Shooting phase, just after an 
+enemy unit has shot.</when>
+    <target>One Adeptus Astartes Infantry  or 
+Adeptus Astartes Mounted  unit from your army 
+that was selected as the target of one or more of the 
+attacking unit’s attacks.</target>
+    <effect>Your unit can make a Normal move of up to 
+D6&quot;. If your unit is Entrenched , you can re‑roll the 
+D6 to determine how far your unit can move.</effect>
+  </stratagem>
+</stratagems>

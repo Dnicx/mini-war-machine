@@ -1,0 +1,108 @@
+<?xml version="1.0" ?>
+<stratagems>
+  <stratagem>
+    <name>MOUNT UP, LADZ</name>
+    <cpCost>1CP</cpCost>
+    <type>BLITZ BRIGADE</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>With nothing left to blast or krump, these Orks 
+scramble aboard their transport and thunder towards 
+the next engagement.</lore>
+    <when>End of the Fight phase.</when>
+    <target>One Orks Infantry  unit from your army 
+that is not within Engagement Range of one or more 
+enemy units, and one friendly Transport  it is able to 
+embark within.</target>
+    <effect>If your Orks Infantry  unit is wholly within 
+6&quot; of that Transport , it can embark within it.</effect>
+  </stratagem>
+  <stratagem>
+    <name>MEKANISED BRUTALITY</name>
+    <cpCost>1CP</cpCost>
+    <type>BLITZ BRIGADE</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>As Orkoid vehicles thunder into battle at high speed, 
+hatches and ramps swing open, unleashing eager 
+mobs into the thick of the fight.</lore>
+    <when>Your Movement phase.</when>
+    <target>One Battlewagon , Kill Rig  or Hunta Rig 
+unit from your army that has not been selected to 
+move this phase.</target>
+    <effect>Until the end of the turn, each time a unit 
+disembarks from your unit after your unit makes a 
+Normal move, that disembarked unit is still eligible to 
+declare a charge this turn.</effect>
+  </stratagem>
+  <stratagem>
+    <name>RUN ’EM DOWN</name>
+    <cpCost>1CP</cpCost>
+    <type>BLITZ BRIGADE</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>Driving forward in loose formation, Ork vehicles 
+smash into the foe, crushing fleeing enemies 
+beneath tyres, steel tracks and Squig trotters.</lore>
+    <when>Your Movement phase.</when>
+    <target>One Battlewagon , Kill Rig  or Hunta Rig 
+unit from your army that has not been selected to 
+move this phase.</target>
+    <effect>Select up to two other friendly Orks Vehicle  
+or Orks Monster units within 6&quot; of your unit. Until 
+the end of the turn, your unit and each unit you 
+selected are eligible to declare a charge in a turn in 
+which they Advanced.</effect>
+  </stratagem>
+  <stratagem>
+    <name>ARMOURED DUELLISTS</name>
+    <cpCost>1CP</cpCost>
+    <type>BLITZ BRIGADE</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>Ork crews delight in engaging enemy vehicles and 
+monsters in mobile battles.</lore>
+    <when>Your Shooting phase.</when>
+    <target>One Orks Vehicle  unit from your army that 
+has not been selected to shoot this phase.</target>
+    <effect>Until the end of the phase, each time your 
+unit makes an attack that targets a Monster  or 
+Vehicle  unit, add 1 to the Hit roll and add 1 to the 
+Wound roll.</effect>
+  </stratagem>
+  <stratagem>
+    <name>IMPERVIOUS</name>
+    <cpCost>1CP</cpCost>
+    <type>BLITZ BRIGADE</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>Ramshackle though they may appear, Ork vehicles 
+are frighteningly resilient in their construction.</lore>
+    <when>Your opponent’s Shooting phase, just after an 
+enemy unit has selected its targets.</when>
+    <target>One Battlewagon , Kill Rig  or Hunta Rig  
+unit from your army that was selected as the target 
+of one or more of the attacking unit’s attacks.</target>
+    <effect>Until the end of the phase, each time an 
+attack targets your unit, if the Strength characteristic 
+of that attack is greater than the Toughness 
+characteristic of your unit, subtract 1 from the 
+Wound roll.</effect>
+  </stratagem>
+  <stratagem>
+    <name>YOOZ IN TROUBLE NOW</name>
+    <cpCost>1CP</cpCost>
+    <type>BLITZ BRIGADE</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>Spilling from their damaged transport, enraged 
+Orkoid infantry mobs surge towards their attackers.</lore>
+    <when>Your opponent’s Shooting phase, just after an 
+enemy unit has shot.</when>
+    <target>One Battlewagon , Hunta Rig or Kill Rig  
+model from your army that was hit by one or more of 
+the attacking unit’s attacks.</target>
+    <effect>One Orks Infantry  unit embarked within 
+your model can disembark and make a Surge move. 
+To do so, roll one D6: models in that unit move a 
+number of inches up to this result, but that unit must 
+end that move as close as possible to the closest 
+enemy unit (excluding Aircraft ). When doing so, 
+those models can be moved within Engagement 
+Range of that enemy unit.</effect>
+  </stratagem>
+</stratagems>

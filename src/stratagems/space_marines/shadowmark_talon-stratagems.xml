@@ -1,0 +1,111 @@
+<?xml version="1.0" ?>
+<stratagems>
+  <stratagem>
+    <name>ARMOUR OF CONTEMPT</name>
+    <cpCost>1CP</cpCost>
+    <type>SHADOWMARK TALON</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>The belligerence of the Adeptus Astartes combined 
+with their post‑human physiology makes them 
+unyielding foes to face.</lore>
+    <when>Your opponent’s Shooting phase or the 
+Fight phase, just after an enemy unit has selected 
+its targets.</when>
+    <target>One Adeptus Astartes  unit from your army 
+that was selected as the target of one or more of the 
+attacking unit’s attacks.</target>
+    <effect>Until the end of the phase, each time an attack 
+targets your unit, worsen the Armour Penetration 
+characteristic of that attack by 1.</effect>
+  </stratagem>
+  <stratagem>
+    <name>LAY LOW THE TYRANTS</name>
+    <cpCost>1CP</cpCost>
+    <type>SHADOWMARK TALON</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>In a storm of blade thrusts and bludgeoning strikes, 
+enemy champions and commanders are laid low, 
+leaving their troops in leaderless disarray.</lore>
+    <when>Fight phase.</when>
+    <target>One Adeptus Astartes  Infantry  unit 
+from your army that has not been selected to fight 
+this phase.</target>
+    <effect>Until the end of the phase, melee weapons 
+equipped by models in your unit have the 
+[PRECISION]  ability.</effect>
+  </stratagem>
+  <stratagem>
+    <name>FEINT AND THRUST</name>
+    <cpCost>1CP</cpCost>
+    <type>SHADOWMARK TALON</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>Retreating from the fight, these warriors lure their 
+enemies on before swiftly turning the tables and 
+hurling themselves into their now overextended foe.</lore>
+    <when>Your Movement phase.</when>
+    <target>One Adeptus Astartes  unit from your army.</target>
+    <effect>Until the end of the turn, your unit is eligible 
+to shoot and declare a charge in a turn in which it Fell 
+Back. If it is a Phobos  or Scout Squad  unit, it is also 
+eligible to shoot and declare a charge in a turn in which 
+it Advanced.</effect>
+  </stratagem>
+  <stratagem>
+    <name>STUNNING FUSILLADE</name>
+    <cpCost>1CP</cpCost>
+    <type>SHADOWMARK TALON</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>From darkness and obscuring cover, Raven Guard 
+battle‑brothers open fire as one, striking their unaware 
+targets with precision fire.</lore>
+    <when>Your Shooting phase.</when>
+    <target>One Adeptus Astartes Infantry  unit from 
+your army that has not been selected to shoot 
+this phase.</target>
+    <effect>Until the end of the phase, each time a model 
+in your unit makes a ranged attack that targets an 
+enemy unit that is more than 12&quot; away, improve the 
+Ballistic Skill and Armour Penetration characteristics 
+of that attack by 1. If one or more enemy models are 
+destroyed as a result of those attacks, select one of 
+those destroyed models; that destroyed model’s unit 
+must take a Battle‑shock test.</effect>
+  </stratagem>
+  <stratagem>
+    <name>RAPTORIAL VIGILANCE</name>
+    <cpCost>1CP</cpCost>
+    <type>SHADOWMARK TALON</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>The Raven Guard are swift to exploit the movements of 
+their foes, whether to pursue their prey and complete 
+the kill or to make use of an opportunity to fade once 
+more from sight.</lore>
+    <when>Your opponent’s Movement phase, just after an 
+enemy unit ends a Normal, Advance or Fall Back move.</when>
+    <target>One Adeptus Astartes Infantry  or Adeptus 
+Astartes Mounted  unit from your army that is within 
+9&quot; of the enemy unit that just ended that move. You 
+cannot target a unit that is within Engagement Range of 
+one or more enemy units.</target>
+    <effect>Your unit can make a Normal move of 
+up to D6&quot;, or up to 6&quot; instead if it is a Phobos  or 
+Scout Squad  unit.</effect>
+  </stratagem>
+  <stratagem>
+    <name>INTO DARKNESS</name>
+    <cpCost>1CP</cpCost>
+    <type>SHADOWMARK TALON</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>At the opportune moment, Raven Guard infiltration 
+units slip away from battle, only to relocate ready to 
+strike the foe again.</lore>
+    <when>End of your opponent’s Fight phase.</when>
+    <target>Up to two Phobos  and/or Scout Squad  units 
+from your army, or one other Adeptus Astartes 
+Infantry  unit from your army. You cannot target a 
+unit that is within Engagement Range of one or more 
+enemy units.</target>
+    <effect>Remove those units from the battlefield and 
+place them into Strategic Reserves.</effect>
+  </stratagem>
+</stratagems>

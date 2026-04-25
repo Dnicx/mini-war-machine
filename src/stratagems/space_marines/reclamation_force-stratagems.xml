@@ -1,0 +1,104 @@
+<?xml version="1.0" ?>
+<stratagems>
+  <stratagem>
+    <name>CRUSADING CONQUERORS</name>
+    <cpCost>1CP</cpCost>
+    <type>RECLAMATION FORCE</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>The sheer will of these battle‑brothers to reclaim the 
+sacred Five Hundred Worlds is overwhelming.</lore>
+    <when>End of the Command phase.</when>
+    <target>One Adeptus Astartes unit from your army.</target>
+    <effect>Until the start of the next Command phase, 
+add 1 to the Objective Control characteristic of 
+models in your unit.</effect>
+  </stratagem>
+  <stratagem>
+    <name>FURIOUS DEDICATION</name>
+    <cpCost>1CP</cpCost>
+    <type>RECLAMATION FORCE</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>Cold fury of purpose drives the charge of the Space 
+Marines, their absolute dedication to their cause 
+lending them ferocious speed and strength.</lore>
+    <when>Your Charge phase or the Fight phase.</when>
+    <target>One Adeptus Astartes  unit from your army 
+that has not declared a charge or been selected to 
+fight this phase.</target>
+    <effect>Until the end of the turn, add 2 to Charge 
+rolls made for your unit and add 1 to the Attacks 
+characteristic of melee weapons equipped by 
+models in your unit.</effect>
+    <restrictions>You cannot use this Stratagem more 
+than once per turn.</restrictions>
+  </stratagem>
+  <stratagem>
+    <name>FIGHT TO THE END</name>
+    <cpCost>1CP</cpCost>
+    <type>RECLAMATION FORCE</type>
+    <subtype>BATTLE TACTIC STRATAGEM</subtype>
+    <lore>Those who have sworn an oath to see Ultramar 
+reclaimed will not yield a single yard of its territories 
+once they have seized and secured them.</lore>
+    <when>Fight phase, just after an enemy unit has 
+selected its targets.</when>
+    <target>One Adeptus Astartes  unit from your army 
+that was selected as the target of one or more of the 
+attacking unit’s attacks.</target>
+    <effect>Until the end of the phase, each time a 
+model in your unit is destroyed, if that model has not 
+fought this phase, roll one D6: on a 4+, do not remove 
+the destroyed model from play; it can fight after the 
+attacking unit has finished making its attacks, and is 
+then removed from play.</effect>
+  </stratagem>
+  <stratagem>
+    <name>SCIONS OF GUILLIMAN</name>
+    <cpCost>1CP</cpCost>
+    <type>RECLAMATION FORCE</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>The gene‑sons of Roboute Guilliman are masters 
+of his tenets, regardless of which Chapter they 
+hail from.</lore>
+    <when>Your Movement phase, just after an Adeptus 
+Astartes unit from your army ends a Fall Back move.</when>
+    <target>That Adeptus Astartes unit.</target>
+    <effect>Until the end of the turn, your unit is eligible 
+to shoot and declare a charge in a turn in which it 
+Fell Back.</effect>
+  </stratagem>
+  <stratagem>
+    <name>ULTRAMARIAN DESTINY</name>
+    <cpCost>1CP</cpCost>
+    <type>RECLAMATION FORCE</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>All those Space Marines fighting to defend or to 
+expand the Ultramarines stellar realm trust that their 
+conquest – though it must be hard fought for – is 
+nothing short of ordained by the Primarch’s will.</lore>
+    <when>Your Movement phase.</when>
+    <target>One Adeptus Astartes unit from your army.</target>
+    <effect>Select one objective marker you control that 
+your unit is within range of. That objective marker 
+remains under your control until your opponent’s 
+Level of Control over that objective marker is greater 
+than yours at the end of a phase.</effect>
+  </stratagem>
+  <stratagem>
+    <name>MARCHING EVER ON</name>
+    <cpCost>1CP</cpCost>
+    <type>RECLAMATION FORCE</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>The road to the complete rebuilding of the Five 
+Hundred Worlds will be a long and gruelling one, and 
+those who fight their way along it cannot pause in 
+their advance for even a moment.</lore>
+    <when>Your opponent’s Movement phase, just after 
+an enemy unit Falls Back.</when>
+    <target>One Adeptus Astartes  unit from your army 
+that was within Engagement Range of that enemy 
+unit at the start of the phase.</target>
+    <effect>Your unit can make a Normal move of up 
+to D6&quot;+1.</effect>
+  </stratagem>
+</stratagems>

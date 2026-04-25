@@ -1,0 +1,101 @@
+<?xml version="1.0" ?>
+<stratagems>
+  <stratagem>
+    <name>ON DA MOVE</name>
+    <cpCost>1CP</cpCost>
+    <type>SPEEDWAAAGH!</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>Speed Freeks live for the thrill of high‑octane warfare, 
+rarely letting their feet off the accelerator, even in the 
+most furious fighting.</lore>
+    <when>Your Movement phase.</when>
+    <target>One Orks  unit from your army that has not 
+been selected to move this phase.</target>
+    <effect>Until the end of the turn, your unit is eligible 
+to shoot and declare a charge in a turn in which it Fell 
+Back or Advanced (unless it used its turbo this turn).</effect>
+  </stratagem>
+  <stratagem>
+    <name>MOBILE DAKKASTORM</name>
+    <cpCost>1CP</cpCost>
+    <type>SPEEDWAAAGH!</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>No self‑respecting Speed Freek stops to aim. Instead, 
+they fire on the move, concentrating hails of dakka 
+on their chosen targets.</lore>
+    <when>Your Shooting phase, just after a Speed 
+Freeks  or Trukk  unit from your army has shot.</when>
+    <target>That Speed Freeks  or Trukk unit.</target>
+    <effect>Select one enemy unit hit by one or more of 
+those attacks (excluding attacks made with Indirect 
+Fire weapons). Until the end of the phase, each time 
+a model in a Speed Freeks  or Trukk  unit from your 
+army makes an attack that targets that unit, improve 
+the Strength characteristic of that attack by 2.</effect>
+  </stratagem>
+  <stratagem>
+    <name>SPESHUL AMMO</name>
+    <cpCost>1CP</cpCost>
+    <type>SPEEDWAAAGH!</type>
+    <subtype>WARGEAR STRATAGEM</subtype>
+    <lore>Though the cost in teef is high, Mek‑crafted speshul 
+ammunition always comes in handy when taking on 
+big targets.</lore>
+    <when>Your Shooting phase.</when>
+    <target>One Orks  unit from your army that has not 
+been selected to shoot this phase.</target>
+    <effect>Until the end of the phase, ranged weapons 
+equipped by models in your unit (excluding 
+Torrent weapons) have the [ANTI‑MONSTER 4+]  and 
+[ANTI‑VEHICLE 4+]  abilities.</effect>
+  </stratagem>
+  <stratagem>
+    <name>DED KILLY CONSTRUCTION</name>
+    <cpCost>1CP</cpCost>
+    <type>SPEEDWAAAGH!</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>Fitted with jagged ploughs, spiked tyres and steel 
+bars, Ork vehicles are potent weapons in their 
+own right.</lore>
+    <when>Your Fight phase.</when>
+    <target>One Speed Freeks  or Trukk  unit from your 
+army that has not been selected to fight this phase.</target>
+    <effect>Until the end of the phase, melee weapons 
+equipped by models in your unit have the [LANCE]  
+ability and, if your unit made a Charge move this 
+turn, until the end of the phase, add 1 to the Damage 
+characteristic of those weapons.</effect>
+  </stratagem>
+  <stratagem>
+    <name>DUST TRAILS</name>
+    <cpCost>1CP</cpCost>
+    <type>SPEEDWAAAGH!</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>Large formations of Ork vehicles throw up columns 
+of dust and clouds of smoke. These combine to 
+shroud and obscure them as they thunder across 
+the battlefield.</lore>
+    <when>Your opponent’s Shooting phase, just after an 
+enemy unit has selected its targets.</when>
+    <target>One  Orks unit from your army that was 
+selected as the target of one or more of the attacking 
+unit’s attacks.</target>
+    <effect>Until the end of the phase, your unit has the 
+Benefit of Cover.</effect>
+  </stratagem>
+  <stratagem>
+    <name>EVASIVE MANOOVA</name>
+    <cpCost>1CP</cpCost>
+    <type>SPEEDWAAAGH!</type>
+    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
+    <lore>The wiliest Speed Freeks see no shame in running 
+away, especially when they can always come back 
+and have ’annuva go.</lore>
+    <when>End of your opponent’s Fight phase.</when>
+    <target>One Speed Freeks  or Trukk  unit from your 
+army that is not within Engagement Range of one or 
+more enemy units.</target>
+    <effect>Remove your unit from the battlefield and 
+place it into Strategic Reserves.</effect>
+  </stratagem>
+</stratagems>
