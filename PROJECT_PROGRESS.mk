@@ -82,6 +82,8 @@ All core features are implemented and functional. The application can:
 - Add visual indicators for once-per-battle abilities in play mode
 - Add ability to track CP usage
 - Add victory point tracking
+- keep track of which units is dead and show only available weapon profile on remainnig model in unit
+- stores multiple roster
 
 ## Planned Features
 
@@ -151,4 +153,3 @@ Add support for importing rosters exported from the official Warhammer 40k app b
 - User selection dialog for ambiguous matches
 - Progressive loading of BSData files
 - Offline support by bundling commonly used .cat files
-- keep track of which units is dead and show only available weapon profile on remainnig model in unit
