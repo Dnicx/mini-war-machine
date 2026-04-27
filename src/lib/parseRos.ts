@@ -1,164 +1,287 @@
-import type { Roster, Unit, Ability, Weapon, Rule, Keyword } from '../types/roster'
+import type { Roster, Unit, Ability, Weapon, Rule, Keyword, Model } from '../types/roster'
 
-export async function parseRosFile(file: File): Promise<Roster> {
-  const text = await file.text()
-  const parser = new DOMParser()
-  const doc = parser.parseFromString(text, 'text/xml')
+// Helper function to extract ability from profile
+function extractAbilityFromProfile(profile: Element, unitId: string, sourceUnit: string, prefix?: string): Ability | null {
+  const abilityName = profile.getAttribute('name')
+  if (!abilityName) return null
 
-  const rosterElement = doc.querySelector('roster')
-  if (!rosterElement) {
-    throw new Error('Invalid .ros file: no roster element found')
+  const characteristics = profile.querySelectorAll('characteristics > characteristic')
+  let description = ''
+  characteristics.forEach((char) => {
+    const charName = char.getAttribute('name')
+    const charValue = char.textContent || ''
+    if (charName === 'Description') description = charValue.trim()
+  })
+
+  return {
+    id: prefix ? `${unitId}-${prefix}-${abilityName}` : `${unitId}-${abilityName}`,
+    name: abilityName,
+    description,
+    sourceUnit
   }
+}
 
-  const rosterName = rosterElement.getAttribute('name') || 'Unknown Roster'
-  const rosterId = rosterElement.getAttribute('id') || Date.now().toString()
-  const points = parseInt(rosterElement.getAttribute('points') || '0')
+// Helper function to extract weapon from profile
+function extractWeaponFromProfile(profile: Element): Weapon | null {
+  const weaponName = profile.getAttribute('name')
+  if (!weaponName) return null
 
-  // Get faction from catalogue
-  const catalogue = doc.querySelector('catalogue')
-  const faction = catalogue?.getAttribute('name') || 'Unknown Faction'
+  const characteristics = profile.querySelectorAll('characteristics > characteristic')
+  let range = '-'
+  let attacks = '-'
+  let damage = '-'
+  let ap = '-'
+  let bs = '-'
+  let s = '-'
+  const keywords: string[] = []
+  console.log( characteristics.item(0) )
 
-  // Extract units
-  const units: Unit[] = []
-  const selections = doc.querySelectorAll('selections > selection')
+  characteristics.forEach((char) => {
+    const charName = char.getAttribute('name')
+    const charValue = char.textContent?.trim() || '-'
+    if (charName === 'Range') range = charValue
+    if (charName === 'A') attacks = charValue
+    if (charName === 'BS') bs = charValue
+    if (charName === 'S') s = charValue
+    if (charName === 'AP') ap = charValue
+    if (charName === 'D') damage = charValue
+    if (charName === 'Keywords') {
+      const keywordValue = charValue.split(',').map(k => k.trim())
+      keywords.push(...keywordValue)
+    }
+    console.log(`[Weapon] ${weaponName}: ${charName} = ${charValue}`)
+  })
 
-  selections.forEach((selection) => {
-    const name = selection.getAttribute('name')
-    const type = selection.getAttribute('type')
-    if (!name) return
+  return {
+    name: weaponName,
+    range,
+    attacks,
+    damage,
+    ap,
+    bs,
+    s,
+    keywords
+  }
+}
 
-    // Skip upgrade selections (wargear, warlord traits, etc.) - they should not appear as units
-    if (type === 'upgrade') return
+// Helper function to extract rule from profile
+function extractRuleFromProfile(profile: Element, idPrefix: string, sourceUnit: string): Rule | null {
+  const ruleName = profile.getAttribute('name')
+  if (!ruleName) return null
 
-    const unitId = selection.getAttribute('id') || `${rosterId}-${name}`
-    const unitPoints = parseInt(selection.getAttribute('points') || '0')
+  let description = ''
+  description = profile.querySelectorAll('description')[0]?.textContent || ''
+  console.log( ruleName, description)
+  return {
+    id: `${idPrefix}-rule-${ruleName}`,
+    name: ruleName,
+    description,
+    sourceUnit
+  }
+}
 
-    // Extract abilities from profile[typeName="Abilities"] (these are the actual abilities to plan)
-    const abilities: Ability[] = []
-    const abilityProfiles = selection.querySelectorAll('profiles > profile[typeName="Abilities"]')
-    abilityProfiles.forEach((profile) => {
-      const abilityName = profile.getAttribute('name')
-      if (abilityName) {
-        const characteristics = profile.querySelectorAll('characteristics > characteristic')
-        let description = ''
-        characteristics.forEach((char) => {
-          const charName = char.getAttribute('name')
-          const charValue = char.textContent || ''
-          if (charName === 'Description') description = charValue.trim()
-        })
-        abilities.push({
-          id: `${unitId}-${abilityName}`,
-          name: abilityName,
-          description,
-          sourceUnit: name
-        })
-      }
-    })
+// Helper function to extract model characteristics from typeName="Unit" profile
+function extractModelCharacteristics(profile: Element): {
+  movement: string
+  toughness: string
+  wounds: string
+  save: string
+  invulnerableSave: string
+  leadership: string
+  objectiveControl: string
+} {
+  const characteristics = profile.querySelectorAll('characteristics > characteristic')
+  let movement = '-'
+  let toughness = '-'
+  let wounds = '-'
+  let save = '-'
+  let invulnerableSave = '-'
+  let leadership = '-'
+  let objectiveControl = '-'
 
-    // Also extract abilities from nested selections (characters often have abilities in sub-selections)
-    const nestedSelections = selection.querySelectorAll('selections selection')
-    nestedSelections.forEach((nested) => {
-      const nestedName = nested.getAttribute('name')
-      const nestedAbilityProfiles = nested.querySelectorAll('profiles > profile[typeName="Abilities"]')
-      nestedAbilityProfiles.forEach((profile) => {
-        const abilityName = profile.getAttribute('name')
-        if (abilityName) {
-          const characteristics = profile.querySelectorAll('characteristics > characteristic')
-          let description = ''
-          characteristics.forEach((char) => {
-            const charName = char.getAttribute('name')
-            const charValue = char.textContent || ''
-            if (charName === 'Description') description = charValue.trim()
-          })
-          abilities.push({
-            id: `${unitId}-${nestedName}-${abilityName}`,
-            name: abilityName,
-            description,
-            sourceUnit: name
-          })
-        }
-      })
-    })
+  characteristics.forEach((char) => {
+    const charName = char.getAttribute('name')
+    const charValue = char.textContent?.trim() || '-'
+    if (charName === 'M') movement = charValue
+    if (charName === 'T') toughness = charValue
+    if (charName === 'W') wounds = charValue
+    if (charName === 'SV') save = charValue
+    if (charName === 'Invulnerable Save') invulnerableSave = charValue
+    if (charName === 'LD') leadership = charValue
+    if (charName === 'OC') objectiveControl = charValue
+  })
 
-    // Extract weapons
-    const weapons: Weapon[] = []
-    const profiles = selection.querySelectorAll('profiles > profile[type="Weapon"]')
-    profiles.forEach((profile) => {
-      const weaponName = profile.getAttribute('name')
-      if (weaponName) {
-        const characteristics = profile.querySelectorAll('characteristics > characteristic')
-        let range = '-'
-        let attacks = '-'
-        let damage = '-'
-        let ap = '-'
+  return { movement, toughness, wounds, save, invulnerableSave, leadership, objectiveControl }
+}
 
-        characteristics.forEach((char) => {
-          const charName = char.getAttribute('name')
-          const charValue = char.getAttribute('value') || '-'
-          if (charName === 'Range') range = charValue
-          if (charName === 'Attacks') attacks = charValue
-          if (charName === 'Damage') damage = charValue
-          if (charName === 'AP') ap = charValue
-        })
+// Helper function to extract weapons from any element (model selection, wargear selection, etc.)
+function extractWeaponsFromElement(element: Element): Weapon[] {
+  const weapons: Weapon[] = []
 
-        weapons.push({
-          name: weaponName,
-          range,
-          attacks,
-          damage,
-          ap
-        })
-      }
-    })
+  // Extract from typeName="Ranged Weapons"
+  const rangedProfiles = element.querySelectorAll('profiles > profile[typeName="Ranged Weapons"]')
+  rangedProfiles.forEach((profile) => {
+    const weapon = extractWeaponFromProfile(profile)
+    if (weapon) weapons.push(weapon)
+  })
 
-    // Extract rules
-    const rules: Rule[] = []
-    const ruleProfiles = selection.querySelectorAll('profiles > profile[typeName="Rules"]')
-    ruleProfiles.forEach((profile) => {
-      const ruleName = profile.getAttribute('name')
-      if (ruleName) {
-        const characteristics = profile.querySelectorAll('characteristics > characteristic')
-        let description = ''
-        characteristics.forEach((char) => {
-          const charName = char.getAttribute('name')
-          const charValue = char.textContent || ''
-          if (charName === 'Description') description = charValue.trim()
-        })
-        rules.push({
-          id: `${unitId}-rule-${ruleName}`,
-          name: ruleName,
-          description,
-          sourceUnit: name
-        })
-      }
-    })
+  // Extract from typeName="Melee Weapons"
+  const meleeProfiles = element.querySelectorAll('profiles > profile[typeName="Melee Weapons"]')
+  meleeProfiles.forEach((profile) => {
+    const weapon = extractWeaponFromProfile(profile)
+    if (weapon) {
+      // Override range for melee
+      weapons.push({ ...weapon, range: 'Melee' })
+    }
+  })
 
-    // Extract keywords from categories
-    const keywords: Keyword[] = []
-    const categories = selection.querySelectorAll('categories > category')
-    categories.forEach((category) => {
-      const keywordName = category.getAttribute('name')
-      if (keywordName) {
-        keywords.push({
-          id: `${unitId}-keyword-${keywordName}`,
-          name: keywordName,
-          sourceUnit: name
-        })
-      }
-    })
+  return weapons
+}
 
-    units.push({
-      id: unitId,
-      name,
-      points: unitPoints,
-      abilities,
-      rules,
-      keywords,
-      weapons
+// Extract abilities from a selection
+function extractAbilities(selection: Element, unitId: string, unitName: string): Ability[] {
+  const abilities: Ability[] = []
+
+  // Extract from profile[typeName="Abilities"]
+  const abilityProfiles = selection.querySelectorAll('profiles > profile[typeName="Abilities"]')
+  abilityProfiles.forEach((profile) => {
+    const ability = extractAbilityFromProfile(profile, unitId, unitName)
+    if (ability) abilities.push(ability)
+  })
+
+  // Extract from nested selections
+  const nestedSelections = selection.querySelectorAll('selections selection')
+  nestedSelections.forEach((nested) => {
+    const nestedName = nested.getAttribute('name')
+    const nestedAbilityProfiles = nested.querySelectorAll('profiles > profile[typeName="Abilities"]')
+    nestedAbilityProfiles.forEach((profile) => {
+      const ability = extractAbilityFromProfile(profile, unitId, unitName, nestedName)
+      if (ability) abilities.push(ability)
     })
   })
 
-  // Merge units with the same name
+  return abilities
+}
+
+// Extract keywords from a selection
+function extractKeywords(selection: Element, unitId: string, unitName: string): Keyword[] {
+  const keywords: Keyword[] = []
+  const categories = selection.querySelectorAll('categories > category')
+  categories.forEach((category) => {
+    const keywordName = category.getAttribute('name')
+    if (keywordName) {
+      keywords.push({
+        id: `${unitId}-keyword-${keywordName}`,
+        name: keywordName,
+        sourceUnit: unitName
+      })
+    }
+  })
+  return keywords
+}
+
+// Extract rules from a selection
+function extractRules(selection: Element, unitId: string, unitName: string): Rule[] {
+  const rules: Rule[] = []
+  const ruleProfiles = selection.querySelectorAll('rules > rule')
+  ruleProfiles.forEach((profile) => {
+    const rule = extractRuleFromProfile(profile, unitId, unitName)
+    if (rule) rules.push(rule)
+  })
+  return rules
+}
+
+// Extract wargear rules from a wargear selection
+function extractWargearRules(wargearSelection: Element, modelId: string, modelName: string): Rule[] {
+  const rules: Rule[] = []
+  const ruleProfiles = wargearSelection.querySelectorAll('profiles > profile[typeName="Rules"]')
+  ruleProfiles.forEach((profile) => {
+    const rule = extractRuleFromProfile(profile, modelId, modelName)
+    if (rule) rules.push(rule)
+  })
+  return rules
+}
+
+// Extract models from a selection
+// For type="model" (character units): creates 1 model from the selection's own Unit profile
+// For type="unit" (squad units): iterates nested model selections, using parent Unit profile as fallback
+function extractModels(selection: Element, unitId: string, unitName: string, isCharacterUnit: boolean): Model[] {
+  const models: Model[] = []
+
+  if (isCharacterUnit) {
+
+    const modelProfile = selection.querySelector('profiles > profile[typeName="Unit"]')
+
+    // Character unit: create exactly one model from this selection
+    const count = parseInt(selection.getAttribute('number') || '1')
+    const modelId = selection.getAttribute('id') || `${unitId}-model`
+
+    // Extract characteristics from the selection's own Unit profile
+    let stats = { movement: '-', toughness: '-', wounds: '-', save: '-', invulnerableSave: '-', leadership: '-', objectiveControl: '-' }
+    if (modelProfile) {
+      stats = extractModelCharacteristics(modelProfile)
+    }
+
+    // Extract weapons from all nested wargear selections
+    const wargearSelections = selection.querySelectorAll('selections > selection')
+    const modelWeapons: Weapon[] = []
+    const modelRules: Rule[] = []
+
+    wargearSelections.forEach((wargear) => {
+      modelWeapons.push(...extractWeaponsFromElement(wargear))
+      modelRules.push(...extractWargearRules(wargear, modelId, unitName))
+    })
+
+    models.push({
+      id: modelId,
+      name: unitName,
+      count,
+      ...stats,
+      weapons: modelWeapons,
+      rules: modelRules
+    })
+  } else {
+    // Squad unit: iterate nested model selections
+    const modelSelections = selection.querySelectorAll('selections > selection[type="model"]')
+
+    modelSelections.forEach((modelSelection) => {
+      const modelName = modelSelection.getAttribute('name')
+      if (!modelName) return
+
+      const count = parseInt(modelSelection.getAttribute('number') || '1')
+      const modelId = modelSelection.getAttribute('id') || `${unitId}-model-${modelName}`
+
+      // Extract characteristics - try model's own Unit profile first, then fallback to parent
+      let stats = { movement: '-', toughness: '-', wounds: '-', save: '-', invulnerableSave: '-', leadership: '-', objectiveControl: '-' }
+      const modelProfile = modelSelection.querySelector('profiles > profile[typeName="Unit"]')
+      stats = extractModelCharacteristics(modelProfile)
+
+      // Extract weapons from model's nested wargear selections
+      const wargearSelections = modelSelection.querySelectorAll('selections > selection')
+      const modelWeapons: Weapon[] = []
+      const modelRules: Rule[] = []
+
+      wargearSelections.forEach((wargear) => {
+        modelWeapons.push(...extractWeaponsFromElement(wargear))
+        modelRules.push(...extractWargearRules(wargear, modelId, modelName))
+      })
+
+      models.push({
+        id: modelId,
+        name: modelName,
+        count,
+        ...stats,
+        weapons: modelWeapons,
+        rules: modelRules
+      })
+    })
+  }
+
+  return models
+}
+
+// Merge units with the same name
+function mergeUnits(units: Unit[], rosterId: string): Unit[] {
   const mergedUnits: Unit[] = []
   const unitsByName = new Map<string, Unit[]>()
 
@@ -170,7 +293,7 @@ export async function parseRosFile(file: File): Promise<Roster> {
   })
 
   unitsByName.forEach((unitsWithSameName, name) => {
-    // Combine all abilities, deduplicating by name
+    // Deduplicate and combine abilities
     const allAbilities: Ability[] = []
     const abilityNames = new Set<string>()
     unitsWithSameName.forEach(unit => {
@@ -182,7 +305,7 @@ export async function parseRosFile(file: File): Promise<Roster> {
       })
     })
 
-    // Combine all keywords, deduplicating by name
+    // Deduplicate and combine keywords
     const allKeywords: Keyword[] = []
     const keywordNames = new Set<string>()
     unitsWithSameName.forEach(unit => {
@@ -194,19 +317,7 @@ export async function parseRosFile(file: File): Promise<Roster> {
       })
     })
 
-    // Combine all weapons, deduplicating by name
-    const allWeapons: Weapon[] = []
-    const weaponNames = new Set<string>()
-    unitsWithSameName.forEach(unit => {
-      unit.weapons.forEach(weapon => {
-        if (!weaponNames.has(weapon.name)) {
-          weaponNames.add(weapon.name)
-          allWeapons.push(weapon)
-        }
-      })
-    })
-
-    // Combine all rules, deduplicating by name
+    // Deduplicate and combine rules
     const allRules: Rule[] = []
     const ruleNames = new Set<string>()
     unitsWithSameName.forEach(unit => {
@@ -218,7 +329,24 @@ export async function parseRosFile(file: File): Promise<Roster> {
       })
     })
 
-    // Sum up points for all units with the same name
+    // Combine models, summing counts for models with the same name
+    const allModels: Model[] = []
+    const modelsByName = new Map<string, Model>()
+    unitsWithSameName.forEach(unit => {
+      unit.models.forEach(model => {
+        if (modelsByName.has(model.name)) {
+          // Sum the count for existing model
+          const existing = modelsByName.get(model.name)!
+          existing.count += model.count
+        } else {
+          // Add new model
+          modelsByName.set(model.name, { ...model })
+        }
+      })
+    })
+    allModels.push(...Array.from(modelsByName.values()))
+
+    // Sum up points
     const totalPoints = unitsWithSameName.reduce((sum, unit) => sum + unit.points, 0)
 
     mergedUnits.push({
@@ -228,11 +356,15 @@ export async function parseRosFile(file: File): Promise<Roster> {
       abilities: allAbilities,
       rules: allRules,
       keywords: allKeywords,
-      weapons: allWeapons
+      models: allModels
     })
   })
 
-  // Extract army-wide abilities
+  return mergedUnits
+}
+
+// Extract army-wide abilities
+function extractArmyAbilities(doc: Document): Ability[] {
   const armyAbilities: Ability[] = []
   const sharedRules = doc.querySelectorAll('sharedRules > rule')
   sharedRules.forEach((rule) => {
@@ -246,25 +378,113 @@ export async function parseRosFile(file: File): Promise<Roster> {
       })
     }
   })
+  return armyAbilities
+}
 
-  return {
+export async function parseRosFile(file: File, debug: boolean = false): Promise<Roster> {
+  const text = await file.text()
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(text, 'text/xml')
+
+  const rosterElement = doc.querySelector('roster')
+  if (!rosterElement) {
+    throw new Error('Invalid .ros file: no roster element found')
+  }
+
+  const rosterName = rosterElement.getAttribute('name') || 'Unknown Roster'
+  const rosterId = rosterElement.getAttribute('id') || Date.now().toString()
+  const points = parseInt(rosterElement.querySelector('costs > cost')?.getAttribute('value') || '0')
+
+  // Get faction from force
+  const force = doc.querySelector('forces > force')
+  const faction = force?.getAttribute('catalogueName') || 'Unknown Faction'
+
+  // Get detatchment from force selections
+  const detachment = force?.querySelector('selections > selection[name="Detachment"]')
+  const detachmentRuleSelection = detachment?.querySelector('selections > selection[group="Detachment"]')
+  const detachmentName = detachmentRuleSelection?.getAttribute('name') || 'No Detachment' // we'll use this later when we support detachments stratagems
+
+  // Extract units
+  const units: Unit[] = []
+  const selections = doc.querySelectorAll('selections > selection[from="entry"]')
+
+  selections.forEach((selection) => {
+    const name = selection.getAttribute('name')
+    const type = selection.getAttribute('type')
+    console.log('unit name:', name, 'type:', type)
+    if (!name) return
+
+    // Skip upgrade selections
+    if (type === 'upgrade') return
+
+    const unitId = selection.getAttribute('id') || `${rosterId}-${name}`
+    const unitPoints = parseInt(selection.querySelector('costs > cost[name="pts"]')?.getAttribute('value') || '0')
+
+    console.log(`[Parsing] Unit: ${name} (type: ${type}, points: ${unitPoints})`)
+
+    const abilities = extractAbilities(selection, unitId, name)
+    const keywords = extractKeywords(selection, unitId, name)
+    const rules = extractRules(selection, unitId, name)
+    const isCharacterUnit = type === 'model'
+    const models = extractModels(selection, unitId, name, isCharacterUnit)
+
+    console.log(`[Parsing] - Abilities: ${abilities.length}, Keywords: ${keywords.length}, Rules: ${rules.length}, Models: ${models.length}`)
+    models.forEach(m => {
+      console.log(`[Parsing]   - Model: ${m.name} (count: ${m.count}, weapons: ${m.weapons.length})`)
+    })
+
+    units.push({
+      id: unitId,
+      name,
+      points: unitPoints,
+      abilities,
+      rules,
+      keywords,
+      models
+    })
+  })
+
+  // Merge units
+  const mergedUnits = mergeUnits(units, rosterId)
+
+  // Extract army abilities
+  const armyAbilities = extractArmyAbilities(doc)
+
+  const roster: Roster = {
     id: rosterId,
     name: rosterName,
     faction,
+    detachment: detachmentName,
     points,
     units: mergedUnits,
     armyAbilities
   }
+
+  // Debug: dump roster to JSON file
+  if (debug) {
+    const json = JSON.stringify(roster, null, 2)
+    const blob = new Blob([json], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `roster-debug-${rosterId}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  return roster
 }
 
-export async function fetchFromYellowscribe(id: string): Promise<Roster> {
+export async function fetchFromYellowscribe(id: string, debug: boolean = false): Promise<Roster> {
   const response = await fetch(`https://yellowscribe.link/get_army_by_id?id=${id}`)
   if (!response.ok) {
     throw new Error('Failed to fetch from Yellowscribe')
   }
   const text = await response.text()
-  
+
   // Create a File object from the response
   const file = new File([text], 'roster.ros', { type: 'text/xml' })
-  return parseRosFile(file)
+  return parseRosFile(file, debug)
 }

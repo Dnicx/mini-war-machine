@@ -37,6 +37,24 @@ export interface Weapon {
   attacks: string
   damage: string
   ap: string
+  bs: string
+  s: string
+  keywords: string[]
+}
+
+export interface Model {
+  id: string
+  name: string
+  count: number
+  movement: string
+  toughness: string
+  wounds: string
+  save: string
+  invulnerableSave: string
+  leadership: string
+  objectiveControl: string
+  weapons: Weapon[]
+  rules: Rule[]
 }
 
 export interface Unit {
@@ -46,13 +64,14 @@ export interface Unit {
   abilities: Ability[]
   rules: Rule[]
   keywords: Keyword[]
-  weapons: Weapon[]
+  models: Model[]
 }
 
 export interface Roster {
   id: string
   name: string
   faction: string
+  detachment: string
   points: number
   units: Unit[]
   armyAbilities: Ability[]

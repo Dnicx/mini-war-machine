@@ -151,3 +151,4 @@ Add support for importing rosters exported from the official Warhammer 40k app b
 - User selection dialog for ambiguous matches
 - Progressive loading of BSData files
 - Offline support by bundling commonly used .cat files
+- keep track of which units is dead and show only available weapon profile on remainnig model in unit

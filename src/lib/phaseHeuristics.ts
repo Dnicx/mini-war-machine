@@ -93,13 +93,13 @@ export function applyHeuristics(ability: Ability): Ability {
     finalPhases = [...new Set([...phases, ...invulnPhases])]
   }
 
-  console.log(`[Phase Detection] "${ability.name}":`, {
-    phases: finalPhases.length > 0 ? finalPhases : 'None',
-    timing: timing || 'None',
-    isReactive,
-    oncePerBattle,
-    oncePerRound
-  })
+  // console.log(`[Phase Detection] "${ability.name}":`, {
+  //   phases: finalPhases.length > 0 ? finalPhases : 'None',
+  //   timing: timing || 'None',
+  //   isReactive,
+  //   oncePerBattle,
+  //   oncePerRound
+  // })
 
   return {
     ...ability,

@@ -11,6 +11,7 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
   const [yellowscribeId, setYellowscribeId] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [debug, setDebug] = useState(false)
 
   const handleYellowscribeSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -20,7 +21,7 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
     setError('')
 
     try {
-      const roster = await fetchFromYellowscribe(yellowscribeId.trim())
+      const roster = await fetchFromYellowscribe(yellowscribeId.trim(), debug)
       onRosterLoaded(roster)
     } catch (err) {
       setError('Failed to fetch roster. Check the ID and try again.')
@@ -37,9 +38,11 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
     setError('')
 
     try {
-      const roster = await parseRosFile(file)
+      console.log( 'importing ')
+      const roster = await parseRosFile(file, debug)
       onRosterLoaded(roster)
     } catch (err) {
+      console.error(err)
       setError('Failed to parse .ros file. Make sure it\'s a valid BattleScribe roster.')
     } finally {
       setLoading(false)
@@ -55,6 +58,17 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
         </div>
 
         <div className="bg-surface p-6 rounded-lg space-y-4">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="debug"
+              checked={debug}
+              onChange={(e) => setDebug(e.target.checked)}
+              className="w-4 h-4 accent-accent"
+            />
+            <label htmlFor="debug" className="text-sm text-text2">Debug mode (dump parsed roster to JSON)</label>
+          </div>
+
           <div>
             <h2 className="text-lg font-semibold text-text mb-3 flex items-center gap-2">
               <Download size={20} />

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Save, Plus, Play, ChevronLeft, ChevronDown, ChevronUp } from 'lucide-react'
-import type { Roster, Ability, Phase, Timing, Keyword, Weapon } from '../types/roster'
+import type { Roster, Ability, Phase, Timing, Keyword } from '../types/roster'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
 import { savePlan, loadPlan } from '../lib/storage'
 
@@ -201,7 +201,7 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
           <h2 className="text-lg font-semibold text-text mt-6">Unit Abilities</h2>
           {roster.units.map(unit => {
             const unitAbilities = allAbilities.filter(a => a.sourceUnit === unit.name)
-            if (unitAbilities.length === 0 && unit.keywords.length === 0 && unit.weapons.length === 0) return null
+            if (unitAbilities.length === 0 && unit.keywords.length === 0) return null
             return (
               <div key={unit.id} className="mb-4">
                 <UnitAbilityCard
@@ -209,7 +209,6 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
                   unitId={unit.id}
                   abilities={unitAbilities}
                   keywords={unit.keywords}
-                  weapons={unit.weapons}
                   isCollapsed={collapsedUnits.has(unit.id)}
                   onToggleCollapse={(unitId) => {
                     setCollapsedUnits(prev => {
@@ -334,7 +333,6 @@ interface UnitAbilityCardProps {
   unitId: string
   abilities: Ability[]
   keywords: Keyword[]
-  weapons: Weapon[]
   isCollapsed: boolean
   onToggleCollapse: (unitId: string) => void
   onPhaseToggle: (id: string, phase: Phase) => void
@@ -342,7 +340,7 @@ interface UnitAbilityCardProps {
   onNotesChange: (id: string, notes: string) => void
 }
 
-function UnitAbilityCard({ unitName, unitId, abilities, keywords, weapons, isCollapsed, onToggleCollapse, onPhaseToggle, onTimingChange, onNotesChange }: UnitAbilityCardProps) {
+function UnitAbilityCard({ unitName, unitId, abilities, keywords, isCollapsed, onToggleCollapse, onPhaseToggle, onTimingChange, onNotesChange }: UnitAbilityCardProps) {
   return (
     <div className="bg-surface p-4 rounded-lg border-l-4 border-surface2">
       <div className="flex items-center justify-between mb-4">
@@ -369,22 +367,6 @@ function UnitAbilityCard({ unitName, unitId, abilities, keywords, weapons, isCol
                   <span key={`${keyword.id}-${index}`} className="text-xs bg-surface2 text-text2 px-2 py-1 rounded">
                     {keyword.name}
                   </span>
-                ))}
-              </div>
-            </div>
-          )}
-          {weapons.length > 0 && (
-            <div className="mb-4 p-3 bg-surface2/50 rounded-lg">
-              <h4 className="text-sm font-semibold text-text2 mb-2">Weapons</h4>
-              <div className="space-y-2">
-                {weapons.map((weapon, index) => (
-                  <div key={index} className="text-xs text-text2">
-                    <span className="font-semibold text-text">{weapon.name}</span>
-                    <span className="ml-2">Rng: {weapon.range}</span>
-                    <span className="ml-2">A: {weapon.attacks}</span>
-                    <span className="ml-2">D: {weapon.damage}</span>
-                    <span className="ml-2">AP: {weapon.ap}</span>
-                  </div>
                 ))}
               </div>
             </div>
