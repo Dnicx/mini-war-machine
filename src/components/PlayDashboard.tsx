@@ -64,15 +64,15 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
         if (planEntry) {
           return {
             ...ability,
-            userPhases: [planEntry.phase],
-            userTiming: planEntry.timing,
+            phases: planEntry.phases,
+            timing: planEntry.timing,
             notes: planEntry.notes
           }
         }
         // If no plan entry, use auto-detected phases as default
         return {
           ...ability,
-          userPhases: ability.autoDetectedPhases
+          phases: ability.autoDetectedPhases
         }
       })
 
@@ -123,7 +123,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     const currentPhase = gameState.currentPhase
 
     return [...allAbilities, ...customStratagems].filter(ability => {
-      const abilityPhases = ability.userPhases || ability.autoDetectedPhases || []
+      const abilityPhases = ability.phases || ability.autoDetectedPhases || []
 
       // Show if phase matches (any of the selected phases)
       // If no phases are set, show in all phases (fallback)
@@ -153,7 +153,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     }
 
     abilities.forEach(ability => {
-      const timing = ability.userTiming || ability.autoDetectedTiming
+      const timing = ability.timing || ability.autoDetectedTiming
       const sourceUnit = ability.sourceUnit || 'Army Abilities'
 
       if (timing) {
@@ -187,7 +187,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     if (gameState.turnOwner !== 'opponent') return {}
 
     const abilities = [...allAbilities, ...customStratagems].filter(ability => {
-      const abilityPhases = ability.userPhases || ability.autoDetectedPhases || []
+      const abilityPhases = ability.phases || ability.autoDetectedPhases || []
       // If no phases are set, show in all phases (fallback)
       const phaseMatch = abilityPhases.length === 0 || abilityPhases.includes(gameState.currentPhase)
       return ability.isReactive && phaseMatch

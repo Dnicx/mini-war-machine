@@ -74,16 +74,29 @@ All core features are implemented and functional. The application can:
 - No multiplayer/sync features
 - No export of plans back to .ros format
 
-## Future Enhancements (Potential)
+## Done 
 - Add Rules display in Planner and PlayDashboard
-- Improve phase detection patterns based on user feedback
 - Add ability to manually override auto-detected phases
-- Export plans to shareable format
-- Add visual indicators for once-per-battle abilities in play mode
+
+## Bug
+- Bug on getting detashment rules
+
+## Future Enhancements (Potential)
+- Add stratagems to plan mode + play mode
+- Add roll timing for remind during dice rolling ( e.g. +1 to hit, -1 hit roll )
+- Add unit list view in playmode
+- Phase tracking to reset stratagems usage
+- track battleshocked state ( reset by 'new battle round' button )
+- Add visual indicators for once-per-battle abilities in play mode ( reset by 'new battle round' button )
+- stores multiple roster
+- keep track of which units is dead and show only available weapon profile on remainnig model in unit
 - Add ability to track CP usage
 - Add victory point tracking
-- keep track of which units is dead and show only available weapon profile on remainnig model in unit
-- stores multiple roster
+- Export plans to shareable format
+- Improve phase detection patterns based on user feedback
+- Add stratagem extraction to app
+- Add custom stratagem image
+- Rephrase stratagems
 
 ## Planned Features
 

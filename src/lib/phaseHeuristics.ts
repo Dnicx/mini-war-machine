@@ -1,14 +1,14 @@
 import type { Ability, Phase, Timing } from '../types/roster'
 
 const PHASE_PATTERNS: Record<Phase, RegExp[]> = {
-  'Start of Game': [/start of (the )?game/i, /before the battle/i, /pre-battle/i, /deployment/i, /model can be attached/i],
+  'Start of Game': [/start of (the )?game/i, /before the battle/i, /pre-battle/i, /deployment/i, /model can be attached/i, /capacity of/i],
   'Start of Battle Round': [/start of (the )?(battle )?round/i, /start of (your )?turn/i, /beginning of (the )?(battle )?round/i],
-  Command: [/command/i, /command phase/i],
-  Movement: [/movement/i, /move/i, /advance/i, /movement phase/i, /during the movement phase/i],
-  Shooting: [/shooting/i, /shoot/i, /attack/i, /fire/i, /shooting phase/i, /during the shooting phase/i, /in shooting phase/i, /enemy shooting/i, /opponent shooting/i],
+  Morale: [/morale/i, /battle shock/i, /end of turn/i, /morale phase/i, /during the morale phase/i],
+  Command: [/command/i, /command phase/i, /Objective Control/i],
+  Movement: [/movement/i, /move/i, /advance/i, /movement phase/i, /during the movement phase/i, /capacity of/i],
+  Shooting: [/shooting/i, /shoot/i, /an attack/i, /fire/i, /shooting phase/i, /during the shooting phase/i, /in shooting phase/i, /enemy shooting/i, /opponent shooting/i],
   Charge: [/charge/i, /end of movement/i, /charge phase/i, /during the charge phase/i],
-  Fight: [/fight/i, /combat/i, /melee/i, /fight phase/i, /during the fight phase/i, /in fight phase/i, /melee phase/i],
-  Morale: [/morale/i, /battle shock/i, /end of turn/i, /morale phase/i, /during the morale phase/i]
+  Fight: [/fight/i, /combat/i, /melee/i, /fight phase/i, /during the fight phase/i, /in fight phase/i, /melee phase/i, /an attack/i]
 }
 
 const TIMING_PATTERNS: Record<Timing, RegExp[]> = {
@@ -29,17 +29,6 @@ const REACTIVE_PATTERNS = [
 
 const ONCE_PER_BATTLE = [/once per battle/i, /one use only/i]
 const ONCE_PER_ROUND = [/once per battle round/i, /once per turn/i]
-
-export function detectPhase(description: string): Phase | undefined {
-  for (const [phase, patterns] of Object.entries(PHASE_PATTERNS)) {
-    for (const pattern of patterns) {
-      if (pattern.test(description)) {
-        return phase as Phase
-      }
-    }
-  }
-  return undefined
-}
 
 export function detectPhases(description: string): Phase[] {
   const detectedPhases: Phase[] = []
@@ -78,7 +67,6 @@ export function detectOncePerRound(description: string): boolean {
 }
 
 export function applyHeuristics(ability: Ability): Ability {
-  const phase = detectPhase(ability.description)
   const phases = detectPhases(ability.description)
   const timing = detectTiming(ability.description)
   const isReactive = detectReactive(ability.description)
@@ -93,17 +81,16 @@ export function applyHeuristics(ability: Ability): Ability {
     finalPhases = [...new Set([...phases, ...invulnPhases])]
   }
 
-  // console.log(`[Phase Detection] "${ability.name}":`, {
-  //   phases: finalPhases.length > 0 ? finalPhases : 'None',
-  //   timing: timing || 'None',
-  //   isReactive,
-  //   oncePerBattle,
-  //   oncePerRound
-  // })
+  console.log(`[Phase Detection] "${ability.name}":`, {
+    phases: finalPhases.length > 0 ? finalPhases : 'None',
+    timing: timing || 'None',
+    isReactive,
+    oncePerBattle,
+    oncePerRound
+  })
 
   return {
     ...ability,
-    autoDetectedPhase: phase,
     autoDetectedPhases: finalPhases,
     autoDetectedTiming: timing,
     isReactive,

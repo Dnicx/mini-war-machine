@@ -18,8 +18,21 @@ export function loadRoster(): Roster | null {
   }
 }
 
-export function savePlan(plan: Plan): void {
+export function savePlan(plan: Plan, debug: boolean = false): void {
   localStorage.setItem(PLAN_KEY, JSON.stringify(plan))
+
+  if (debug) {
+    const json = JSON.stringify(plan, null, 2)
+    const blob = new Blob([json], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `plan-debug-${plan.rosterId}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
 }
 
 export function loadPlan(): Plan | null {

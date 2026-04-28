@@ -20,6 +20,7 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
   const [newStratagemDesc, setNewStratagemDesc] = useState('')
   const [saved, setSaved] = useState(false)
   const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
+  const [debug, setDebug] = useState(false)
 
   useEffect(() => {
     // Load saved plan
@@ -43,8 +44,8 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
         if (saved) {
           return {
             ...ability,
-            userPhases: [saved.phase],
-            userTiming: saved.timing,
+            phases: saved.phases,
+            timing: saved.timing,
             notes: saved.notes
           }
         }
@@ -53,11 +54,11 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
       setAllAbilities(withOverrides)
       setCustomStratagems(savedPlan.customStratagems || [])
     } else {
-      // Initialize userPhases to autoDetectedPhases by default
+      // Initialize phases to autoDetectedPhases by default
       const withDefaults = withHeuristics.map(ability => ({
         ...ability,
-        userPhases: ability.autoDetectedPhases,
-        userTiming: ability.autoDetectedTiming
+        phases: ability.autoDetectedPhases,
+        timing: ability.autoDetectedTiming
       }))
       setAllAbilities(withDefaults)
     }
@@ -66,27 +67,50 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
   const handlePhaseToggle = (abilityId: string, phase: Phase) => {
     setAllAbilities(prev => prev.map(a => {
       if (a.id !== abilityId) return a
-      const currentPhases = a.userPhases || []
+      const currentPhases = a.phases || []
       const newPhases = currentPhases.includes(phase)
         ? currentPhases.filter(p => p !== phase)
         : [...currentPhases, phase]
-      return { ...a, userPhases: newPhases.length > 0 ? newPhases : undefined }
+      return { ...a, phases: newPhases.length > 0 ? newPhases : undefined }
     }))
     setSaved(false)
   }
 
   const handleTimingChange = (abilityId: string, timing: Timing) => {
-    setAllAbilities(prev => prev.map(a => 
-      a.id === abilityId ? { ...a, userTiming: timing } : a
+    setAllAbilities(prev => prev.map(a =>
+      a.id === abilityId ? { ...a, timing } : a
     ))
     setSaved(false)
   }
 
   const handleNotesChange = (abilityId: string, notes: string) => {
-    setAllAbilities(prev => prev.map(a => 
+    setAllAbilities(prev => prev.map(a =>
       a.id === abilityId ? { ...a, notes } : a
     ))
     setSaved(false)
+  }
+
+  const handleResetAbility = (abilityId: string) => {
+    setAllAbilities(prev => prev.map(a => {
+      if (a.id !== abilityId) return a
+      return {
+        ...a,
+        phases: a.autoDetectedPhases,
+        timing: a.autoDetectedTiming
+      }
+    }))
+    setSaved(false)
+  }
+
+  const handleResetAll = () => {
+    if (window.confirm('Are you sure you want to reset all phase selections to auto-detected values?')) {
+      setAllAbilities(prev => prev.map(a => ({
+        ...a,
+        phases: a.autoDetectedPhases,
+        timing: a.autoDetectedTiming
+      })))
+      setSaved(false)
+    }
   }
 
   const handleAddStratagem = () => {
@@ -112,8 +136,8 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
   const handleSave = () => {
     const phasePlans = allAbilities.map(ability => ({
       abilityId: ability.id,
-      phase: (ability.userPhases && ability.userPhases[0]) || ability.autoDetectedPhase || 'Command',
-      timing: ability.userTiming || ability.autoDetectedTiming || 'start',
+      phases: ability.phases || [],
+      timing: ability.timing || '',
       notes: ability.notes || ''
     }))
 
@@ -123,7 +147,7 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
       customStratagems
     }
 
-    savePlan(plan)
+    savePlan(plan, debug)
     setSaved(true)
   }
 
@@ -143,6 +167,12 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
           </div>
           <div className="flex gap-2">
             <button
+              onClick={handleResetAll}
+              className="px-4 py-2 bg-surface2 text-text rounded hover:bg-surface2/80 flex items-center gap-2"
+            >
+              Reset All
+            </button>
+            <button
               onClick={handleSave}
               className="px-4 py-2 bg-surface2 text-text rounded hover:bg-surface2/80 flex items-center gap-2"
             >
@@ -160,6 +190,16 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
         </div>
 
         <div className="mb-6 bg-surface p-4 rounded-lg">
+          <div className="flex items-center gap-2 mb-4">
+            <input
+              type="checkbox"
+              id="debug"
+              checked={debug}
+              onChange={(e) => setDebug(e.target.checked)}
+              className="w-4 h-4 accent-accent"
+            />
+            <label htmlFor="debug" className="text-sm text-text2">Debug mode (dump plan to JSON on save)</label>
+          </div>
           <h2 className="text-lg font-semibold text-text mb-3">Add Custom Stratagem</h2>
           <div className="space-y-3">
             <input
@@ -195,6 +235,7 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
               onPhaseToggle={handlePhaseToggle}
               onTimingChange={handleTimingChange}
               onNotesChange={handleNotesChange}
+              onResetAbility={handleResetAbility}
             />
           ))}
 
@@ -224,6 +265,7 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
                   onPhaseToggle={handlePhaseToggle}
                   onTimingChange={handleTimingChange}
                   onNotesChange={handleNotesChange}
+                  onResetAbility={handleResetAbility}
                 />
               </div>
             )
@@ -261,11 +303,14 @@ interface AbilityCardProps {
   onPhaseToggle: (id: string, phase: Phase) => void
   onTimingChange: (id: string, timing: Timing) => void
   onNotesChange: (id: string, notes: string) => void
+  onResetAbility: (id: string) => void
 }
 
-function AbilityCard({ ability, onPhaseToggle, onTimingChange, onNotesChange }: AbilityCardProps) {
-  const currentPhases = ability.userPhases || ability.autoDetectedPhases || []
-  const currentTiming = ability.userTiming || ability.autoDetectedTiming || ''
+function AbilityCard({ ability, onPhaseToggle, onTimingChange, onNotesChange, onResetAbility }: AbilityCardProps) {
+  const currentPhases = ability.phases || []
+  const currentTiming = ability.timing || ''
+  const autoPhases = ability.autoDetectedPhases || []
+  const hasUserOverride = ability.phases !== ability.autoDetectedPhases || ability.timing !== ability.autoDetectedTiming
 
   return (
     <div className="bg-surface p-4 rounded-lg border-l-4 border-surface2">
@@ -283,23 +328,43 @@ function AbilityCard({ ability, onPhaseToggle, onTimingChange, onNotesChange }: 
       {ability.sourceUnit && (
         <p className="text-text2 text-xs mb-2">{ability.sourceUnit}</p>
       )}
-      <p className="text-text2 text-sm mb-3">{ability.description}</p>
+      <div className="mb-3 p-3 bg-surface2/50 rounded-lg">
+        <p className="text-text2 text-sm whitespace-pre-wrap">{ability.description}</p>
+      </div>
 
       <div className="grid grid-cols-2 gap-2 mb-3">
         <div>
-          <label className="text-xs text-text2 block mb-1">Phases</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs text-text2">Phases</label>
+            {hasUserOverride && (
+              <button
+                onClick={() => onResetAbility(ability.id)}
+                className="text-xs text-accent hover:text-accent/80"
+              >
+                auto
+              </button>
+            )}
+          </div>
           <div className="space-y-1">
-            {PHASES.map(phase => (
-              <label key={phase} className="flex items-center gap-2 text-sm text-text">
-                <input
-                  type="checkbox"
-                  checked={currentPhases.includes(phase)}
-                  onChange={() => onPhaseToggle(ability.id, phase)}
-                  className="accent-accent"
-                />
-                {phase}
-              </label>
-            ))}
+            {PHASES.map(phase => {
+              const isAutoSuggested = autoPhases.includes(phase)
+              const isChecked = currentPhases.includes(phase)
+
+              return (
+                <label key={phase} className="flex items-center gap-2 text-sm text-text">
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => onPhaseToggle(ability.id, phase)}
+                    className={isAutoSuggested ? 'accent-surface2' : 'accent-accent'}
+                  />
+                  <span className={isAutoSuggested ? 'text-text2' : ''}>
+                    {phase}
+                    {isAutoSuggested && <span className="ml-1 text-xs text-text2">(auto)</span>}
+                  </span>
+                </label>
+              )
+            })}
           </div>
         </div>
         <div>
@@ -338,9 +403,10 @@ interface UnitAbilityCardProps {
   onPhaseToggle: (id: string, phase: Phase) => void
   onTimingChange: (id: string, timing: Timing) => void
   onNotesChange: (id: string, notes: string) => void
+  onResetAbility: (id: string) => void
 }
 
-function UnitAbilityCard({ unitName, unitId, abilities, keywords, isCollapsed, onToggleCollapse, onPhaseToggle, onTimingChange, onNotesChange }: UnitAbilityCardProps) {
+function UnitAbilityCard({ unitName, unitId, abilities, keywords, isCollapsed, onToggleCollapse, onPhaseToggle, onTimingChange, onNotesChange, onResetAbility }: UnitAbilityCardProps) {
   return (
     <div className="bg-surface p-4 rounded-lg border-l-4 border-surface2">
       <div className="flex items-center justify-between mb-4">
@@ -380,36 +446,58 @@ function UnitAbilityCard({ unitName, unitId, abilities, keywords, isCollapsed, o
                     {ability.isReactive && (
                       <span className="text-xs bg-yellow-600/30 text-yellow-200 px-2 py-1 rounded">Reactive</span>
                     )}
-                    {(ability.userPhases || ability.autoDetectedPhases || []).length > 0 && (
+                    {(ability.phases || []).length > 0 && (
                       <span className="text-xs bg-surface2 text-text2 px-2 py-1 rounded">
-                        {(ability.userPhases || ability.autoDetectedPhases || []).join(', ')}
+                        {(ability.phases || []).join(', ')}
                       </span>
                     )}
                   </div>
                 </div>
-                <p className="text-text2 text-sm mb-3">{ability.description}</p>
+                <div className="mb-3 p-3 bg-surface2/50 rounded-lg">
+                  <p className="text-text2 text-sm whitespace-pre-wrap">{ability.description}</p>
+                </div>
 
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   <div>
-                    <label className="text-xs text-text2 block mb-1">Phases</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs text-text2">Phases</label>
+                      {(ability.phases !== ability.autoDetectedPhases || ability.timing !== ability.autoDetectedTiming) && (
+                        <button
+                          onClick={() => onResetAbility(ability.id)}
+                          className="text-xs text-accent hover:text-accent/80"
+                        >
+                          auto
+                        </button>
+                      )}
+                    </div>
                     <div className="space-y-1">
-                      {PHASES.map(phase => (
-                        <label key={phase} className="flex items-center gap-2 text-sm text-text">
-                          <input
-                            type="checkbox"
-                            checked={(ability.userPhases || ability.autoDetectedPhases || []).includes(phase)}
-                            onChange={() => onPhaseToggle(ability.id, phase)}
-                            className="accent-accent"
-                          />
-                          {phase}
-                        </label>
-                      ))}
+                      {PHASES.map(phase => {
+                        const autoPhases = ability.autoDetectedPhases || []
+                        const currentPhases = ability.phases || []
+                        const isAutoSuggested = autoPhases.includes(phase)
+                        const isChecked = currentPhases.includes(phase)
+
+                        return (
+                          <label key={phase} className="flex items-center gap-2 text-sm text-text">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => onPhaseToggle(ability.id, phase)}
+                              className={isAutoSuggested ? 'accent-surface2' : 'accent-accent'}
+                            />
+                            <span className={isAutoSuggested ? 'text-text2' : ''}>
+                              {phase}
+                              {isAutoSuggested && <span className="ml-1 text-xs text-text2">(auto)</span>}
+                            </span>
+                          </label>
+                        )
+                      })}
                     </div>
                   </div>
                   <div>
                     <label className="text-xs text-text2 block mb-1">Timing</label>
                     <select
-                      value={ability.userTiming || ability.autoDetectedTiming || ''}
+                      value={ability.timing || ability.autoDetectedTiming || ''}
                       onChange={(e) => onTimingChange(ability.id, e.target.value as Timing)}
                       className="w-full px-2 py-1 bg-surface2 border border-surface2 rounded text-text text-sm focus:outline-none focus:border-accent"
                     >

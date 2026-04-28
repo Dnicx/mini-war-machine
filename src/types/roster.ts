@@ -7,14 +7,13 @@ export interface Ability {
   name: string
   description: string
   sourceUnit?: string
-  autoDetectedPhase?: Phase
   autoDetectedPhases?: Phase[]
   autoDetectedTiming?: Timing
   isReactive?: boolean
   oncePerBattle?: boolean
   oncePerBattleRound?: boolean
-  userPhases?: Phase[]
-  userTiming?: Timing
+  phases?: Phase[]
+  timing?: Timing
   notes?: string
 }
 
@@ -79,7 +78,7 @@ export interface Roster {
 
 export interface PhasePlan {
   abilityId: string
-  phase: Phase
+  phases: Phase[]
   timing: Timing
   notes: string
 }

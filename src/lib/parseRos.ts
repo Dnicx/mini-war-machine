@@ -34,7 +34,7 @@ function extractWeaponFromProfile(profile: Element): Weapon | null {
   let bs = '-'
   let s = '-'
   const keywords: string[] = []
-  console.log( characteristics.item(0) )
+  // console.log( characteristics.item(0) )
 
   characteristics.forEach((char) => {
     const charName = char.getAttribute('name')
@@ -49,7 +49,7 @@ function extractWeaponFromProfile(profile: Element): Weapon | null {
       const keywordValue = charValue.split(',').map(k => k.trim())
       keywords.push(...keywordValue)
     }
-    console.log(`[Weapon] ${weaponName}: ${charName} = ${charValue}`)
+    // console.log(`[Weapon] ${weaponName}: ${charName} = ${charValue}`)
   })
 
   return {
@@ -71,7 +71,7 @@ function extractRuleFromProfile(profile: Element, idPrefix: string, sourceUnit: 
 
   let description = ''
   description = profile.querySelectorAll('description')[0]?.textContent || ''
-  console.log( ruleName, description)
+  // console.log( ruleName, description)
   return {
     id: `${idPrefix}-rule-${ruleName}`,
     name: ruleName,
@@ -411,7 +411,7 @@ export async function parseRosFile(file: File, debug: boolean = false): Promise<
   selections.forEach((selection) => {
     const name = selection.getAttribute('name')
     const type = selection.getAttribute('type')
-    console.log('unit name:', name, 'type:', type)
+    // console.log('unit name:', name, 'type:', type)
     if (!name) return
 
     // Skip upgrade selections
@@ -420,7 +420,7 @@ export async function parseRosFile(file: File, debug: boolean = false): Promise<
     const unitId = selection.getAttribute('id') || `${rosterId}-${name}`
     const unitPoints = parseInt(selection.querySelector('costs > cost[name="pts"]')?.getAttribute('value') || '0')
 
-    console.log(`[Parsing] Unit: ${name} (type: ${type}, points: ${unitPoints})`)
+    // console.log(`[Parsing] Unit: ${name} (type: ${type}, points: ${unitPoints})`)
 
     const abilities = extractAbilities(selection, unitId, name)
     const keywords = extractKeywords(selection, unitId, name)
@@ -428,9 +428,9 @@ export async function parseRosFile(file: File, debug: boolean = false): Promise<
     const isCharacterUnit = type === 'model'
     const models = extractModels(selection, unitId, name, isCharacterUnit)
 
-    console.log(`[Parsing] - Abilities: ${abilities.length}, Keywords: ${keywords.length}, Rules: ${rules.length}, Models: ${models.length}`)
+    // console.log(`[Parsing] - Abilities: ${abilities.length}, Keywords: ${keywords.length}, Rules: ${rules.length}, Models: ${models.length}`)
     models.forEach(m => {
-      console.log(`[Parsing]   - Model: ${m.name} (count: ${m.count}, weapons: ${m.weapons.length})`)
+      // console.log(`[Parsing]   - Model: ${m.name} (count: ${m.count}, weapons: ${m.weapons.length})`)
     })
 
     units.push({
