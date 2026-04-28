@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Save, Plus, Play, ChevronLeft, ChevronDown, ChevronUp } from 'lucide-react'
 import type { Roster, Ability, Phase, Timing, Keyword } from '../types/roster'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
@@ -10,7 +10,7 @@ interface PlannerProps {
   onBackToImport: () => void
 }
 
-const PHASES: Phase[] = ['Start of Game', 'Start of Battle Round', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight', 'Morale']
+const PHASES: Phase[] = ['Start of Game', 'Start of Battle Round', 'Morale', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight']
 const TIMINGS: Timing[] = ['start', 'beforeTarget', 'afterTargeted', 'end']
 
 export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
@@ -21,6 +21,8 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
   const [saved, setSaved] = useState(false)
   const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
   const [debug, setDebug] = useState(false)
+  const [currentEmptyIndex, setCurrentEmptyIndex] = useState(0)
+  const abilityRefs = useRef<Record<string, HTMLDivElement>>({})
 
   useEffect(() => {
     // Load saved plan
@@ -133,6 +135,19 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
     setSaved(false)
   }
 
+  const handleScrollToNextEmpty = () => {
+    const abilitiesWithEmptyPhases = allAbilities.filter(a => !a.phases || a.phases.length === 0)
+    if (abilitiesWithEmptyPhases.length === 0) return
+
+    const nextIndex = (currentEmptyIndex + 1) % abilitiesWithEmptyPhases.length
+    setCurrentEmptyIndex(nextIndex)
+
+    const nextAbility = abilitiesWithEmptyPhases[nextIndex]
+    if (nextAbility && abilityRefs.current[nextAbility.id]) {
+      abilityRefs.current[nextAbility.id].scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }
+
   const handleSave = () => {
     const phasePlans = allAbilities.map(ability => ({
       abilityId: ability.id,
@@ -236,6 +251,9 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
               onTimingChange={handleTimingChange}
               onNotesChange={handleNotesChange}
               onResetAbility={handleResetAbility}
+              ref={(node) => {
+                if (node) abilityRefs.current[ability.id] = node
+              }}
             />
           ))}
 
@@ -266,6 +284,9 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
                   onTimingChange={handleTimingChange}
                   onNotesChange={handleNotesChange}
                   onResetAbility={handleResetAbility}
+                  onAbilityRef={(id, node) => {
+                    if (node) abilityRefs.current[id] = node
+                  }}
                 />
               </div>
             )
@@ -294,6 +315,12 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
           )}
         </div>
       </div>
+      <button
+        onClick={handleScrollToNextEmpty}
+        className="fixed bottom-6 right-6 px-6 py-3 bg-red-500/20 text-red-400 rounded-full hover:bg-red-500/30 flex items-center gap-2 shadow-lg border border-red-500/30 z-50"
+      >
+        Next Empty
+      </button>
     </div>
   )
 }
@@ -304,16 +331,20 @@ interface AbilityCardProps {
   onTimingChange: (id: string, timing: Timing) => void
   onNotesChange: (id: string, notes: string) => void
   onResetAbility: (id: string) => void
+  ref?: (node: HTMLDivElement | null) => void
 }
 
-function AbilityCard({ ability, onPhaseToggle, onTimingChange, onNotesChange, onResetAbility }: AbilityCardProps) {
+function AbilityCard({ ability, onPhaseToggle, onTimingChange, onNotesChange, onResetAbility, ref }: AbilityCardProps) {
   const currentPhases = ability.phases || []
   const currentTiming = ability.timing || ''
   const autoPhases = ability.autoDetectedPhases || []
   const hasUserOverride = ability.phases !== ability.autoDetectedPhases || ability.timing !== ability.autoDetectedTiming
+  const hasEmptyPhases = !currentPhases || currentPhases.length === 0
 
   return (
-    <div className="bg-surface p-4 rounded-lg border-l-4 border-surface2">
+    <div
+      ref={ref}
+      className={`bg-surface p-4 rounded-lg border-l-4 ${hasEmptyPhases ? 'border-red-500' : 'border-surface2'}`}>
       <div className="flex justify-between items-start mb-2">
         <h4 className="font-semibold text-text">{ability.name}</h4>
         <div className="flex gap-2">
@@ -404,9 +435,10 @@ interface UnitAbilityCardProps {
   onTimingChange: (id: string, timing: Timing) => void
   onNotesChange: (id: string, notes: string) => void
   onResetAbility: (id: string) => void
+  onAbilityRef: (id: string, node: HTMLDivElement | null) => void
 }
 
-function UnitAbilityCard({ unitName, unitId, abilities, keywords, isCollapsed, onToggleCollapse, onPhaseToggle, onTimingChange, onNotesChange, onResetAbility }: UnitAbilityCardProps) {
+function UnitAbilityCard({ unitName, unitId, abilities, keywords, isCollapsed, onToggleCollapse, onPhaseToggle, onTimingChange, onNotesChange, onResetAbility, onAbilityRef }: UnitAbilityCardProps) {
   return (
     <div className="bg-surface p-4 rounded-lg border-l-4 border-surface2">
       <div className="flex items-center justify-between mb-4">
@@ -438,8 +470,14 @@ function UnitAbilityCard({ unitName, unitId, abilities, keywords, isCollapsed, o
             </div>
           )}
           <div className="space-y-4">
-            {abilities.map(ability => (
-              <div key={ability.id} className="border-b border-surface2/50 pb-4 last:border-0 last:pb-0">
+            {abilities.map(ability => {
+              const hasEmptyPhases = !ability.phases || ability.phases.length === 0
+              return (
+                <div
+                  key={ability.id}
+                  ref={(node) => onAbilityRef(ability.id, node)}
+                  className={`border-b border-surface2/50 pb-4 last:border-0 last:pb-0 ${hasEmptyPhases ? 'pl-4 !border-l-4 !border-l-red-500' : ''}`}
+                >
                 <div className="flex justify-between items-start mb-2">
                   <h4 className="font-semibold text-text">{ability.name}</h4>
                   <div className="flex gap-2">
@@ -517,7 +555,8 @@ function UnitAbilityCard({ unitName, unitId, abilities, keywords, isCollapsed, o
                   className="w-full px-3 py-1 bg-surface2 border border-surface2 rounded text-text placeholder-text2 text-sm focus:outline-none focus:border-accent"
                 />
               </div>
-            ))}
+                )
+              })}
           </div>
         </>
       )}

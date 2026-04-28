@@ -9,7 +9,7 @@ interface PlayDashboardProps {
   onBackToPlanner: () => void
 }
 
-const PHASES: Phase[] = ['Start of Game', 'Start of Battle Round', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight', 'Morale']
+const PHASES: Phase[] = ['Start of Game', 'Start of Battle Round', 'Morale', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight']
 const TIMINGS: Timing[] = ['start', 'beforeTarget', 'afterTargeted', 'end']
 const TIMING_LABELS: Record<Timing, string> = {
   start: 'Start of Phase',

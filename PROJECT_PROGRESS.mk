@@ -80,6 +80,7 @@ All core features are implemented and functional. The application can:
 
 ## Bug
 - Bug on getting detashment rules
+- Fix detachment rule not extracted
 
 ## Future Enhancements (Potential)
 - Add stratagems to plan mode + play mode
