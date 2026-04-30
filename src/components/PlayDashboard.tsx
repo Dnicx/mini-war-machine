@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Shield, Swords, ChevronDown, ChevronUp } fro
 import type { Roster, Phase, Timing, Ability, GameState } from '../types/roster'
 import { loadPlan, saveGameState, loadGameState } from '../lib/storage'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
+import { SafeMarkdownRenderer } from './SafeMarkdownRenderer'
 
 interface PlayDashboardProps {
   roster: Roster
@@ -423,7 +424,7 @@ function PlayAbilityCard({ ability }: PlayAbilityCardProps) {
         {ability.sourceUnit && (
           <p className="text-text2 text-xs">{ability.sourceUnit}</p>
         )}
-        <p className="text-text2 text-sm mt-1 whitespace-pre-wrap">{ability.description}</p>
+        <SafeMarkdownRenderer content={ability.description} className="text-text2 text-sm mt-1" />
         {ability.notes && (
           <p className="text-accent text-xs mt-1 italic">Note: {ability.notes}</p>
         )}

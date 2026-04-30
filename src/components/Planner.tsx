@@ -3,6 +3,7 @@ import { Save, Plus, Play, ChevronLeft, ChevronDown, ChevronUp } from 'lucide-re
 import type { Roster, Ability, Phase, Timing, Keyword } from '../types/roster'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
 import { savePlan, loadPlan } from '../lib/storage'
+import { SafeMarkdownRenderer } from './SafeMarkdownRenderer'
 
 interface PlannerProps {
   roster: Roster
@@ -300,7 +301,7 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <h4 className="font-semibold text-text">{stratagem.name}</h4>
-                      <p className="text-text2 text-sm mt-1">{stratagem.description}</p>
+                      <SafeMarkdownRenderer content={stratagem.description} className="text-text2 text-sm mt-1" />
                     </div>
                     <button
                       onClick={() => handleDeleteStratagem(stratagem.id)}
@@ -338,7 +339,7 @@ function AbilityCard({ ability, onPhaseToggle, onTimingChange, onNotesChange, on
   const currentPhases = ability.phases || []
   const currentTiming = ability.timing || ''
   const autoPhases = ability.autoDetectedPhases || []
-  const hasUserOverride = ability.phases !== ability.autoDetectedPhases || ability.timing !== ability.autoDetectedTiming
+  const hasUserOverride = JSON.stringify(ability.phases) !== JSON.stringify(ability.autoDetectedPhases) || ability.timing !== ability.autoDetectedTiming
   const hasEmptyPhases = !currentPhases || currentPhases.length === 0
 
   return (
@@ -360,7 +361,7 @@ function AbilityCard({ ability, onPhaseToggle, onTimingChange, onNotesChange, on
         <p className="text-text2 text-xs mb-2">{ability.sourceUnit}</p>
       )}
       <div className="mb-3 p-3 bg-surface2/50 rounded-lg">
-        <p className="text-text2 text-sm whitespace-pre-wrap">{ability.description}</p>
+        <SafeMarkdownRenderer content={ability.description} className="text-text2 text-sm whitespace-pre-wrap" />
       </div>
 
       <div className="grid grid-cols-2 gap-2 mb-3">
@@ -492,14 +493,14 @@ function UnitAbilityCard({ unitName, unitId, abilities, keywords, isCollapsed, o
                   </div>
                 </div>
                 <div className="mb-3 p-3 bg-surface2/50 rounded-lg">
-                  <p className="text-text2 text-sm whitespace-pre-wrap">{ability.description}</p>
+                  <SafeMarkdownRenderer content={ability.description} className="text-text2 text-sm whitespace-pre-wrap" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-xs text-text2">Phases</label>
-                      {(ability.phases !== ability.autoDetectedPhases || ability.timing !== ability.autoDetectedTiming) && (
+                      {(JSON.stringify(ability.phases) !== JSON.stringify(ability.autoDetectedPhases) || ability.timing !== ability.autoDetectedTiming) && (
                         <button
                           onClick={() => onResetAbility(ability.id)}
                           className="text-xs text-accent hover:text-accent/80"

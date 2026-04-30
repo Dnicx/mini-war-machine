@@ -77,16 +77,18 @@ All core features are implemented and functional. The application can:
 ## Done 
 - Add Rules display in Planner and PlayDashboard
 - Add ability to manually override auto-detected phases
+- Fix detachment rule not extracted
+- Fix extract unit's models data. unit can have many model characteristic and not in same selection ( can be in profile and selection > profile)
 
 ## Bug
-- Bug on getting detashment rules
-- Fix detachment rule not extracted
+- Fix timing, when None is showing in all timing. Should have to choose one timing. And add during roll.
 
 ## Future Enhancements (Potential)
 - Add stratagems to plan mode + play mode
 - Add roll timing for remind during dice rolling ( e.g. +1 to hit, -1 hit roll )
 - Add unit list view in playmode
 - Phase tracking to reset stratagems usage
+- Add modifier tracker ( separate dice and characteristic modifiers)
 - track battleshocked state ( reset by 'new battle round' button )
 - Add visual indicators for once-per-battle abilities in play mode ( reset by 'new battle round' button )
 - stores multiple roster

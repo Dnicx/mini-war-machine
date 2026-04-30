@@ -33,3 +33,4 @@ plans/
 # PDF for extract stratagems
 *.pdf
 tmp/*
+Example_ros/
