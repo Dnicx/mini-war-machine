@@ -1,22 +1,23 @@
 import { useState, useEffect, useRef } from 'react'
-import { Save, Plus, Play, ChevronLeft, ChevronDown, ChevronUp } from 'lucide-react'
-import type { Roster, Ability, Phase, Timing, Keyword, Stratagem, TurnOwner } from '../types/roster'
+import type { Roster, Ability, Phase, Timing, Stratagem, TurnOwner } from '../types/roster'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
 import { savePlan, loadPlan } from '../lib/storage'
-import { SafeMarkdownRenderer } from './SafeMarkdownRenderer'
-import { StratagemCard } from './StratagemCard'
 import { getCoreStratagems, getAvailableDetachments, getDetachmentStratagems } from '../lib/stratagemRegistry'
 import { getStratagemFolderName } from '../lib/factionMapping'
 import { detectDetachment } from '../lib/detection'
+import { PlannerHeader } from './PlannerHeader'
+import { CustomStratagemForm } from './CustomStratagemForm'
+import { DetachmentSelector } from './DetachmentSelector'
+import { StratagemSection } from './StratagemSection'
+import { ArmyAbilitiesSection } from './ArmyAbilitiesSection'
+import { UnitAbilitiesSection } from './UnitAbilitiesSection'
+import { CustomStratagemsSection } from './CustomStratagemsSection'
 
 interface PlannerProps {
   roster: Roster
   onPlayMode: () => void
   onBackToImport: () => void
 }
-
-const PHASES: Phase[] = ['Start of Game', 'Start of Battle Round', 'Morale', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight']
-const TIMINGS: Timing[] = ['start', 'beforeTarget', 'afterTargeted', 'end']
 
 export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
   const [allAbilities, setAllAbilities] = useState<Ability[]>([])
@@ -29,9 +30,7 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
   const abilityRefs = useRef<Record<string, HTMLDivElement>>({})
   const [saved, setSaved] = useState(true)
   const [factionFolder, setFactionFolder] = useState<string | undefined>(undefined)
-  const [newStratagemName, setNewStratagemName] = useState('')
-  const [newStratagemDesc, setNewStratagemDesc] = useState('')
-  const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
+    const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
   const [debug, setDebug] = useState(false)
 
   useEffect(() => {
@@ -188,21 +187,7 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
     }
   }
 
-  const handleAddStratagem = () => {
-    if (!newStratagemName.trim() || !newStratagemDesc.trim()) return
-
-    const newStratagem: Ability = {
-      id: `custom-${Date.now()}`,
-      name: newStratagemName,
-      description: newStratagemDesc
-    }
-
-    setCustomStratagems(prev => [...prev, newStratagem])
-    setNewStratagemName('')
-    setNewStratagemDesc('')
-    setSaved(false)
-  }
-
+  
   const handleDeleteStratagem = (id: string) => {
     setCustomStratagems(prev => prev.filter(s => s.id !== id))
     setSaved(false)
@@ -329,40 +314,13 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
   return (
     <div className="min-h-screen p-4">
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onBackToImport}
-              className="text-text2 hover:text-accent flex items-center gap-1"
-            >
-              <ChevronLeft size={18} />
-              Back
-            </button>
-            <h1 className="text-2xl font-bold text-accent">Planning Mode</h1>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={handleResetAll}
-              className="px-4 py-2 bg-surface2 text-text rounded hover:bg-surface2/80 flex items-center gap-2"
-            >
-              Reset All
-            </button>
-            <button
-              onClick={handleSave}
-              className="px-4 py-2 bg-surface2 text-text rounded hover:bg-surface2/80 flex items-center gap-2"
-            >
-              <Save size={18} />
-              {saved ? 'Saved' : 'Save Plan'}
-            </button>
-            <button
-              onClick={onPlayMode}
-              className="px-4 py-2 bg-accent text-white rounded hover:bg-accent/80 flex items-center gap-2"
-            >
-              <Play size={18} />
-              Play Mode
-            </button>
-          </div>
-        </div>
+        <PlannerHeader
+          onBackToImport={onBackToImport}
+          onResetAll={handleResetAll}
+          onSave={handleSave}
+          onPlayMode={onPlayMode}
+          saved={saved}
+        />
 
         <div className="mb-6 bg-surface p-4 rounded-lg">
           <div className="flex items-center gap-2 mb-4">
@@ -375,50 +333,24 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
             />
             <label htmlFor="debug" className="text-sm text-text2">Debug mode (dump plan to JSON on save)</label>
           </div>
-          <h2 className="text-lg font-semibold text-text mb-3">Add Custom Stratagem</h2>
-          <div className="space-y-3">
-            <input
-              type="text"
-              value={newStratagemName}
-              onChange={(e) => setNewStratagemName(e.target.value)}
-              placeholder="Stratagem name"
-              className="w-full px-4 py-2 bg-surface2 border border-surface2 rounded text-text placeholder-text2 focus:outline-none focus:border-accent"
-            />
-            <textarea
-              value={newStratagemDesc}
-              onChange={(e) => setNewStratagemDesc(e.target.value)}
-              placeholder="Stratagem description"
-              rows={3}
-              className="w-full px-4 py-2 bg-surface2 border border-surface2 rounded text-text placeholder-text2 focus:outline-none focus:border-accent resize-none"
-            />
-            <button
-              onClick={handleAddStratagem}
-              className="px-4 py-2 bg-surface2 text-text rounded hover:bg-surface2/80 flex items-center gap-2"
-            >
-              <Plus size={18} />
-              Add Stratagem
-            </button>
-          </div>
+          <CustomStratagemForm
+            onAddStratagem={(name, description) => {
+              const newStratagem: Ability = {
+                id: `custom-${Date.now()}`,
+                name,
+                description
+              }
+              setCustomStratagems(prev => [...prev, newStratagem])
+              setSaved(false)
+            }}
+          />
         </div>
 
-        {/* Detachment Selection Section */}
-        {availableDetachments.length > 0 && (
-          <div className="mb-6 bg-surface p-4 rounded-lg border-l-4 border-surface2">
-            <h2 className="text-lg font-semibold text-text mb-3">Detachment</h2>
-            <select
-              value={selectedDetachment}
-              onChange={(e) => handleDetachmentChange(e.target.value)}
-              className="w-full px-4 py-2 bg-surface2 border border-surface2 rounded text-text focus:outline-none focus:border-accent"
-            >
-              <option value="">Select detachment...</option>
-              {availableDetachments.map(det => (
-                <option key={det} value={det}>
-                  {det.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+        <DetachmentSelector
+          availableDetachments={availableDetachments}
+          selectedDetachment={selectedDetachment}
+          onDetachmentChange={handleDetachmentChange}
+        />
 
         {/* Error message for no matching detachment */}
         {availableDetachments.length === 0 && factionFolder && (
@@ -440,118 +372,60 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
           </div>
         )}
 
-        {/* Core Stratagems Section */}
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold text-text mb-3">Core Stratagems</h2>
-          <div className="space-y-4">
-            {coreStratagems.map(stratagem => (
-              <StratagemCard
-                key={stratagem.id}
-                stratagem={stratagem}
-                type="core"
-                onToggleEnable={handleStratagemEnableToggle}
-                onPhaseToggle={(id, phase) => handleStratagemPhaseToggle(id, phase, true)}
-                onTimingChange={(id, timing) => handleStratagemTimingChange(id, timing, true)}
-                onTurnOwnerChange={(id, turnOwner) => handleStratagemTurnOwnerChange(id, turnOwner, true)}
-                onReset={(id) => handleStratagemReset(id, true)}
-              />
-            ))}
-          </div>
-        </div>
+        <StratagemSection
+          coreStratagems={coreStratagems}
+          detachmentStratagems={detachmentStratagems}
+          selectedDetachment={selectedDetachment}
+          onToggleEnable={handleStratagemEnableToggle}
+          onPhaseToggle={handleStratagemPhaseToggle}
+          onTimingChange={handleStratagemTimingChange}
+          onTurnOwnerChange={handleStratagemTurnOwnerChange}
+          onReset={handleStratagemReset}
+        />
 
-        {/* Detachment Stratagems Section */}
-        {selectedDetachment && detachmentStratagems.length > 0 && (
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-text mb-3">Detachment Stratagems</h2>
-            <div className="space-y-4">
-              {detachmentStratagems.map(stratagem => (
-                <StratagemCard
-                  key={stratagem.id}
-                  stratagem={stratagem}
-                  type="detachment"
-                  onPhaseToggle={(id, phase) => handleStratagemPhaseToggle(id, phase, false)}
-                  onTimingChange={(id, timing) => handleStratagemTimingChange(id, timing, false)}
-                  onTurnOwnerChange={(id, turnOwner) => handleStratagemTurnOwnerChange(id, turnOwner, false)}
-                  onReset={(id) => handleStratagemReset(id, false)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+        <ArmyAbilitiesSection
+          abilities={allAbilities.filter(a => !a.sourceUnit)}
+          onPhaseToggle={handlePhaseToggle}
+          onTimingChange={handleTimingChange}
+          onNotesChange={handleNotesChange}
+          onResetAbility={handleResetAbility}
+          onAbilityRef={(id, node) => {
+            if (node) abilityRefs.current[id] = node
+          }}
+        />
 
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-text">Army Abilities</h2>
-          {allAbilities.filter(a => !a.sourceUnit).map(ability => (
-            <AbilityCard
-              key={ability.id}
-              ability={ability}
-              onPhaseToggle={handlePhaseToggle}
-              onTimingChange={handleTimingChange}
-              onNotesChange={handleNotesChange}
-              onResetAbility={handleResetAbility}
-              ref={(node) => {
-                if (node) abilityRefs.current[ability.id] = node
-              }}
-            />
-          ))}
+        <UnitAbilitiesSection
+          units={roster.units.map(unit => ({
+            id: unit.id,
+            name: unit.name,
+            abilities: allAbilities.filter(a => a.sourceUnit === unit.name),
+            keywords: unit.keywords
+          }))}
+          collapsedUnits={collapsedUnits}
+          onToggleCollapse={(unitId) => {
+            setCollapsedUnits(prev => {
+              const next = new Set(prev)
+              if (next.has(unitId)) {
+                next.delete(unitId)
+              } else {
+                next.add(unitId)
+              }
+              return next
+            })
+          }}
+          onPhaseToggle={handlePhaseToggle}
+          onTimingChange={handleTimingChange}
+          onNotesChange={handleNotesChange}
+          onResetAbility={handleResetAbility}
+          onAbilityRef={(id, node) => {
+            if (node) abilityRefs.current[id] = node
+          }}
+        />
 
-          <h2 className="text-lg font-semibold text-text mt-6">Unit Abilities</h2>
-          {roster.units.map(unit => {
-            const unitAbilities = allAbilities.filter(a => a.sourceUnit === unit.name)
-            if (unitAbilities.length === 0 && unit.keywords.length === 0) return null
-            return (
-              <div key={unit.id} className="mb-4">
-                <UnitAbilityCard
-                  unitName={unit.name}
-                  unitId={unit.id}
-                  abilities={unitAbilities}
-                  keywords={unit.keywords}
-                  isCollapsed={collapsedUnits.has(unit.id)}
-                  onToggleCollapse={(unitId) => {
-                    setCollapsedUnits(prev => {
-                      const next = new Set(prev)
-                      if (next.has(unitId)) {
-                        next.delete(unitId)
-                      } else {
-                        next.add(unitId)
-                      }
-                      return next
-                    })
-                  }}
-                  onPhaseToggle={handlePhaseToggle}
-                  onTimingChange={handleTimingChange}
-                  onNotesChange={handleNotesChange}
-                  onResetAbility={handleResetAbility}
-                  onAbilityRef={(id, node) => {
-                    if (node) abilityRefs.current[id] = node
-                  }}
-                />
-              </div>
-            )
-          })}
-
-          {customStratagems.length > 0 && (
-            <>
-              <h2 className="text-lg font-semibold text-text mt-6">Custom Stratagems</h2>
-              {customStratagems.map(stratagem => (
-                <div key={stratagem.id} className="bg-surface p-4 rounded-lg border-l-4 border-accent">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-text">{stratagem.name}</h4>
-                      <SafeMarkdownRenderer content={stratagem.description} className="text-text2 text-sm mt-1" />
-                    </div>
-                    <button
-                      onClick={() => handleDeleteStratagem(stratagem.id)}
-                      className="ml-2 text-red-400 hover:text-red-300"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </>
-          )}
-        </div>
+        <CustomStratagemsSection
+          customStratagems={customStratagems}
+          onDeleteStratagem={handleDeleteStratagem}
+        />
       </div>
       <button
         onClick={handleScrollToNextEmpty}
@@ -563,241 +437,3 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
   )
 }
 
-interface AbilityCardProps {
-  ability: Ability
-  onPhaseToggle: (id: string, phase: Phase) => void
-  onTimingChange: (id: string, timing: Timing) => void
-  onNotesChange: (id: string, notes: string) => void
-  onResetAbility: (id: string) => void
-  ref?: (node: HTMLDivElement | null) => void
-}
-
-function AbilityCard({ ability, onPhaseToggle, onTimingChange, onNotesChange, onResetAbility, ref }: AbilityCardProps) {
-  const currentPhases = ability.phases || []
-  const currentTiming = ability.timing || ''
-  const autoPhases = ability.autoDetectedPhases || []
-  const hasUserOverride = JSON.stringify(ability.phases) !== JSON.stringify(ability.autoDetectedPhases) || ability.timing !== ability.autoDetectedTiming
-  const hasEmptyPhases = !currentPhases || currentPhases.length === 0
-
-  return (
-    <div
-      ref={ref}
-      className={`bg-surface p-4 rounded-lg border-l-4 ${hasEmptyPhases ? 'border-red-500' : 'border-surface2'}`}>
-      <div className="flex justify-between items-start mb-2">
-        <h4 className="font-semibold text-text">{ability.name}</h4>
-        <div className="flex gap-2">
-          {ability.isReactive && (
-            <span className="text-xs bg-yellow-600/30 text-yellow-200 px-2 py-1 rounded">Reactive</span>
-          )}
-          {currentPhases.length > 0 && (
-            <span className="text-xs bg-surface2 text-text2 px-2 py-1 rounded">{currentPhases.join(', ')}</span>
-          )}
-        </div>
-      </div>
-      {ability.sourceUnit && (
-        <p className="text-text2 text-xs mb-2">{ability.sourceUnit}</p>
-      )}
-      <div className="mb-3 p-3 bg-surface2/50 rounded-lg">
-        <SafeMarkdownRenderer content={ability.description} className="text-text2 text-sm whitespace-pre-wrap" />
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 mb-3">
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="text-xs text-text2">Phases</label>
-            {hasUserOverride && (
-              <button
-                onClick={() => onResetAbility(ability.id)}
-                className="text-xs text-accent hover:text-accent/80"
-              >
-                auto
-              </button>
-            )}
-          </div>
-          <div className="space-y-1">
-            {PHASES.map(phase => {
-              const isAutoSuggested = autoPhases.includes(phase)
-              const isChecked = currentPhases.includes(phase)
-
-              return (
-                <label key={phase} className="flex items-center gap-2 text-sm text-text">
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => onPhaseToggle(ability.id, phase)}
-                    className={isAutoSuggested ? 'accent-surface2' : 'accent-accent'}
-                  />
-                  <span className={isAutoSuggested ? 'text-text2' : ''}>
-                    {phase}
-                    {isAutoSuggested && <span className="ml-1 text-xs text-text2">(auto)</span>}
-                  </span>
-                </label>
-              )
-            })}
-          </div>
-        </div>
-        <div>
-          <label className="text-xs text-text2 block mb-1">Timing</label>
-          <select
-            value={currentTiming || ''}
-            onChange={(e) => onTimingChange(ability.id, e.target.value as Timing)}
-            className="w-full px-2 py-1 bg-surface2 border border-surface2 rounded text-text text-sm focus:outline-none focus:border-accent"
-          >
-            <option value="">Auto ({ability.autoDetectedTiming || 'None'})</option>
-            {TIMINGS.map(timing => (
-              <option key={timing} value={timing}>{timing}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <input
-        type="text"
-        value={ability.notes || ''}
-        onChange={(e) => onNotesChange(ability.id, e.target.value)}
-        placeholder="Add notes..."
-        className="w-full px-3 py-1 bg-surface2 border border-surface2 rounded text-text placeholder-text2 text-sm focus:outline-none focus:border-accent"
-      />
-    </div>
-  )
-}
-
-interface UnitAbilityCardProps {
-  unitName: string
-  unitId: string
-  abilities: Ability[]
-  keywords: Keyword[]
-  isCollapsed: boolean
-  onToggleCollapse: (unitId: string) => void
-  onPhaseToggle: (id: string, phase: Phase) => void
-  onTimingChange: (id: string, timing: Timing) => void
-  onNotesChange: (id: string, notes: string) => void
-  onResetAbility: (id: string) => void
-  onAbilityRef: (id: string, node: HTMLDivElement | null) => void
-}
-
-function UnitAbilityCard({ unitName, unitId, abilities, keywords, isCollapsed, onToggleCollapse, onPhaseToggle, onTimingChange, onNotesChange, onResetAbility, onAbilityRef }: UnitAbilityCardProps) {
-  return (
-    <div className="bg-surface p-4 rounded-lg border-l-4 border-surface2">
-      <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={() => onToggleCollapse(unitId)}
-          className="text-md font-semibold text-text hover:text-accent transition-colors text-left"
-        >
-          {unitName}
-        </button>
-        <button
-          onClick={() => onToggleCollapse(unitId)}
-          className="text-text2 hover:text-accent transition-colors"
-        >
-          {isCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
-        </button>
-      </div>
-      {!isCollapsed && (
-        <>
-          {keywords.length > 0 && (
-            <div className="mb-4 p-3 bg-surface2/50 rounded-lg">
-              <h4 className="text-sm font-semibold text-text2 mb-2">Keywords</h4>
-              <div className="flex flex-wrap gap-2">
-                {keywords.map((keyword, index) => (
-                  <span key={`${keyword.id}-${index}`} className="text-xs bg-surface2 text-text2 px-2 py-1 rounded">
-                    {keyword.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-          <div className="space-y-4">
-            {abilities.map(ability => {
-              const hasEmptyPhases = !ability.phases || ability.phases.length === 0
-              return (
-                <div
-                  key={ability.id}
-                  ref={(node) => onAbilityRef(ability.id, node)}
-                  className={`border-b border-surface2/50 pb-4 last:border-0 last:pb-0 ${hasEmptyPhases ? 'pl-4 !border-l-4 !border-l-red-500' : ''}`}
-                >
-                <div className="flex justify-between items-start mb-2">
-                  <h4 className="font-semibold text-text">{ability.name}</h4>
-                  <div className="flex gap-2">
-                    {ability.isReactive && (
-                      <span className="text-xs bg-yellow-600/30 text-yellow-200 px-2 py-1 rounded">Reactive</span>
-                    )}
-                    {(ability.phases || []).length > 0 && (
-                      <span className="text-xs bg-surface2 text-text2 px-2 py-1 rounded">
-                        {(ability.phases || []).join(', ')}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="mb-3 p-3 bg-surface2/50 rounded-lg">
-                  <SafeMarkdownRenderer content={ability.description} className="text-text2 text-sm whitespace-pre-wrap" />
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs text-text2">Phases</label>
-                      {(JSON.stringify(ability.phases) !== JSON.stringify(ability.autoDetectedPhases) || ability.timing !== ability.autoDetectedTiming) && (
-                        <button
-                          onClick={() => onResetAbility(ability.id)}
-                          className="text-xs text-accent hover:text-accent/80"
-                        >
-                          auto
-                        </button>
-                      )}
-                    </div>
-                    <div className="space-y-1">
-                      {PHASES.map(phase => {
-                        const autoPhases = ability.autoDetectedPhases || []
-                        const currentPhases = ability.phases || []
-                        const isAutoSuggested = autoPhases.includes(phase)
-                        const isChecked = currentPhases.includes(phase)
-
-                        return (
-                          <label key={phase} className="flex items-center gap-2 text-sm text-text">
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => onPhaseToggle(ability.id, phase)}
-                              className={isAutoSuggested ? 'accent-surface2' : 'accent-accent'}
-                            />
-                            <span className={isAutoSuggested ? 'text-text2' : ''}>
-                              {phase}
-                              {isAutoSuggested && <span className="ml-1 text-xs text-text2">(auto)</span>}
-                            </span>
-                          </label>
-                        )
-                      })}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs text-text2 block mb-1">Timing</label>
-                    <select
-                      value={ability.timing || ability.autoDetectedTiming || ''}
-                      onChange={(e) => onTimingChange(ability.id, e.target.value as Timing)}
-                      className="w-full px-2 py-1 bg-surface2 border border-surface2 rounded text-text text-sm focus:outline-none focus:border-accent"
-                    >
-                      <option value="">Auto ({ability.autoDetectedTiming || 'None'})</option>
-                      {TIMINGS.map(timing => (
-                        <option key={timing} value={timing}>{timing}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <input
-                  type="text"
-                  value={ability.notes || ''}
-                  onChange={(e) => onNotesChange(ability.id, e.target.value)}
-                  placeholder="Add notes..."
-                  className="w-full px-3 py-1 bg-surface2 border border-surface2 rounded text-text placeholder-text2 text-sm focus:outline-none focus:border-accent"
-                />
-              </div>
-                )
-              })}
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
