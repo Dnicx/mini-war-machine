@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight, Shield, Swords, ChevronDown, ChevronUp } from 'lucide-react'
-import type { Roster, Phase, Timing, Ability, GameState } from '../types/roster'
+import type { Roster, Phase, Timing, Ability, GameState, Stratagem } from '../types/roster'
 import { loadPlan, saveGameState, loadGameState } from '../lib/storage'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
 import { SafeMarkdownRenderer } from './SafeMarkdownRenderer'
+import { getCoreStratagems, getDetachmentStratagems } from '../lib/stratagemRegistry'
+import { getStratagemFolderName } from '../lib/factionMapping'
 
 interface PlayDashboardProps {
   roster: Roster
@@ -34,6 +36,8 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
 
   const [allAbilities, setAllAbilities] = useState<Ability[]>([])
   const [customStratagems, setCustomStratagems] = useState<Ability[]>([])
+  const [coreStratagems, setCoreStratagems] = useState<Stratagem[]>([])
+  const [detachmentStratagems, setDetachmentStratagems] = useState<Stratagem[]>([])
   const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
 
   useEffect(() => {
@@ -79,6 +83,44 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
 
       setAllAbilities(withOverrides)
       setCustomStratagems(plan.customStratagems || [])
+
+      // Load core stratagems
+      const coreStrats = getCoreStratagems()
+      const coreOverrides = coreStrats.map(strat => {
+        const saved = plan.corePhasePlans?.find(p => p.abilityId === strat.id)
+        if (saved) {
+          return {
+            ...strat,
+            phases: saved.phases,
+            timing: saved.timing,
+            turnOwner: saved.turnOwner,
+            enabled: saved.enabled ?? true
+          }
+        }
+        return strat
+      })
+      setCoreStratagems(coreOverrides)
+
+      // Load detachment stratagems if selected
+      if (plan.selectedDetachment) {
+        const factionFolder = getStratagemFolderName(roster.faction)
+        if (factionFolder) {
+          const detachmentStrats = getDetachmentStratagems(factionFolder, plan.selectedDetachment)
+          const detachmentOverrides = detachmentStrats.map(strat => {
+            const saved = plan.detachmentPhasePlans?.find(p => p.abilityId === strat.id)
+            if (saved) {
+              return {
+                ...strat,
+                phases: saved.phases,
+                timing: saved.timing,
+                turnOwner: saved.turnOwner
+              }
+            }
+            return strat
+          })
+          setDetachmentStratagems(detachmentOverrides)
+        }
+      }
     }
   }, [roster])
 
@@ -123,12 +165,36 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const getActiveAbilities = () => {
     const currentPhase = gameState.currentPhase
 
-    return [...allAbilities, ...customStratagems].filter(ability => {
+    // Filter core stratagems (only enabled ones)
+    const enabledCoreStrats = coreStratagems.filter(s => s.enabled !== false)
+    
+    // Combine all abilities and stratagems
+    const allItems = [...allAbilities, ...customStratagems, ...enabledCoreStrats, ...detachmentStratagems]
+
+    return allItems.filter(ability => {
       const abilityPhases = ability.phases || ability.autoDetectedPhases || []
 
       // Show if phase matches (any of the selected phases)
       // If no phases are set, show in all phases (fallback)
       const phaseMatch = abilityPhases.length === 0 || abilityPhases.includes(currentPhase)
+
+      // For stratagems, check turn owner
+      if ('turnOwner' in ability) {
+        const turnOwner = (ability as Stratagem).turnOwner || (ability as Stratagem).autoDetectedTurnOwner || 'yours'
+        const currentTurn = gameState.turnOwner
+        
+        // Show if turn owner matches current turn
+        if (turnOwner === 'either') {
+          return phaseMatch
+        }
+        if (turnOwner === 'yours' && currentTurn === 'yours') {
+          return phaseMatch
+        }
+        if (turnOwner === 'opponent' && currentTurn === 'opponent') {
+          return phaseMatch
+        }
+        return false
+      }
 
       // For reactive abilities, show during opponent's turn
       if (ability.isReactive && gameState.turnOwner === 'opponent') {
@@ -155,7 +221,8 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
 
     abilities.forEach(ability => {
       const timing = ability.timing || ability.autoDetectedTiming
-      const sourceUnit = ability.sourceUnit || 'Army Abilities'
+      // For stratagems, use "Stratagems" as the source unit
+      const sourceUnit = 'turnOwner' in ability ? 'Stratagems' : (ability.sourceUnit || 'Army Abilities')
 
       if (timing) {
         if (!byTiming[timing][sourceUnit]) {
@@ -187,10 +254,24 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const getReactiveAbilities = () => {
     if (gameState.turnOwner !== 'opponent') return {}
 
-    const abilities = [...allAbilities, ...customStratagems].filter(ability => {
+    // Filter core stratagems (only enabled ones)
+    const enabledCoreStrats = coreStratagems.filter(s => s.enabled !== false)
+    
+    const abilities = [...allAbilities, ...customStratagems, ...enabledCoreStrats, ...detachmentStratagems].filter(ability => {
       const abilityPhases = ability.phases || ability.autoDetectedPhases || []
       // If no phases are set, show in all phases (fallback)
       const phaseMatch = abilityPhases.length === 0 || abilityPhases.includes(gameState.currentPhase)
+      
+      // For stratagems, check if they can be used on opponent's turn
+      if ('turnOwner' in ability) {
+        const turnOwner = (ability as Stratagem).turnOwner || (ability as Stratagem).autoDetectedTurnOwner || 'yours'
+        // Show if turn owner is 'either' or 'opponent'
+        if (turnOwner === 'either' || turnOwner === 'opponent') {
+          return phaseMatch
+        }
+        return false
+      }
+      
       return ability.isReactive && phaseMatch
     })
 
@@ -417,14 +498,35 @@ interface PlayAbilityCardProps {
 }
 
 function PlayAbilityCard({ ability }: PlayAbilityCardProps) {
+  const isStratagem = 'cpCost' in ability
+  const stratagem = isStratagem ? ability as Stratagem : null
+
   return (
-    <div className="p-3 rounded-lg border-l-4 bg-surface2 border-accent">
+    <div className={`p-3 rounded-lg border-l-4 bg-surface2 ${isStratagem ? 'border-purple-500' : 'border-accent'}`}>
       <div className="flex-1">
-        <h4 className="font-semibold text-text">{ability.name}</h4>
+        <div className="flex items-center gap-2">
+          <h4 className="font-semibold text-text">{ability.name}</h4>
+          {stratagem && (
+            <span className="text-xs bg-surface2 text-text px-2 py-1 rounded font-bold">
+              {stratagem.cpCost}
+            </span>
+          )}
+        </div>
         {ability.sourceUnit && (
           <p className="text-text2 text-xs">{ability.sourceUnit}</p>
         )}
-        <SafeMarkdownRenderer content={ability.description} className="text-text2 text-sm mt-1" />
+        {stratagem ? (
+          // Stratagem display
+          <div className="text-text2 text-sm mt-1">
+            <p className="mb-1"><span className="font-semibold text-purple-400">WHEN: </span>{stratagem.when}</p>
+            {stratagem.target && <p className="mb-1"><span className="font-semibold text-purple-400">TARGET: </span>{stratagem.target}</p>}
+            <p className="mb-1"><span className="font-semibold text-purple-400">EFFECT: </span>{stratagem.effect}</p>
+            {stratagem.restrictions && <p className="mb-1"><span className="font-semibold text-purple-400">RESTRICTIONS: </span>{stratagem.restrictions}</p>}
+          </div>
+        ) : (
+          // Regular ability display
+          <SafeMarkdownRenderer content={ability.description} className="text-text2 text-sm mt-1" />
+        )}
         {ability.notes && (
           <p className="text-accent text-xs mt-1 italic">Note: {ability.notes}</p>
         )}

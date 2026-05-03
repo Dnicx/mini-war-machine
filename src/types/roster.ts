@@ -1,6 +1,6 @@
 export type Phase = 'Start of Game' | 'Start of Battle Round' | 'Command' | 'Movement' | 'Shooting' | 'Charge' | 'Fight' | 'Morale'
 export type Timing = 'start' | 'beforeTarget' | 'afterTargeted' | 'end'
-export type TurnOwner = 'yours' | 'opponent'
+export type TurnOwner = 'yours' | 'opponent' | 'either'
 
 export interface Ability {
   id: string
@@ -15,6 +15,20 @@ export interface Ability {
   phases?: Phase[]
   timing?: Timing
   notes?: string
+}
+
+export interface Stratagem extends Ability {
+  cpCost: string
+  type: string
+  subtype: string
+  lore?: string
+  when: string
+  target?: string
+  effect: string
+  restrictions?: string
+  enabled?: boolean
+  autoDetectedTurnOwner?: TurnOwner
+  turnOwner?: TurnOwner
 }
 
 export interface Rule {
@@ -81,12 +95,17 @@ export interface PhasePlan {
   phases: Phase[]
   timing: Timing
   notes: string
+  turnOwner?: TurnOwner
+  enabled?: boolean
 }
 
 export interface Plan {
   rosterId: string
   phasePlans: PhasePlan[]
   customStratagems: Ability[]
+  selectedDetachment?: string
+  corePhasePlans?: (PhasePlan & { enabled?: boolean })[]
+  detachmentPhasePlans?: PhasePlan[]
 }
 
 export interface GameState {

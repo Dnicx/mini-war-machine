@@ -79,12 +79,15 @@ All core features are implemented and functional. The application can:
 - Add ability to manually override auto-detected phases
 - Fix detachment rule not extracted
 - Fix extract unit's models data. unit can have many model characteristic and not in same selection ( can be in profile and selection > profile)
+- Add stratagems to plan mode + play mode
 
 ## Bug
 - Fix timing, when None is showing in all timing. Should have to choose one timing. And add during roll.
+- Still don't see stratagem card that said can't find any detachment stratagemss
 
 ## Future Enhancements (Potential)
-- Add stratagems to plan mode + play mode
+- foldable section ( stratagems )
+- set different bg color for each stratagems type`
 - Add roll timing for remind during dice rolling ( e.g. +1 to hit, -1 hit roll )
 - Add unit list view in playmode
 - Phase tracking to reset stratagems usage
