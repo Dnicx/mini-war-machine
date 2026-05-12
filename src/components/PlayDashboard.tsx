@@ -334,28 +334,30 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
         <div className="flex items-center gap-2 mb-3">
           <button
             onClick={prevPhase}
-            className="p-1 text-text2 hover:text-accent"
+            className="p-1 text-text2 hover:text-accent flex-shrink-0"
           >
             <ChevronLeft size={20} />
           </button>
-          <div className="flex-1 flex justify-center">
-            {PHASES.map(phase => (
-              <button
-                key={phase}
-                onClick={() => updateGameState({ currentPhase: phase })}
-                className={`px-3 py-1 mx-1 rounded text-sm ${
-                  gameState.currentPhase === phase
-                    ? 'bg-accent text-white'
-                    : 'bg-surface2 text-text hover:bg-surface2/80'
-                }`}
-              >
-                {phase}
-              </button>
-            ))}
+          <div className="flex-1 overflow-x-auto">
+            <div className="flex gap-1 min-w-max justify-center">
+              {PHASES.map(phase => (
+                <button
+                  key={phase}
+                  onClick={() => updateGameState({ currentPhase: phase })}
+                  className={`px-3 py-1 rounded text-sm whitespace-nowrap ${
+                    gameState.currentPhase === phase
+                      ? 'bg-accent text-white'
+                      : 'bg-surface2 text-text hover:bg-surface2/80'
+                  }`}
+                >
+                  {phase}
+                </button>
+              ))}
+            </div>
           </div>
           <button
             onClick={nextPhase}
-            className="p-1 text-text2 hover:text-accent"
+            className="p-1 text-text2 hover:text-accent flex-shrink-0"
           >
             <ChevronRight size={20} />
           </button>

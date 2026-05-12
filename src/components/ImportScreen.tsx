@@ -101,7 +101,7 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
             <label className="block w-full">
               <input
                 type="file"
-                accept=".ros"
+                accept=".ros,.txt,application/octet-stream"
                 onChange={handleFileUpload}
                 disabled={loading}
                 className="hidden"

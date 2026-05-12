@@ -10,7 +10,7 @@ interface PlannerHeaderProps {
 
 export function PlannerHeader({ onBackToImport, onResetAll, onSave, onPlayMode, saved }: PlannerHeaderProps) {
   return (
-    <div className="flex items-center justify-between mb-6">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
       <div className="flex items-center gap-3">
         <button
           onClick={onBackToImport}
@@ -21,7 +21,7 @@ export function PlannerHeader({ onBackToImport, onResetAll, onSave, onPlayMode, 
         </button>
         <h1 className="text-2xl font-bold text-accent">Planning Mode</h1>
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={onResetAll}
           className="px-4 py-2 bg-surface2 text-text rounded hover:bg-surface2/80 flex items-center gap-2"
