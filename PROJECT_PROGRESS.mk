@@ -104,6 +104,12 @@ All core features are implemented and functional. The application can:
 - Add custom stratagem image
 - Rephrase stratagems
 
+## Feedback
+1. [Fixed] ability is all over the place
+2. really need to see stat
+3. need easier way to pick a unit in for reacting ( and full screen state )
+4. Fix ability and stratagem timing visual
+
 ## Planned Features
 
 ### Support Official Warhammer App Exports

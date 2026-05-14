@@ -34,3 +34,5 @@ plans/
 *.pdf
 tmp/*
 Example_ros/
+
+CLAUDE.md

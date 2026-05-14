@@ -62,3 +62,7 @@ export function loadGameState(): GameState | null {
 export function clearGameState(): void {
   localStorage.removeItem(GAME_STATE_KEY)
 }
+
+export function clearPlan(): void {
+  localStorage.removeItem(PLAN_KEY)
+}

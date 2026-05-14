@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Upload, Download } from 'lucide-react'
 import type { Roster } from '../types/roster'
 import { parseRosFile, fetchFromYellowscribe } from '../lib/parseRos'
+import { clearPlan } from '../lib/storage'
 
 interface ImportScreenProps {
   onRosterLoaded: (roster: Roster) => void
@@ -68,6 +69,12 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
             />
             <label htmlFor="debug" className="text-sm text-text2">Debug mode (dump parsed roster to JSON)</label>
           </div>
+          <button
+            onClick={() => { clearPlan(); alert('Saved plan cleared.') }}
+            className="w-full px-4 py-2 bg-red-800/50 text-red-200 rounded hover:bg-red-800 text-sm"
+          >
+            [Debug] Clear Saved Plan
+          </button>
 
           <div>
             <h2 className="text-lg font-semibold text-text mb-3 flex items-center gap-2">

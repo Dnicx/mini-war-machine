@@ -132,9 +132,20 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
       }))
       setAllAbilities(withDefaults)
       
-      // Initialize stratagems to auto-detected values
-      setCoreStratagems(coreStrats)
-      setDetachmentStratagems(detachmentStrats)
+      // Initialize stratagems to autoDetectedPhases
+      const coreWithDefaults = coreStrats.map(s => ({
+        ...s,
+        phases: s.autoDetectedPhases,
+        timing: s.autoDetectedTiming
+      }))
+      setCoreStratagems(coreWithDefaults)
+
+      const detachmentWithDefaults = detachmentStrats.map(s => ({
+        ...s,
+        phases: s.autoDetectedPhases,
+        timing: s.autoDetectedTiming
+      }))
+      setDetachmentStratagems(detachmentWithDefaults)
     }
   }, [roster])
 
