@@ -45,3 +45,21 @@ Build for production:
 ```bash
 npm run build
 ```
+
+## Android (Capacitor)
+
+After any code change, run:
+```bash
+npx vite build
+npx cap sync android
+npx cap run android
+```
+
+Or use the convenience script:
+```bash
+npm run android
+```
+
+Select your physical device from the list when prompted.
+
+> **Tip:** If you only changed JS/CSS, all three steps are needed. If you only changed native Android config, just `npx cap run android` is enough.

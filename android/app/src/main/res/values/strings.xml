@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">mini-war-machine</string>
+    <string name="title_activity_main">mini-war-machine</string>
+    <string name="package_name">com.miniwar.machine</string>
+    <string name="custom_url_scheme">com.miniwar.machine</string>
+</resources>
