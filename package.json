@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "extract-stratagems": "node scripts/extract-stratagems.js",
-    "android": "vite build && npx cap sync android && npx cap run android"
+    "build:android": "vite build && npx cap sync android && npx cap run android",
+    "android:dev": "npx cap run android --live-reload --port 5173"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.4",

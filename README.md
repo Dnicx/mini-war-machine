@@ -57,7 +57,16 @@ npx cap run android
 
 Or use the convenience script:
 ```bash
-npm run android
+npm run build:android
+```
+
+For live reload
+```bash
+npm run dev
+```
+And in another terminal
+```bash
+npx cap run android --live-reload --port 5173
 ```
 
 Select your physical device from the list when prompted.
