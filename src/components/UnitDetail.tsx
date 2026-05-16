@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { ChevronDown, ChevronUp, Camera, Swords, Shield, User } from 'lucide-react'
+import { ChevronLeft, ChevronDown, ChevronUp, Camera, Swords, Shield, User } from 'lucide-react'
 import type { Unit, Model } from '../types/roster'
 import { useSwipe } from '../hooks/useSwipe'
 import { StatTile } from './StatTile'
@@ -33,44 +33,6 @@ function resizeImage(file: File, maxPx: number, quality: number): Promise<string
   })
 }
 
-function ModelStatBlock({
-  model,
-  isCollapsed,
-  onToggle,
-  showHeader,
-}: {
-  model: Model
-  isCollapsed: boolean
-  onToggle: () => void
-  showHeader: boolean
-}) {
-  return (
-    <div className="mb-3">
-      {showHeader && (
-        <button
-          onClick={onToggle}
-          className="flex items-center gap-2 mb-2 text-sm font-semibold text-text hover:text-accent transition-colors"
-        >
-          {isCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-          {model.name}
-          <span className="text-text2 text-xs font-normal">×{model.count}</span>
-        </button>
-      )}
-      {!isCollapsed && (
-        <div className="flex flex-wrap gap-2">
-          <StatTile label="M" value={model.movement} />
-          <StatTile label="T" value={model.toughness} />
-          <StatTile label="W" value={model.wounds} />
-          <StatTile label="SV" value={model.save} />
-          <StatTile label="InvSv" value={model.invulnerableSave} />
-          <StatTile label="LD" value={model.leadership} />
-          <StatTile label="OC" value={model.objectiveControl} />
-        </div>
-      )}
-    </div>
-  )
-}
-
 function WeaponsSubView({ unit, collapsedModels, onToggleModel }: {
   unit: Unit
   collapsedModels: Set<string>
@@ -85,7 +47,7 @@ function WeaponsSubView({ unit, collapsedModels, onToggleModel }: {
           {multiModel && (
             <button
               onClick={() => onToggleModel(model.id)}
-              className="flex items-center gap-2 mb-2 text-sm font-semibold text-text hover:text-accent transition-colors"
+              className="flex items-center gap-2 mb-3 text-sm font-semibold text-text hover:text-accent transition-colors"
             >
               {collapsedModels.has(model.id) ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
               {model.name}
@@ -100,7 +62,7 @@ function WeaponsSubView({ unit, collapsedModels, onToggleModel }: {
                 model.weapons.map((weapon, i) => (
                   <div key={i} className="bg-surface rounded-lg p-3">
                     <p className="text-text text-sm font-semibold mb-2">{weapon.name}</p>
-                    <div className="flex flex-wrap gap-2 mb-2">
+                    <div className="grid grid-cols-3 gap-2 mb-2">
                       <StatTile label="Range" value={weapon.range} />
                       <StatTile label="A" value={weapon.attacks} />
                       <StatTile label="BS/WS" value={weapon.bs} />
@@ -126,25 +88,51 @@ function WeaponsSubView({ unit, collapsedModels, onToggleModel }: {
   )
 }
 
+function ModelsSubView({ unit, collapsedModels, onToggleModel }: {
+  unit: Unit
+  collapsedModels: Set<string>
+  onToggleModel: (id: string) => void
+}) {
+  const multiModel = unit.models.length > 1
+
+  return (
+    <div className="space-y-4">
+      {unit.models.map((model: Model) => (
+        <div key={model.id}>
+          {multiModel && (
+            <button
+              onClick={() => onToggleModel(model.id)}
+              className="flex items-center gap-2 mb-3 text-sm font-semibold text-text hover:text-accent transition-colors"
+            >
+              {collapsedModels.has(model.id) ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+              {model.name}
+              <span className="text-text2 text-xs font-normal">×{model.count}</span>
+            </button>
+          )}
+          {!collapsedModels.has(model.id) && (
+            <div className="grid grid-cols-3 gap-2">
+              <StatTile label="M" value={model.movement} />
+              <StatTile label="T" value={model.toughness} />
+              <StatTile label="W" value={model.wounds} />
+              <StatTile label="SV" value={model.save} />
+              <StatTile label="LD" value={model.leadership} />
+              <StatTile label="OC" value={model.objectiveControl} />
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function UnitDetail({ unit, unitImages, onImagesChange, onBack }: UnitDetailProps) {
-  const [activeContent, setActiveContent] = useState<'weapons' | 'abilities'>('weapons')
+  const [activeContent, setActiveContent] = useState<'models' | 'weapons' | 'abilities'>('models')
   const [collapsedModels, setCollapsedModels] = useState<Set<string>>(new Set())
-  const [collapsedStatModels, setCollapsedStatModels] = useState<Set<string>>(new Set())
   const imageInputRef = useRef<HTMLInputElement>(null)
   const swipeHandlers = useSwipe(() => {}, onBack)
 
-  const multiModel = unit.models.length > 1
-
   const toggleModel = (id: string) => {
     setCollapsedModels(prev => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
-
-  const toggleStatModel = (id: string) => {
-    setCollapsedStatModels(prev => {
       const next = new Set(prev)
       next.has(id) ? next.delete(id) : next.add(id)
       return next
@@ -168,52 +156,83 @@ export function UnitDetail({ unit, unitImages, onImagesChange, onBack }: UnitDet
   const imageUrl = unitImages[unit.id]
 
   return (
-    <div className="flex flex-col h-full" {...swipeHandlers}>
-      {/* Header */}
-      <div className="flex items-center gap-4 p-4 bg-surface rounded-xl mb-4">
-        <div className="relative flex-shrink-0 cursor-pointer" onClick={handleImageClick}>
-          {imageUrl ? (
-            <img src={imageUrl} alt={unit.name} className="w-20 h-20 rounded-lg object-cover" />
-          ) : (
-            <div className="w-20 h-20 rounded-lg bg-surface2 flex items-center justify-center">
-              <User size={32} className="text-text2" />
-            </div>
-          )}
-          <div className="absolute bottom-1 right-1 bg-surface/80 rounded-full p-0.5">
-            <Camera size={12} className="text-text2" />
-          </div>
-          <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h2 className="text-lg font-bold text-text leading-tight">{unit.name}</h2>
-          {unit.keywords.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1">
-              {unit.keywords.map(kw => (
-                <span key={kw.id} className="text-xs bg-surface2 text-text2 px-1.5 py-0.5 rounded">{kw.name}</span>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+    <div {...swipeHandlers}>
+      {/* Sticky floating header */}
+      <div className="sticky top-0 z-20 bg-background pt-1 pb-2">
+        {/* Row 1: back arrow + image + unit name */}
+        <div className="flex items-center gap-3 mb-2">
+          <button
+            onClick={onBack}
+            className="p-1 text-text2 hover:text-accent flex-shrink-0 transition-colors"
+            aria-label="Back to unit list"
+          >
+            <ChevronLeft size={24} />
+          </button>
 
-      {/* Stat block */}
-      <div className="mb-4">
-        {unit.models.map(model => (
-          <ModelStatBlock
-            key={model.id}
-            model={model}
-            showHeader={multiModel}
-            isCollapsed={collapsedStatModels.has(model.id)}
-            onToggle={() => toggleStatModel(model.id)}
-          />
-        ))}
+          <div className="relative cursor-pointer flex-shrink-0" onClick={handleImageClick}>
+            {imageUrl ? (
+              <img src={imageUrl} alt={unit.name} className="w-12 h-12 rounded-lg object-cover" />
+            ) : (
+              <div className="w-12 h-12 rounded-lg bg-surface2 flex items-center justify-center">
+                <User size={20} className="text-text2 opacity-50" />
+              </div>
+            )}
+            <div className="absolute bottom-0 right-0 bg-background/80 rounded-full p-0.5">
+              <Camera size={10} className="text-text2" />
+            </div>
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageChange}
+            />
+          </div>
+
+          <h2 className="text-lg font-bold text-text flex-1 min-w-0 leading-tight">{unit.name}</h2>
+        </div>
+
+        {/* Row 2: nav tabs */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setActiveContent('models')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium transition-colors ${
+              activeContent === 'models' ? 'bg-accent text-white' : 'bg-surface2 text-text'
+            }`}
+          >
+            <User size={14} />
+            Models
+          </button>
+          <button
+            onClick={() => setActiveContent('weapons')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium transition-colors ${
+              activeContent === 'weapons' ? 'bg-accent text-white' : 'bg-surface2 text-text'
+            }`}
+          >
+            <Swords size={14} />
+            Weapons
+          </button>
+          <button
+            onClick={() => setActiveContent('abilities')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium transition-colors ${
+              activeContent === 'abilities' ? 'bg-accent text-white' : 'bg-surface2 text-text'
+            }`}
+          >
+            <Shield size={14} />
+            Abilities
+          </button>
+        </div>
       </div>
 
       {/* Scrollable content area */}
-      <div className="flex-1 overflow-y-auto pb-24 min-h-0">
-        {activeContent === 'weapons' ? (
+      <div className="pt-3 pb-20">
+        {activeContent === 'models' && (
+          <ModelsSubView unit={unit} collapsedModels={collapsedModels} onToggleModel={toggleModel} />
+        )}
+        {activeContent === 'weapons' && (
           <WeaponsSubView unit={unit} collapsedModels={collapsedModels} onToggleModel={toggleModel} />
-        ) : (
+        )}
+        {activeContent === 'abilities' && (
           <div className="space-y-2">
             {unit.abilities.length === 0 ? (
               <p className="text-text2 text-sm text-center py-8">No abilities defined for this unit</p>
@@ -224,28 +243,6 @@ export function UnitDetail({ unit, unitImages, onImagesChange, onBack }: UnitDet
             )}
           </div>
         )}
-      </div>
-
-      {/* Bottom switcher — pinned above tab bar */}
-      <div className="flex gap-2 p-2 border-t border-surface2 bg-background mb-16">
-        <button
-          onClick={() => setActiveContent('weapons')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium text-sm transition-colors ${
-            activeContent === 'weapons' ? 'bg-accent text-white' : 'bg-surface2 text-text'
-          }`}
-        >
-          <Swords size={16} />
-          Weapons
-        </button>
-        <button
-          onClick={() => setActiveContent('abilities')}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium text-sm transition-colors ${
-            activeContent === 'abilities' ? 'bg-accent text-white' : 'bg-surface2 text-text'
-          }`}
-        >
-          <Shield size={16} />
-          Abilities
-        </button>
       </div>
     </div>
   )
