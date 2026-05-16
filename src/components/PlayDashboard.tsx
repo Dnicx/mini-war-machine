@@ -14,10 +14,11 @@ interface PlayDashboardProps {
 }
 
 const PHASES: Phase[] = ['Start of Game', 'Start of Battle Round', 'Morale', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight']
-const TIMINGS: Timing[] = ['start', 'beforeTarget', 'afterTargeted', 'end']
+const TIMINGS: Timing[] = ['start', 'beforeTarget', 'attacking', 'afterTargeted', 'end']
 const TIMING_LABELS: Record<Timing, string> = {
   start: 'Start of Phase',
   beforeTarget: 'During Phase (Before Choosing Target)',
+  attacking: 'During Attack (Dice Rolls)',
   afterTargeted: 'During Phase (After Being Targeted)',
   end: 'End of Phase'
 }
@@ -234,6 +235,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     const byTiming: Record<Timing, Record<string, Ability[]>> = {
       start: {},
       beforeTarget: {},
+      attacking: {},
       afterTargeted: {},
       end: {}
     }

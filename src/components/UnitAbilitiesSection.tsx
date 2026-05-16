@@ -83,7 +83,7 @@ function UnitAbilityCard({
   onAbilityRef
 }: UnitAbilityCardProps) {
   const PHASES: Phase[] = ['Start of Game', 'Start of Battle Round', 'Morale', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight']
-  const TIMINGS: Timing[] = ['start', 'beforeTarget', 'afterTargeted', 'end']
+  const TIMINGS: Timing[] = ['start', 'beforeTarget', 'attacking', 'afterTargeted', 'end']
 
   return (
     <div className="bg-surface p-4 rounded-lg border-l-4 border-surface2">
