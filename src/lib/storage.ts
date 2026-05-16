@@ -66,3 +66,25 @@ export function clearGameState(): void {
 export function clearPlan(): void {
   localStorage.removeItem(PLAN_KEY)
 }
+
+const UNIT_IMAGES_KEY = 'wh40k_unit_images'
+
+export function saveUnitImages(images: Record<string, string>): void {
+  try {
+    localStorage.setItem(UNIT_IMAGES_KEY, JSON.stringify(images))
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+      alert('Storage full — could not save image. Try removing other unit images first.')
+    }
+  }
+}
+
+export function loadUnitImages(): Record<string, string> {
+  const data = localStorage.getItem(UNIT_IMAGES_KEY)
+  if (!data) return {}
+  try {
+    return JSON.parse(data) as Record<string, string>
+  } catch {
+    return {}
+  }
+}

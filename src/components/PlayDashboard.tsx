@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useSwipe } from '../hooks/useSwipe'
-import { ChevronLeft, ChevronRight, Shield, Swords, ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Shield, Swords, ChevronDown, ChevronUp, Users } from 'lucide-react'
 import type { Roster, Phase, Timing, Ability, GameState, Stratagem } from '../types/roster'
-import { loadPlan, saveGameState, loadGameState } from '../lib/storage'
+import { loadPlan, saveGameState, loadGameState, loadUnitImages, saveUnitImages } from '../lib/storage'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
-import { SafeMarkdownRenderer } from './SafeMarkdownRenderer'
 import { getCoreStratagems, getDetachmentStratagems } from '../lib/stratagemRegistry'
 import { getStratagemFolderName } from '../lib/factionMapping'
+import { PlayAbilityCard } from './PlayAbilityCard'
+import { UnitView } from './UnitView'
 
 interface PlayDashboardProps {
   roster: Roster
@@ -40,6 +41,8 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const [coreStratagems, setCoreStratagems] = useState<Stratagem[]>([])
   const [detachmentStratagems, setDetachmentStratagems] = useState<Stratagem[]>([])
   const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
+  const [activeTab, setActiveTab] = useState<'phase' | 'unit'>('phase')
+  const [unitImages, setUnitImages] = useState<Record<string, string>>(() => loadUnitImages())
 
   useEffect(() => {
     // Load saved game state
@@ -299,9 +302,14 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const abilitiesByTiming = getAbilitiesByTiming()
   const reactiveAbilities = getReactiveAbilities()
 
+  const handleImagesChange = (images: Record<string, string>) => {
+    setUnitImages(images)
+    saveUnitImages(images)
+  }
+
   return (
-    <div className="max-w-4xl mx-auto p-4" {...swipeHandlers}>
-      {/* Header */}
+    <div className="max-w-4xl mx-auto p-4 pb-16" {...(activeTab === 'phase' ? swipeHandlers : {})}>
+      {/* Header — always visible */}
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={onBackToPlanner}
@@ -314,227 +322,221 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
         <div className="w-20" />
       </div>
 
-      {/* Game State Header */}
-      <div className="bg-surface p-4 rounded-lg mb-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-4">
-            <span className="text-text2">Round {gameState.battleRound}</span>
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              gameState.turnOwner === 'yours' ? 'bg-accent text-white' : 'bg-surface2 text-text'
-            }`}>
-              {gameState.turnOwner === 'yours' ? 'Your Turn' : "Opponent's Turn"}
-            </span>
-          </div>
-          <button
-            onClick={nextTurn}
-            className="px-3 py-1 bg-surface2 text-text rounded hover:bg-surface2/80 text-sm"
-          >
-            Next Turn
-          </button>
-        </div>
+      {/* Phase View content — hidden in Unit View */}
+      {activeTab === 'phase' && (
+        <>
+          {/* Game State Header */}
+          <div className="bg-surface p-4 rounded-lg mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-4">
+                <span className="text-text2">Round {gameState.battleRound}</span>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  gameState.turnOwner === 'yours' ? 'bg-accent text-white' : 'bg-surface2 text-text'
+                }`}>
+                  {gameState.turnOwner === 'yours' ? 'Your Turn' : "Opponent's Turn"}
+                </span>
+              </div>
+              <button
+                onClick={nextTurn}
+                className="px-3 py-1 bg-surface2 text-text rounded hover:bg-surface2/80 text-sm"
+              >
+                Next Turn
+              </button>
+            </div>
 
-        {/* Phase Navigation */}
-        <div className="flex items-center gap-2 mb-3">
-          <button
-            onClick={prevPhase}
-            className="p-1 text-text2 hover:text-accent flex-shrink-0"
-          >
-            <ChevronLeft size={20} />
-          </button>
-          <div className="flex-1 overflow-x-auto">
-            <div className="flex gap-1 min-w-max justify-center">
-              {PHASES.map(phase => (
-                <button
-                  key={phase}
-                  onClick={() => updateGameState({ currentPhase: phase })}
-                  className={`px-3 py-1 rounded text-sm whitespace-nowrap ${
-                    gameState.currentPhase === phase
-                      ? 'bg-accent text-white'
-                      : 'bg-surface2 text-text hover:bg-surface2/80'
-                  }`}
-                >
-                  {phase}
-                </button>
-              ))}
+            {/* Phase Navigation */}
+            <div className="flex items-center gap-2 mb-3">
+              <button
+                onClick={prevPhase}
+                className="p-1 text-text2 hover:text-accent flex-shrink-0"
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <div className="flex-1 overflow-x-auto">
+                <div className="flex gap-1 min-w-max justify-center">
+                  {PHASES.map(phase => (
+                    <button
+                      key={phase}
+                      onClick={() => updateGameState({ currentPhase: phase })}
+                      className={`px-3 py-1 rounded text-sm whitespace-nowrap ${
+                        gameState.currentPhase === phase
+                          ? 'bg-accent text-white'
+                          : 'bg-surface2 text-text hover:bg-surface2/80'
+                      }`}
+                    >
+                      {phase}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={nextPhase}
+                className="p-1 text-text2 hover:text-accent flex-shrink-0"
+              >
+                <ChevronRight size={20} />
+              </button>
             </div>
           </div>
-          <button
-            onClick={nextPhase}
-            className="p-1 text-text2 hover:text-accent flex-shrink-0"
-          >
-            <ChevronRight size={20} />
-          </button>
-        </div>
-      </div>
 
-      {/* Score & CP Tracker */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div className="bg-surface p-4 rounded-lg">
-          <h3 className="text-sm font-semibold text-text2 mb-2">Your Score</h3>
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => updateGameState({ yourScore: Math.max(0, gameState.yourScore - 1) })}
-              className="w-8 h-8 bg-surface2 rounded text-text hover:bg-surface2/80"
-            >
-              -
-            </button>
-            <span className="text-2xl font-bold text-accent">{gameState.yourScore}</span>
-            <button
-              onClick={() => updateGameState({ yourScore: gameState.yourScore + 1 })}
-              className="w-8 h-8 bg-surface2 rounded text-text hover:bg-surface2/80"
-            >
-              +
-            </button>
+          {/* Score & CP Tracker */}
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="bg-surface p-4 rounded-lg">
+              <h3 className="text-sm font-semibold text-text2 mb-2">Your Score</h3>
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => updateGameState({ yourScore: Math.max(0, gameState.yourScore - 1) })}
+                  className="w-8 h-8 bg-surface2 rounded text-text hover:bg-surface2/80"
+                >
+                  -
+                </button>
+                <span className="text-2xl font-bold text-accent">{gameState.yourScore}</span>
+                <button
+                  onClick={() => updateGameState({ yourScore: gameState.yourScore + 1 })}
+                  className="w-8 h-8 bg-surface2 rounded text-text hover:bg-surface2/80"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            <div className="bg-surface p-4 rounded-lg">
+              <h3 className="text-sm font-semibold text-text2 mb-2">Your CP</h3>
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => updateGameState({ yourCP: Math.max(0, gameState.yourCP - 1) })}
+                  className="w-8 h-8 bg-surface2 rounded text-text hover:bg-surface2/80"
+                >
+                  -
+                </button>
+                <span className="text-2xl font-bold text-accent">{gameState.yourCP}</span>
+                <button
+                  onClick={() => updateGameState({ yourCP: gameState.yourCP + 1 })}
+                  className="w-8 h-8 bg-surface2 rounded text-text hover:bg-surface2/80"
+                >
+                  +
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="bg-surface p-4 rounded-lg">
-          <h3 className="text-sm font-semibold text-text2 mb-2">Your CP</h3>
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => updateGameState({ yourCP: Math.max(0, gameState.yourCP - 1) })}
-              className="w-8 h-8 bg-surface2 rounded text-text hover:bg-surface2/80"
-            >
-              -
-            </button>
-            <span className="text-2xl font-bold text-accent">{gameState.yourCP}</span>
-            <button
-              onClick={() => updateGameState({ yourCP: gameState.yourCP + 1 })}
-              className="w-8 h-8 bg-surface2 rounded text-text hover:bg-surface2/80"
-            >
-              +
-            </button>
-          </div>
-        </div>
-      </div>
 
-      {/* Reactive Panel (Opponent's Turn) */}
-      {gameState.turnOwner === 'opponent' && Object.keys(reactiveAbilities).length > 0 && (
-        <div className="bg-surface2 p-4 rounded-lg mb-4 border-l-4 border-yellow-500">
-          <div className="flex items-center gap-2 mb-3">
-            <Shield className="text-yellow-500" size={20} />
-            <h3 className="font-semibold text-text">Reactive Abilities</h3>
-          </div>
-          <div className="space-y-4">
-            {Object.entries(reactiveAbilities).map(([unitName, abilities]) => (
-              <CollapsibleUnitSection
-                key={unitName}
-                unitName={unitName}
-                abilities={abilities}
-                isCollapsed={collapsedUnits.has(unitName)}
-                onToggle={() => {
-                  setCollapsedUnits(prev => {
-                    const next = new Set(prev)
-                    if (next.has(unitName)) {
-                      next.delete(unitName)
-                    } else {
-                      next.add(unitName)
-                    }
-                    return next
-                  })
-                }}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Active Abilities Panel - Grouped by Timing */}
-      {gameState.turnOwner === 'yours' && gameState.currentPhase !== 'Start of Game' && gameState.currentPhase !== 'Start of Battle Round' ? (
-        <div className="space-y-4">
-          {TIMINGS.map(timing => (
-            <div key={timing} className="bg-surface p-4 rounded-lg">
-              <h3 className="font-semibold text-text mb-3">{TIMING_LABELS[timing]}</h3>
+          {/* Reactive Panel (Opponent's Turn) */}
+          {gameState.turnOwner === 'opponent' && Object.keys(reactiveAbilities).length > 0 && (
+            <div className="bg-surface2 p-4 rounded-lg mb-4 border-l-4 border-yellow-500">
+              <div className="flex items-center gap-2 mb-3">
+                <Shield className="text-yellow-500" size={20} />
+                <h3 className="font-semibold text-text">Reactive Abilities</h3>
+              </div>
               <div className="space-y-4">
-                {Object.keys(abilitiesByTiming[timing]).length === 0 ? (
-                  <p className="text-text2 text-center py-4 text-sm">No abilities for this timing</p>
+                {Object.entries(reactiveAbilities).map(([unitName, abilities]) => (
+                  <CollapsibleUnitSection
+                    key={unitName}
+                    unitName={unitName}
+                    abilities={abilities}
+                    isCollapsed={collapsedUnits.has(unitName)}
+                    onToggle={() => {
+                      setCollapsedUnits(prev => {
+                        const next = new Set(prev)
+                        if (next.has(unitName)) {
+                          next.delete(unitName)
+                        } else {
+                          next.add(unitName)
+                        }
+                        return next
+                      })
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Active Abilities Panel - Grouped by Timing */}
+          {gameState.turnOwner === 'yours' && gameState.currentPhase !== 'Start of Game' && gameState.currentPhase !== 'Start of Battle Round' ? (
+            <div className="space-y-4">
+              {TIMINGS.map(timing => (
+                <div key={timing} className="bg-surface p-4 rounded-lg">
+                  <h3 className="font-semibold text-text mb-3">{TIMING_LABELS[timing]}</h3>
+                  <div className="space-y-4">
+                    {Object.keys(abilitiesByTiming[timing]).length === 0 ? (
+                      <p className="text-text2 text-center py-4 text-sm">No abilities for this timing</p>
+                    ) : (
+                      Object.entries(abilitiesByTiming[timing]).map(([unitName, abilities]) => (
+                        <CollapsibleUnitSection
+                          key={unitName}
+                          unitName={unitName}
+                          abilities={abilities}
+                          isCollapsed={collapsedUnits.has(unitName)}
+                          onToggle={() => {
+                            setCollapsedUnits(prev => {
+                              const next = new Set(prev)
+                              if (next.has(unitName)) {
+                                next.delete(unitName)
+                              } else {
+                                next.add(unitName)
+                              }
+                              return next
+                            })
+                          }}
+                        />
+                      ))
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-surface p-4 rounded-lg">
+              <div className="flex items-center gap-2 mb-3">
+                <Swords className="text-accent" size={20} />
+                <h3 className="font-semibold text-text">
+                  {gameState.turnOwner === 'yours' ? 'Active Abilities' : 'Opponent Phase'}
+                </h3>
+              </div>
+              <div className="space-y-2">
+                {activeAbilities.length === 0 ? (
+                  <p className="text-text2 text-center py-4">No abilities for this phase</p>
                 ) : (
-                  Object.entries(abilitiesByTiming[timing]).map(([unitName, abilities]) => (
-                    <CollapsibleUnitSection
-                      key={unitName}
-                      unitName={unitName}
-                      abilities={abilities}
-                      isCollapsed={collapsedUnits.has(unitName)}
-                      onToggle={() => {
-                        setCollapsedUnits(prev => {
-                          const next = new Set(prev)
-                          if (next.has(unitName)) {
-                            next.delete(unitName)
-                          } else {
-                            next.add(unitName)
-                          }
-                          return next
-                        })
-                      }}
+                  activeAbilities.map(ability => (
+                    <PlayAbilityCard
+                      key={ability.id}
+                      ability={ability}
                     />
                   ))
                 )}
               </div>
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="bg-surface p-4 rounded-lg">
-          <div className="flex items-center gap-2 mb-3">
-            <Swords className="text-accent" size={20} />
-            <h3 className="font-semibold text-text">
-              {gameState.turnOwner === 'yours' ? 'Active Abilities' : 'Opponent Phase'}
-            </h3>
-          </div>
-          <div className="space-y-2">
-            {activeAbilities.length === 0 ? (
-              <p className="text-text2 text-center py-4">No abilities for this phase</p>
-            ) : (
-              activeAbilities.map(ability => (
-                <PlayAbilityCard
-                  key={ability.id}
-                  ability={ability}
-                />
-              ))
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-interface PlayAbilityCardProps {
-  ability: Ability
-}
-
-function PlayAbilityCard({ ability }: PlayAbilityCardProps) {
-  const isStratagem = 'cpCost' in ability
-  const stratagem = isStratagem ? ability as Stratagem : null
-
-  return (
-    <div className={`p-3 rounded-lg border-l-4 bg-surface2 ${isStratagem ? 'border-purple-500' : 'border-accent'}`}>
-      <div className="flex-1">
-        <div className="flex items-center gap-2">
-          <h4 className="font-semibold text-text">{ability.name}</h4>
-          {stratagem && (
-            <span className="text-xs bg-surface2 text-text px-2 py-1 rounded font-bold">
-              {stratagem.cpCost}
-            </span>
           )}
-        </div>
-        {ability.sourceUnit && (
-          <p className="text-text2 text-xs">{ability.sourceUnit}</p>
-        )}
-        {stratagem ? (
-          // Stratagem display
-          <div className="text-text2 text-sm mt-1">
-            <p className="mb-1"><span className="font-semibold text-purple-400">WHEN: </span>{stratagem.when}</p>
-            {stratagem.target && <p className="mb-1"><span className="font-semibold text-purple-400">TARGET: </span>{stratagem.target}</p>}
-            <p className="mb-1"><span className="font-semibold text-purple-400">EFFECT: </span>{stratagem.effect}</p>
-            {stratagem.restrictions && <p className="mb-1"><span className="font-semibold text-purple-400">RESTRICTIONS: </span>{stratagem.restrictions}</p>}
-          </div>
-        ) : (
-          // Regular ability display
-          <SafeMarkdownRenderer content={ability.description} className="text-text2 text-sm mt-1" />
-        )}
-        {ability.notes && (
-          <p className="text-accent text-xs mt-1 italic">Note: {ability.notes}</p>
-        )}
+        </>
+      )}
+
+      {/* Unit View content */}
+      {activeTab === 'unit' && (
+        <UnitView
+          roster={roster}
+          unitImages={unitImages}
+          onImagesChange={handleImagesChange}
+        />
+      )}
+
+      {/* Bottom tab bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-surface border-t border-surface2 flex z-40">
+        <button
+          onClick={() => setActiveTab('phase')}
+          className={`flex-1 flex flex-col items-center py-3 gap-1 text-xs transition-colors ${
+            activeTab === 'phase' ? 'text-accent' : 'text-text2'
+          }`}
+        >
+          <Swords size={20} />
+          Phase View
+        </button>
+        <button
+          onClick={() => setActiveTab('unit')}
+          className={`flex-1 flex flex-col items-center py-3 gap-1 text-xs transition-colors ${
+            activeTab === 'unit' ? 'text-accent' : 'text-text2'
+          }`}
+        >
+          <Users size={20} />
+          Unit View
+        </button>
       </div>
     </div>
   )

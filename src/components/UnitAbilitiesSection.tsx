@@ -1,6 +1,28 @@
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { useRef } from 'react'
+import { ChevronDown, ChevronUp, Camera } from 'lucide-react'
 import type { Ability, Phase, Timing, Keyword } from '../types/roster'
 import { SafeMarkdownRenderer } from './SafeMarkdownRenderer'
+
+function resizeImage(file: File, maxPx: number, quality: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const scale = Math.min(1, maxPx / Math.max(img.width, img.height))
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.round(img.width * scale)
+        canvas.height = Math.round(img.height * scale)
+        canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+        resolve(canvas.toDataURL('image/jpeg', quality))
+      }
+      img.onerror = reject
+      img.src = e.target!.result as string
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
 
 interface UnitAbilitiesSectionProps {
   units: Array<{
@@ -16,6 +38,8 @@ interface UnitAbilitiesSectionProps {
   onNotesChange: (id: string, notes: string) => void
   onResetAbility: (id: string) => void
   onAbilityRef: (id: string, node: HTMLDivElement | null) => void
+  unitImages?: Record<string, string>
+  onImagesChange?: (images: Record<string, string>) => void
 }
 
 export function UnitAbilitiesSection({
@@ -26,7 +50,9 @@ export function UnitAbilitiesSection({
   onTimingChange,
   onNotesChange,
   onResetAbility,
-  onAbilityRef
+  onAbilityRef,
+  unitImages,
+  onImagesChange
 }: UnitAbilitiesSectionProps) {
   const unitsWithAbilities = units.filter(unit => unit.abilities.length > 0 || unit.keywords.length > 0)
 
@@ -49,6 +75,8 @@ export function UnitAbilitiesSection({
           onNotesChange={onNotesChange}
           onResetAbility={onResetAbility}
           onAbilityRef={onAbilityRef}
+          unitImage={unitImages?.[unit.id]}
+          onImageChange={onImagesChange ? (dataUrl) => onImagesChange({ ...unitImages, [unit.id]: dataUrl }) : undefined}
         />
       ))}
     </div>
@@ -67,11 +95,13 @@ interface UnitAbilityCardProps {
   onNotesChange: (id: string, notes: string) => void
   onResetAbility: (id: string) => void
   onAbilityRef: (id: string, node: HTMLDivElement | null) => void
+  unitImage?: string
+  onImageChange?: (dataUrl: string) => void
 }
 
 function UnitAbilityCard({
   unitName,
-  unitId,
+  unitId: _unitId,
   abilities,
   keywords,
   isCollapsed,
@@ -80,23 +110,56 @@ function UnitAbilityCard({
   onTimingChange,
   onNotesChange,
   onResetAbility,
-  onAbilityRef
+  onAbilityRef,
+  unitImage,
+  onImageChange
 }: UnitAbilityCardProps) {
+  const imageInputRef = useRef<HTMLInputElement>(null)
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !onImageChange) return
+    try {
+      const dataUrl = await resizeImage(file, 512, 0.7)
+      onImageChange(dataUrl)
+    } catch {
+      alert('Failed to process image.')
+    }
+    e.target.value = ''
+  }
   const PHASES: Phase[] = ['Start of Game', 'Start of Battle Round', 'Morale', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight']
   const TIMINGS: Timing[] = ['start', 'beforeTarget', 'afterTargeted', 'end']
 
+  const unitId = _unitId
   return (
     <div className="bg-surface p-4 rounded-lg border-l-4 border-surface2">
       <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {unitImage ? (
+            <img src={unitImage} alt={unitName} className="w-8 h-8 rounded object-cover flex-shrink-0" />
+          ) : null}
+          <button
+            onClick={() => onToggleCollapse(unitId)}
+            className="text-md font-semibold text-text hover:text-accent transition-colors text-left truncate"
+          >
+            {unitName}
+          </button>
+          {onImageChange && (
+            <>
+              <button
+                onClick={() => imageInputRef.current?.click()}
+                className="text-text2 hover:text-accent transition-colors flex-shrink-0"
+                title="Upload unit image"
+              >
+                <Camera size={14} />
+              </button>
+              <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+            </>
+          )}
+        </div>
         <button
           onClick={() => onToggleCollapse(unitId)}
-          className="text-md font-semibold text-text hover:text-accent transition-colors text-left"
-        >
-          {unitName}
-        </button>
-        <button
-          onClick={() => onToggleCollapse(unitId)}
-          className="text-text2 hover:text-accent transition-colors"
+          className="text-text2 hover:text-accent transition-colors flex-shrink-0"
         >
           {isCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
         </button>
