@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Upload, Download } from 'lucide-react'
+import { Upload } from 'lucide-react'
 import type { Roster } from '../types/roster'
-import { parseRosFile, fetchFromYellowscribe } from '../lib/parseRos'
+import { parseRosFile } from '../lib/parseRos'
 import { clearPlan } from '../lib/storage'
 
 interface ImportScreenProps {
@@ -9,27 +9,9 @@ interface ImportScreenProps {
 }
 
 export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
-  const [yellowscribeId, setYellowscribeId] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [debug, setDebug] = useState(false)
-
-  const handleYellowscribeSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!yellowscribeId.trim()) return
-
-    setLoading(true)
-    setError('')
-
-    try {
-      const roster = await fetchFromYellowscribe(yellowscribeId.trim(), debug)
-      onRosterLoaded(roster)
-    } catch (err) {
-      setError('Failed to fetch roster. Check the ID and try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -75,30 +57,6 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
           >
             [Debug] Clear Saved Plan
           </button>
-
-          <div>
-            <h2 className="text-lg font-semibold text-text mb-3 flex items-center gap-2">
-              <Download size={20} />
-              Import from Yellowscribe
-            </h2>
-            <form onSubmit={handleYellowscribeSubmit} className="space-y-3">
-              <input
-                type="text"
-                value={yellowscribeId}
-                onChange={(e) => setYellowscribeId(e.target.value)}
-                placeholder="Enter Yellowscribe ID"
-                className="w-full px-4 py-2 bg-surface2 border border-surface2 rounded text-text placeholder-text2 focus:outline-none focus:border-accent"
-                disabled={loading}
-              />
-              <button
-                type="submit"
-                disabled={loading || !yellowscribeId.trim()}
-                className="w-full px-4 py-2 bg-accent text-white rounded hover:bg-accent/80 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Loading...' : 'Import'}
-              </button>
-            </form>
-          </div>
 
           <div className="border-t border-surface2 pt-4">
             <h2 className="text-lg font-semibold text-text mb-3 flex items-center gap-2">

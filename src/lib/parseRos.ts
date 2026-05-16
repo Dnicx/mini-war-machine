@@ -166,7 +166,7 @@ function extractAbilities(selection: Element, unitId: string, unitName: string):
 // Extract keywords from a selection
 function extractKeywords(selection: Element, unitId: string, unitName: string): Keyword[] {
   const keywords: Keyword[] = []
-  const categories = selection.querySelectorAll('categories > category')
+  const categories = selection.querySelectorAll(':scope > categories > category')
   categories.forEach((category) => {
     const keywordName = category.getAttribute('name')
     if (keywordName) {
