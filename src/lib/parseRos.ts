@@ -41,7 +41,7 @@ function extractWeaponFromProfile(profile: Element): Weapon | null {
     const charValue = char.textContent?.trim() || '-'
     if (charName === 'Range') range = charValue
     if (charName === 'A') attacks = charValue
-    if (charName === 'BS') bs = charValue
+    if (charName === 'BS' || charName === 'WS') bs = charValue
     if (charName === 'S') s = charValue
     if (charName === 'AP') ap = charValue
     if (charName === 'D') damage = charValue
