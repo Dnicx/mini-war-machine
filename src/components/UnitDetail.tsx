@@ -33,57 +33,67 @@ function resizeImage(file: File, maxPx: number, quality: number): Promise<string
   })
 }
 
-function WeaponsSubView({ unit, collapsedModels, onToggleModel }: {
-  unit: Unit
-  collapsedModels: Set<string>
-  onToggleModel: (id: string) => void
-}) {
-  const multiModel = unit.models.length > 1
+function WeaponsSubView({ unit }: { unit: Unit }) {
+  const mergedMap = new Map<string, { weapon: Unit['models'][0]['weapons'][0]; count: number }>()
+
+  for (const model of unit.models) {
+    for (const weapon of model.weapons) {
+      const key = [weapon.name, weapon.range, weapon.attacks, weapon.bs, weapon.s, weapon.ap, weapon.damage, weapon.keywords.join(',')].join('|')
+      const existing = mergedMap.get(key)
+      if (existing) {
+        existing.count += model.count
+      } else {
+        mergedMap.set(key, { weapon, count: model.count })
+      }
+    }
+  }
+
+  const all = Array.from(mergedMap.values())
+  const ranged = all.filter(({ weapon }) => weapon.range.toLowerCase() !== 'melee')
+  const melee = all.filter(({ weapon }) => weapon.range.toLowerCase() === 'melee')
+
+  if (all.length === 0) {
+    return <p className="text-text2 text-sm italic">No weapons</p>
+  }
+
+  const renderWeapon = ({ weapon, count }: { weapon: Unit['models'][0]['weapons'][0]; count: number }, i: number) => (
+    <div key={i} className="bg-surface rounded-lg p-3">
+      <div className="flex items-baseline gap-2 mb-2">
+        <p className="text-text text-sm font-semibold">{weapon.name}</p>
+        <span className="text-xs font-semibold text-accent">×{count}</span>
+      </div>
+      <div className="grid grid-cols-3 gap-2 mb-2">
+        <StatTile label="Range" value={weapon.range} />
+        <StatTile label="A" value={weapon.attacks} />
+        <StatTile label="BS/WS" value={weapon.bs} />
+        <StatTile label="S" value={weapon.s} />
+        <StatTile label="AP" value={weapon.ap} />
+        <StatTile label="D" value={weapon.damage} />
+      </div>
+      {weapon.keywords.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {weapon.keywords.map(kw => (
+            <span key={kw} className="text-xs bg-surface2 text-text2 px-2 py-0.5 rounded-full">{kw}</span>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 
   return (
     <div className="space-y-4">
-      {unit.models.map(model => (
-        <div key={model.id}>
-          {multiModel && (
-            <button
-              onClick={() => onToggleModel(model.id)}
-              className="flex items-center gap-2 mb-3 text-sm font-semibold text-text hover:text-accent transition-colors"
-            >
-              {collapsedModels.has(model.id) ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-              {model.name}
-              <span className="text-text2 text-xs font-normal">×{model.count}</span>
-            </button>
-          )}
-          {!collapsedModels.has(model.id) && (
-            <div className="space-y-3">
-              {model.weapons.length === 0 ? (
-                <p className="text-text2 text-sm italic">No weapons</p>
-              ) : (
-                model.weapons.map((weapon, i) => (
-                  <div key={i} className="bg-surface rounded-lg p-3">
-                    <p className="text-text text-sm font-semibold mb-2">{weapon.name}</p>
-                    <div className="grid grid-cols-3 gap-2 mb-2">
-                      <StatTile label="Range" value={weapon.range} />
-                      <StatTile label="A" value={weapon.attacks} />
-                      <StatTile label="BS/WS" value={weapon.bs} />
-                      <StatTile label="S" value={weapon.s} />
-                      <StatTile label="AP" value={weapon.ap} />
-                      <StatTile label="D" value={weapon.damage} />
-                    </div>
-                    {weapon.keywords.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {weapon.keywords.map(kw => (
-                          <span key={kw} className="text-xs bg-surface2 text-text2 px-2 py-0.5 rounded-full">{kw}</span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          )}
+      {ranged.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-text2 uppercase tracking-wider">Ranged</p>
+          {ranged.map(renderWeapon)}
         </div>
-      ))}
+      )}
+      {melee.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-text2 uppercase tracking-wider">Melee</p>
+          {melee.map(renderWeapon)}
+        </div>
+      )}
     </div>
   )
 }
@@ -230,7 +240,7 @@ export function UnitDetail({ unit, unitImages, onImagesChange, onBack }: UnitDet
           <ModelsSubView unit={unit} collapsedModels={collapsedModels} onToggleModel={toggleModel} />
         )}
         {activeContent === 'weapons' && (
-          <WeaponsSubView unit={unit} collapsedModels={collapsedModels} onToggleModel={toggleModel} />
+          <WeaponsSubView unit={unit} />
         )}
         {activeContent === 'abilities' && (
           <div className="space-y-2">
