@@ -53,7 +53,7 @@ export function UnitView({ roster, unitImages, onImagesChange }: UnitViewProps) 
               className="w-full bg-surface rounded-xl overflow-hidden flex items-stretch text-left focus:outline-none focus:ring-2 focus:ring-accent"
             >
               {/* Left: image */}
-              <div className="w-32 flex-shrink-0 self-stretch min-h-[120px]">
+              <div className="w-24 flex-shrink-0 self-stretch min-h-[120px]">
                 {imageUrl ? (
                   <img src={imageUrl} alt={unit.name} className="w-full h-full object-cover" />
                 ) : (
@@ -67,17 +67,41 @@ export function UnitView({ roster, unitImages, onImagesChange }: UnitViewProps) 
               <div className="flex-1 p-3 min-w-0">
                 <h3 className="text-text2 font-bold text-lg leading-tight">{unit.name}</h3>
 
-                {/* Model stats — one line per model type */}
-                <div className="mt-1.5 space-y-0.5">
-                  {unit.models.map(model => (
-                    <div key={model.id} className="text-xs leading-relaxed">
-                      <span className="font-semibold text-text">{model.name}</span>
-                      <span className="text-text/60">
-                        {'  '}M: {model.movement} | T: {model.toughness} | Sv: {model.save} | W: {model.wounds} | Ld: {model.leadership} | OC: {model.objectiveControl}
-                      </span>
+                {/* Model stats — merged by identical stat profile */}
+                {(() => {
+                  const groups = new Map<string, { names: string[]; m: typeof unit.models[0] }>()
+                  for (const model of unit.models) {
+                    const key = [model.movement, model.toughness, model.save, model.wounds, model.leadership, model.objectiveControl].join('|')
+                    const existing = groups.get(key)
+                    if (existing) existing.names.push(model.name)
+                    else groups.set(key, { names: [model.name], m: model })
+                  }
+                  const entries = Array.from(groups.values())
+                  const showNames = entries.length > 1
+                  return (
+                    <div className="mt-1.5 space-y-0.5">
+                      {entries.map(({ names, m }) => (
+                        <div key={names.join(',')} className="text-xs leading-relaxed">
+                          {showNames && (
+                            <span className="font-semibold text-text">{names.join(' / ')}{'  '}</span>
+                          )}
+                          <span className="text-sm/3">
+                            {[
+                              ['M', m.movement], ['T', m.toughness], ['Sv', m.save],
+                              ['W', m.wounds], ['Ld', m.leadership], ['OC', m.objectiveControl],
+                            ].map(([label, value], i) => (
+                              <span key={label}>
+                                {i > 0 && ' '}
+                                <span className="text-text/40">{label} </span>
+                                <span className="text-text font-medium">{value}</span>
+                              </span>
+                            ))}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  )
+                })()}
 
                 {/* Keywords */}
                 {(() => {
