@@ -110,6 +110,7 @@ All core features are implemented and functional. The application can:
 3. need easier way to pick a unit in for reacting ( and full screen state )
 4. Fix ability and stratagem timing visual
 5. All stratagem view
+6. keep old save with new install.
 
 ## Planned Features
 

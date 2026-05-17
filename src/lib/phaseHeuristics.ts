@@ -12,6 +12,7 @@ const PHASE_PATTERNS: Record<Phase, RegExp[]> = {
 }
 
 const TIMING_PATTERNS: Record<Timing, RegExp[]> = {
+  attacking: [/hit roll/i, /wound roll/i, /save roll/i, /damage roll/i, /re-?roll/i],
   start: [/start of/i, /beginning of/i, /at the start/i],
   beforeTarget: [/before/i, /when selecting/i, /when choosing/i],
   afterTargeted: [/after/i, /when targeted/i, /when hit/i],
@@ -83,7 +84,7 @@ export function applyHeuristics(ability: Ability): Ability {
 
   console.log(`[Phase Detection] "${ability.name}":`, {
     phases: finalPhases.length > 0 ? finalPhases : 'None',
-    timing: timing || 'None',
+    timing: timing,
     isReactive,
     oncePerBattle,
     oncePerRound
@@ -92,7 +93,7 @@ export function applyHeuristics(ability: Ability): Ability {
   return {
     ...ability,
     autoDetectedPhases: finalPhases,
-    autoDetectedTiming: timing,
+    autoDetectedTiming: timing ?? 'start',
     isReactive,
     oncePerBattle,
     oncePerBattleRound: oncePerRound

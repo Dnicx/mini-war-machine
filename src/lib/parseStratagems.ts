@@ -50,7 +50,7 @@ export function parseStratagemXml(xml: string): Stratagem[] {
     const finalStratagem: Stratagem = {
       ...stratagem,
       autoDetectedPhases: withPhaseHeuristics.autoDetectedPhases,
-      autoDetectedTiming: withPhaseHeuristics.autoDetectedTiming,
+      autoDetectedTiming: withPhaseHeuristics.autoDetectedTiming ?? 'start',
       isReactive: withPhaseHeuristics.isReactive,
       oncePerBattle: withPhaseHeuristics.oncePerBattle,
       oncePerBattleRound: withPhaseHeuristics.oncePerBattleRound,
