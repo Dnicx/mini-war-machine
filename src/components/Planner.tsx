@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import type { Roster, Ability, Phase, Timing, Stratagem, TurnOwner } from '../types/roster'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
-import { savePlan, loadPlan } from '../lib/storage'
+import { savePlan, loadPlan, loadUnitImages, saveUnitImages } from '../lib/storage'
 import { getCoreStratagems, getAvailableDetachments, getDetachmentStratagems } from '../lib/stratagemRegistry'
 import { getStratagemFolderName } from '../lib/factionMapping'
 import { detectDetachment } from '../lib/detection'
@@ -32,6 +32,12 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
   const [factionFolder, setFactionFolder] = useState<string | undefined>(undefined)
     const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
   const [debug, setDebug] = useState(false)
+  const [unitImages, setUnitImages] = useState<Record<string, string>>(() => loadUnitImages())
+
+  const handleImagesChange = (images: Record<string, string>) => {
+    setUnitImages(images)
+    saveUnitImages(images)
+  }
 
   useEffect(() => {
     // Load saved plan
@@ -431,6 +437,8 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
           onAbilityRef={(id, node) => {
             if (node) abilityRefs.current[id] = node
           }}
+          unitImages={unitImages}
+          onImagesChange={handleImagesChange}
         />
 
         <CustomStratagemsSection

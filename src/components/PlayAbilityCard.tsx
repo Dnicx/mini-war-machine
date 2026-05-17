@@ -1,0 +1,42 @@
+import type { Ability, Stratagem } from '../types/roster'
+import { SafeMarkdownRenderer } from './SafeMarkdownRenderer'
+
+interface PlayAbilityCardProps {
+  ability: Ability
+}
+
+export function PlayAbilityCard({ ability }: PlayAbilityCardProps) {
+  const isStratagem = 'cpCost' in ability
+  const stratagem = isStratagem ? ability as Stratagem : null
+
+  return (
+    <div className={`p-3 rounded-lg border-l-4 bg-surface2 ${isStratagem ? 'border-purple-500' : 'border-accent'}`}>
+      <div className="flex-1">
+        <div className="flex items-center gap-2">
+          <h4 className="font-semibold text-text">{ability.name}</h4>
+          {stratagem && (
+            <span className="text-xs bg-surface2 text-text px-2 py-1 rounded font-bold">
+              {stratagem.cpCost}
+            </span>
+          )}
+        </div>
+        {ability.sourceUnit && (
+          <p className="text-text2 text-xs">{ability.sourceUnit}</p>
+        )}
+        {stratagem ? (
+          <div className="text-text2 text-sm mt-1">
+            <p className="mb-1"><span className="font-semibold text-purple-400">WHEN: </span>{stratagem.when}</p>
+            {stratagem.target && <p className="mb-1"><span className="font-semibold text-purple-400">TARGET: </span>{stratagem.target}</p>}
+            <p className="mb-1"><span className="font-semibold text-purple-400">EFFECT: </span>{stratagem.effect}</p>
+            {stratagem.restrictions && <p className="mb-1"><span className="font-semibold text-purple-400">RESTRICTIONS: </span>{stratagem.restrictions}</p>}
+          </div>
+        ) : (
+          <SafeMarkdownRenderer content={ability.description} className="text-text2 text-sm mt-1" />
+        )}
+        {ability.notes && (
+          <p className="text-accent text-xs mt-1 italic">Note: {ability.notes}</p>
+        )}
+      </div>
+    </div>
+  )
+}
