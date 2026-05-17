@@ -53,11 +53,11 @@ export function UnitView({ roster, unitImages, onImagesChange }: UnitViewProps) 
               className="w-full bg-surface rounded-xl overflow-hidden flex items-stretch text-left focus:outline-none focus:ring-2 focus:ring-accent"
             >
               {/* Left: image */}
-              <div className="w-24 flex-shrink-0 self-stretch min-h-[120px]">
+              <div className="w-24 flex-shrink-0 self-stretch min-h-[120px] relative">
                 {imageUrl ? (
-                  <img src={imageUrl} alt={unit.name} className="w-full h-full object-cover" />
+                  <img src={imageUrl} alt={unit.name} className="absolute inset-0 w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full bg-surface2 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-surface2 flex items-center justify-center">
                     <User size={40} className="text-text2 opacity-40" />
                   </div>
                 )}
@@ -101,6 +101,19 @@ export function UnitView({ roster, unitImages, onImagesChange }: UnitViewProps) 
                       ))}
                     </div>
                   )
+                })()}
+
+                {/* Invulnerable save */}
+                {(() => {
+                  const invulnValues = [...new Set(
+                    unit.models.map(m => m.invulnerableSave).filter(v => v && v !== '-')
+                  )]
+                  return invulnValues.length > 0 ? (
+                    <div className="mt-1.5 text-xs leading-relaxed">
+                      <span className="text-text/40">Inv. Save </span>
+                      <span className="text-text font-medium">{invulnValues.join(' / ')}</span>
+                    </div>
+                  ) : null
                 })()}
 
                 {/* Keywords */}

@@ -80,6 +80,19 @@ function extractRuleFromProfile(profile: Element, idPrefix: string, sourceUnit: 
   }
 }
 
+// Extract invulnerable save value from an Abilities profile named "Invulnerable Save"
+function extractInvulnerableSave(selectionEl: Element): string {
+  const profiles = selectionEl.querySelectorAll(':scope > profiles > profile[typeName="Abilities"]')
+  for (const profile of Array.from(profiles)) {
+    if (profile.getAttribute('name')?.toLowerCase() === 'invulnerable save') {
+      const desc = profile.querySelector('characteristics > characteristic[name="Description"]')
+      const value = desc?.textContent?.trim()
+      if (value) return value
+    }
+  }
+  return '-'
+}
+
 // Helper function to extract model characteristics from typeName="Unit" profile
 function extractModelCharacteristics(profile: Element): {
   movement: string
@@ -224,6 +237,7 @@ function extractModels(unitSelection: Element, unitId: string, unitName: string,
     else {
       console.warn( unitName, 'character is missing model profile')
     }
+    stats.invulnerableSave = extractInvulnerableSave(unitSelection)
 
     // Extract weapons from all nested wargear selections
     const wargearSelections = unitSelection.querySelectorAll('selections > selection')
@@ -266,7 +280,7 @@ function extractModels(unitSelection: Element, unitId: string, unitName: string,
       const modelId = modelSelection.getAttribute('id') || `${unitId}-model-${modelName}`
 
       // Extract characteristics - try model's own Unit profile first, then fallback to parent
-      let stats = unitStat
+      let stats = { ...unitStat }
       const modelProfile = modelSelection.querySelector(`profiles > profile[typeName="Unit"]`)
       if (modelProfile) {
         stats = extractModelCharacteristics(modelProfile)
@@ -278,6 +292,8 @@ function extractModels(unitSelection: Element, unitId: string, unitName: string,
         else
           console.error( unitName, modelName, 'profile is blank')
       }
+      const invuln = extractInvulnerableSave(modelSelection)
+      stats.invulnerableSave = invuln !== '-' ? invuln : extractInvulnerableSave(unitSelection)
 
       // Extract weapons from model's nested wargear selections
       const wargearSelections = modelSelection.querySelectorAll('selections > selection')

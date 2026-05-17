@@ -84,13 +84,16 @@ All core features are implemented and functional. The application can:
 - Add stratagems to plan mode + play mode
 - Fix timing, when None is showing in all timing. Should have to choose one timing. And add during roll.
 - bladeguard ws not loaded.
+- Add unit list view in playmode
 - group melee and range weapon
 - in unit list, only show (somewhat) unique keyword and show all keywords in detail. 
+- Merge unit's common profile 
+- add invul save to unit list
 
 ## Bug
 
 ## Future Enhancements (Potential)
-- Merge unit's common profile 
+- stores multiple roster
 - go to unit detail from stratagem's view.
 - set different bg color for each stratagems type`
 - foldable section ( stratagems )
@@ -98,21 +101,20 @@ All core features are implemented and functional. The application can:
 - support model with special keyword ( centurion sergeant have grenade )
 - add timing to abilities
 - Add roll timing for remind during dice rolling ( e.g. +1 to hit, -1 hit roll )
-- Add unit list view in playmode
 - Phase tracking to reset stratagems usage
 - Add modifier tracker ( separate dice and characteristic modifiers)
 - track battleshocked state ( reset by 'new battle round' button )
 - Add visual indicators for once-per-battle abilities in play mode ( reset by 'new battle round' button )
-- stores multiple roster
+- All stratagem view
 - keep track of which units is dead and show only available weapon profile on remainnig model in unit
+---
 - Add ability to track CP usage
 - Add victory point tracking
 - Export plans to shareable format
 - Improve phase detection patterns based on user feedback
 - Add stratagem extraction to app
-- Add custom stratagem image
+- Add custom stratagem icon 
 - Rephrase stratagems
-- All stratagem view
 
 ## Planned Features
 
