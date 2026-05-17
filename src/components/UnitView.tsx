@@ -9,6 +9,20 @@ interface UnitViewProps {
   onImagesChange: (images: Record<string, string>) => void
 }
 
+// Keywords hidden in the unit list view (still shown in unit detail).
+// Add lowercase names here to suppress them. Prefix-based rules are below.
+const REDUNDANT_KEYWORDS = new Set([
+  'epic hero',
+  'character',
+  'imperium',
+  'chaos',
+])
+
+// Keywords whose names start with any of these prefixes are also hidden.
+const REDUNDANT_KEYWORD_PREFIXES = [
+  'faction:',
+]
+
 export function UnitView({ roster, unitImages, onImagesChange }: UnitViewProps) {
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null)
 
@@ -66,18 +80,27 @@ export function UnitView({ roster, unitImages, onImagesChange }: UnitViewProps) 
                 </div>
 
                 {/* Keywords */}
-                {unit.keywords.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {unit.keywords.map(kw => (
-                      <span
-                        key={kw.id}
-                        className="text-xs bg-surface2 text-accent px-2 py-0.5 rounded-full uppercase font-medium tracking-wide"
-                      >
-                        {kw.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                {(() => {
+                  const unitNameLower = unit.name.toLowerCase()
+                  const visibleKeywords = unit.keywords.filter(kw => {
+                    const n = kw.name.toLowerCase()
+                    return !REDUNDANT_KEYWORDS.has(n)
+                      && !REDUNDANT_KEYWORD_PREFIXES.some(p => n.startsWith(p))
+                      && n !== unitNameLower
+                  })
+                  return visibleKeywords.length > 0 ? (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {visibleKeywords.map(kw => (
+                        <span
+                          key={kw.id}
+                          className="text-xs bg-surface2 text-accent px-2 py-0.5 rounded-full uppercase font-medium tracking-wide"
+                        >
+                          {kw.name}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null
+                })()}
               </div>
             </button>
           )

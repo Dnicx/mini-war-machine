@@ -202,7 +202,16 @@ export function UnitDetail({ unit, unitImages, onImagesChange, onBack }: UnitDet
           <h2 className="text-lg font-bold text-text flex-1 min-w-0 leading-tight">{unit.name}</h2>
         </div>
 
-        {/* Row 2: nav tabs */}
+        {/* Row 2: keywords */}
+        {unit.keywords.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2">
+            {unit.keywords.map(kw => (
+              <span key={kw.id} className="text-xs bg-surface2 text-accent px-2 py-0.5 rounded-full uppercase font-medium tracking-wide">{kw.name}</span>
+            ))}
+          </div>
+        )}
+
+        {/* Row 3: nav tabs */}
         <div className="flex gap-2">
           <button
             onClick={() => setActiveContent('models')}

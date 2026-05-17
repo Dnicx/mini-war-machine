@@ -74,20 +74,29 @@ All core features are implemented and functional. The application can:
 - No multiplayer/sync features
 - No export of plans back to .ros format
 
+---
+
 ## Done 
 - Add Rules display in Planner and PlayDashboard
 - Add ability to manually override auto-detected phases
 - Fix detachment rule not extracted
 - Fix extract unit's models data. unit can have many model characteristic and not in same selection ( can be in profile and selection > profile)
 - Add stratagems to plan mode + play mode
+- Fix timing, when None is showing in all timing. Should have to choose one timing. And add during roll.
+- bladeguard ws not loaded.
+- group melee and range weapon
+- in unit list, only show (somewhat) unique keyword and show all keywords in detail. 
 
 ## Bug
-- Fix timing, when None is showing in all timing. Should have to choose one timing. And add during roll.
-- Still don't see stratagem card that said can't find any detachment stratagemss
 
 ## Future Enhancements (Potential)
-- foldable section ( stratagems )
+- Merge unit's common profile 
+- go to unit detail from stratagem's view.
 - set different bg color for each stratagems type`
+- foldable section ( stratagems )
+- foldable timing in play view
+- support model with special keyword ( centurion sergeant have grenade )
+- add timing to abilities
 - Add roll timing for remind during dice rolling ( e.g. +1 to hit, -1 hit roll )
 - Add unit list view in playmode
 - Phase tracking to reset stratagems usage
@@ -103,14 +112,7 @@ All core features are implemented and functional. The application can:
 - Add stratagem extraction to app
 - Add custom stratagem image
 - Rephrase stratagems
-
-## Feedback
-1. [Fixed] ability is all over the place
-2. really need to see stat
-3. need easier way to pick a unit in for reacting ( and full screen state )
-4. Fix ability and stratagem timing visual
-5. All stratagem view
-6. keep old save with new install.
+- All stratagem view
 
 ## Planned Features
 
