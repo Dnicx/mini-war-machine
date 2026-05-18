@@ -47,6 +47,7 @@ function AppContent() {
         path="/planner"
         element={roster ? (
           <Planner
+            key={roster.id}
             roster={roster}
             onPlayMode={() => navigate('/play')}
             onBackToImport={handleBackToImport}
@@ -59,7 +60,7 @@ function AppContent() {
       <Route
         path="/play"
         element={roster ? (
-          <PlayDashboard roster={roster} onBackToPlanner={() => navigate('/planner')} />
+          <PlayDashboard key={roster.id} roster={roster} onBackToPlanner={() => navigate('/planner')} />
         ) : (
           <ImportScreen onRosterLoaded={handleRosterLoaded} />
         )}
