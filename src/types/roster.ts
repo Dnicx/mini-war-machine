@@ -90,6 +90,15 @@ export interface Roster {
   armyAbilities: Ability[]
 }
 
+export interface RosterMeta {
+  id: string
+  name: string
+  faction: string
+  detachment: string
+  points: number
+  lastUsed: number
+}
+
 export interface PhasePlan {
   abilityId: string
   phases: Phase[]

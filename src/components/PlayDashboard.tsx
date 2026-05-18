@@ -56,7 +56,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     }
 
     // Load plan and get abilities
-    const plan = loadPlan()
+    const plan = loadPlan(roster.id)
     if (plan) {
       const abilities: Ability[] = [...roster.armyAbilities]
       roster.units.forEach(unit => {

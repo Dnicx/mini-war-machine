@@ -41,7 +41,7 @@ function extractWeaponFromProfile(profile: Element): Weapon | null {
     const charValue = char.textContent?.trim() || '-'
     if (charName === 'Range') range = charValue
     if (charName === 'A') attacks = charValue
-    if (charName === 'BS') bs = charValue
+    if (charName === 'BS' || charName === 'WS') bs = charValue
     if (charName === 'S') s = charValue
     if (charName === 'AP') ap = charValue
     if (charName === 'D') damage = charValue
@@ -78,6 +78,19 @@ function extractRuleFromProfile(profile: Element, idPrefix: string, sourceUnit: 
     description,
     sourceUnit
   }
+}
+
+// Extract invulnerable save value from an Abilities profile named "Invulnerable Save"
+function extractInvulnerableSave(selectionEl: Element): string {
+  const profiles = selectionEl.querySelectorAll(':scope > profiles > profile[typeName="Abilities"]')
+  for (const profile of Array.from(profiles)) {
+    if (profile.getAttribute('name')?.toLowerCase() === 'invulnerable save') {
+      const desc = profile.querySelector('characteristics > characteristic[name="Description"]')
+      const value = desc?.textContent?.trim()
+      if (value) return value
+    }
+  }
+  return '-'
 }
 
 // Helper function to extract model characteristics from typeName="Unit" profile
@@ -224,6 +237,7 @@ function extractModels(unitSelection: Element, unitId: string, unitName: string,
     else {
       console.warn( unitName, 'character is missing model profile')
     }
+    stats.invulnerableSave = extractInvulnerableSave(unitSelection)
 
     // Extract weapons from all nested wargear selections
     const wargearSelections = unitSelection.querySelectorAll('selections > selection')
@@ -266,7 +280,7 @@ function extractModels(unitSelection: Element, unitId: string, unitName: string,
       const modelId = modelSelection.getAttribute('id') || `${unitId}-model-${modelName}`
 
       // Extract characteristics - try model's own Unit profile first, then fallback to parent
-      let stats = unitStat
+      let stats = { ...unitStat }
       const modelProfile = modelSelection.querySelector(`profiles > profile[typeName="Unit"]`)
       if (modelProfile) {
         stats = extractModelCharacteristics(modelProfile)
@@ -278,6 +292,8 @@ function extractModels(unitSelection: Element, unitId: string, unitName: string,
         else
           console.error( unitName, modelName, 'profile is blank')
       }
+      const invuln = extractInvulnerableSave(modelSelection)
+      stats.invulnerableSave = invuln !== '-' ? invuln : extractInvulnerableSave(unitSelection)
 
       // Extract weapons from model's nested wargear selections
       const wargearSelections = modelSelection.querySelectorAll('selections > selection')
@@ -442,7 +458,7 @@ export async function parseRosFile(file: File, debug: boolean = false): Promise<
   }
 
   const rosterName = rosterElement.getAttribute('name') || 'Unknown Roster'
-  const rosterId = rosterElement.getAttribute('id') || Date.now().toString()
+  const rosterId = crypto.randomUUID()
   const points = parseInt(rosterElement.querySelector('costs > cost')?.getAttribute('value') || '0')
 
   // Get faction from force
