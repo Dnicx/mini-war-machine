@@ -80,6 +80,7 @@ Prefer:
 - focused changes
 - preserving existing APIs
 - preserving existing structure
+- Comment the non obvious code. The key message is "WHY". 
 
 Avoid:
 - mass formatting changes
@@ -88,6 +89,7 @@ Avoid:
 - changing naming conventions
 - changing architecture without approval
 - naming variables using abbreviations for better readability
+- clean-up outside scope
 
 Do not refactor unrelated code "while here."
 

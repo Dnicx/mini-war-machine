@@ -1,4 +1,4 @@
-export type Phase = 'Start of Game' | 'Start of Battle Round' | 'Command' | 'Movement' | 'Shooting' | 'Charge' | 'Fight' | 'Morale'
+export type Phase = 'Start of Game' | 'Start of Battle Round' | 'Command' | 'Movement' | 'Shooting' | 'Charge' | 'Fight'
 export type Timing = 'start' | 'beforeTarget' | 'attacking' | 'afterTargeted' | 'end'
 export type TurnOwner = 'yours' | 'opponent' | 'either'
 

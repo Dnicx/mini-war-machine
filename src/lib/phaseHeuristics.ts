@@ -3,8 +3,7 @@ import type { Ability, Phase, Timing } from '../types/roster'
 const PHASE_PATTERNS: Record<Phase, RegExp[]> = {
   'Start of Game': [/start of (the )?game/i, /before the battle/i, /pre-battle/i, /deployment/i, /model can be attached/i, /capacity of/i],
   'Start of Battle Round': [/start of (the )?(battle )?round/i, /start of (your )?turn/i, /beginning of (the )?(battle )?round/i],
-  Morale: [/morale/i, /battle shock/i, /end of turn/i, /morale phase/i, /during the morale phase/i],
-  Command: [/any phase/i, /command/i, /command phase/i, /Objective Control/i],
+  Command: [/any phase/i, /command/i, /command phase/i, /Objective Control/i, /battle shock/i],
   Movement: [/any phase/i, /movement/i, /move/i, /advance/i, /movement phase/i, /during the movement phase/i, /capacity of/i],
   Shooting: [/any phase/i, /shooting/i, /shoot/i, /an attack/i, /fire/i, /shooting phase/i, /during the shooting phase/i, /in shooting phase/i, /enemy shooting/i, /opponent shooting/i, / ranged attack/i],
   Charge: [/any phase/i, /charge/i, /end of movement/i, /charge phase/i, /during the charge phase/i],
