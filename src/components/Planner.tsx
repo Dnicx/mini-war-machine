@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import type { Roster, Ability, Phase, Timing, Stratagem, TurnOwner } from '../types/roster'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
 import { savePlan, loadPlan, loadUnitImages, saveUnitImages } from '../lib/storage'
@@ -33,19 +33,20 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
   const [customStratagems, setCustomStratagems] = useState<Ability[]>([])
   const [coreStratagems, setCoreStratagems] = useState<Stratagem[]>([])
   const [detachmentStratagems, setDetachmentStratagems] = useState<Stratagem[]>([])
-  const [availableDetachments, setAvailableDetachments] = useState<string[]>([])
   const [selectedDetachment, setSelectedDetachment] = useState<string>('')
   const [currentEmptyIndex, setCurrentEmptyIndex] = useState(0)
   const abilityRefs = useRef<Record<string, HTMLDivElement>>({})
   const [saved, setSaved] = useState(true)
-  const [factionFolder, setFactionFolder] = useState<string | undefined>(undefined)
-    const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
+  const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
   const [debug, setDebug] = useState(false)
   const [unitImages, setUnitImages] = useState<Record<string, string>>(() => loadUnitImages())
   const [activeSection, setActiveSection] = useState<PlannerSection>('core')
   const coreStratagemRef = useRef<HTMLDivElement>(null)
   const detachmentStratagemRef = useRef<HTMLDivElement>(null)
   const abilitiesRef = useRef<HTMLDivElement>(null)
+
+  const factionFolder = useMemo(() => getStratagemFolderName(roster.faction), [roster.faction])
+  const availableDetachments = useMemo(() => factionFolder ? getAvailableDetachments(factionFolder) : [], [factionFolder])
 
   const handleImagesChange = (images: Record<string, string>) => {
     setUnitImages(images)
@@ -73,50 +74,29 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
   }, [])
 
   useEffect(() => {
-    // Load saved plan
     const savedPlan = loadPlan(roster.id)
-    
-    // Combine all abilities from roster
+
+
     const allAbilitiesList = [
       ...roster.armyAbilities,
-      ...roster.units.flatMap(unit => 
+      ...roster.units.flatMap(unit =>
         unit.abilities.map(a => ({ ...a, sourceUnit: unit.name }))
       )
     ]
-    
-    // Apply heuristics
+
     const withHeuristics = applyHeuristicsToAll(allAbilitiesList)
-    
-    // Load core stratagems
     const coreStrats = getCoreStratagems()
-    
-    // Get available detachments for faction
-    console.log( 'faction', roster.faction )
-    const factionFolder = getStratagemFolderName(roster.faction)
-    console.log('DEBUG: Faction folder:', factionFolder)
-    const availableDets = factionFolder ? getAvailableDetachments(factionFolder) : []
-    console.log('DEBUG: Available detachments:', availableDets)
-    setAvailableDetachments(availableDets)
-    setFactionFolder(factionFolder)
-    
-    // Auto-detect detachment
-    console.log('DEBUG: Roster detachment:', roster.detachment)
-    const detectedDetachment = detectDetachment(roster.detachment, availableDets)
-    console.log('DEBUG: Detected detachment:', detectedDetachment)
+
+    const detectedDetachment = detectDetachment(roster.detachment, availableDetachments)
     const initialDetachment = savedPlan?.selectedDetachment || detectedDetachment || ''
-    console.log('DEBUG: Initial detachment:', initialDetachment)
     setSelectedDetachment(initialDetachment)
-    
-    // Load detachment stratagems if selected
+
     let detachmentStrats: Stratagem[] = []
     if (initialDetachment && factionFolder) {
-      console.log('DEBUG: Loading stratagems for', factionFolder, initialDetachment)
       detachmentStrats = getDetachmentStratagems(factionFolder, initialDetachment)
-      console.log('DEBUG: Loaded', detachmentStrats.length, 'detachment stratagems')
     }
-    
+
     if (savedPlan && savedPlan.rosterId === roster.id) {
-      // Override abilities with saved plan
       const withOverrides = withHeuristics.map(ability => {
         const saved = savedPlan.phasePlans.find(p => p.abilityId === ability.id)
         if (saved) {
@@ -131,8 +111,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
       })
       setAllAbilities(withOverrides)
       setCustomStratagems(savedPlan.customStratagems || [])
-      
-      // Override core stratagems
+
       const coreOverrides = coreStrats.map(strat => {
         const saved = savedPlan.corePhasePlans?.find(p => p.abilityId === strat.id)
         if (saved) {
@@ -147,8 +126,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
         return strat
       })
       setCoreStratagems(coreOverrides)
-      
-      // Override detachment stratagems
+
       const detachmentOverrides = detachmentStrats.map(strat => {
         const saved = savedPlan.detachmentPhasePlans?.find(p => p.abilityId === strat.id)
         if (saved) {
@@ -163,30 +141,23 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
       })
       setDetachmentStratagems(detachmentOverrides)
     } else {
-      // Initialize abilities to autoDetectedPhases
-      const withDefaults = withHeuristics.map(ability => ({
+      setAllAbilities(withHeuristics.map(ability => ({
         ...ability,
         phases: ability.autoDetectedPhases,
         timing: ability.autoDetectedTiming
-      }))
-      setAllAbilities(withDefaults)
-      
-      // Initialize stratagems to autoDetectedPhases
-      const coreWithDefaults = coreStrats.map(s => ({
+      })))
+      setCoreStratagems(coreStrats.map(s => ({
         ...s,
         phases: s.autoDetectedPhases,
         timing: s.autoDetectedTiming
-      }))
-      setCoreStratagems(coreWithDefaults)
-
-      const detachmentWithDefaults = detachmentStrats.map(s => ({
+      })))
+      setDetachmentStratagems(detachmentStrats.map(s => ({
         ...s,
         phases: s.autoDetectedPhases,
         timing: s.autoDetectedTiming
-      }))
-      setDetachmentStratagems(detachmentWithDefaults)
+      })))
     }
-  }, [roster])
+  }, [roster, factionFolder, availableDetachments])
 
   const handlePhaseToggle = (abilityId: string, phase: Phase) => {
     setAllAbilities(prev => prev.map(a => {
@@ -308,16 +279,10 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
   }
 
   const handleDetachmentChange = (detachment: string) => {
-    console.log('DEBUG: User selected detachment:', detachment)
     setSelectedDetachment(detachment)
-    const factionFolder = getStratagemFolderName(roster.faction)
-    console.log('DEBUG: Faction folder for change:', factionFolder)
     if (detachment && factionFolder) {
-      const strats = getDetachmentStratagems(factionFolder, detachment)
-      console.log('DEBUG: Loaded', strats.length, 'stratagems for detachment change')
-      setDetachmentStratagems(strats)
+      setDetachmentStratagems(getDetachmentStratagems(factionFolder, detachment))
     } else {
-      console.log('DEBUG: Clearing detachment stratagems')
       setDetachmentStratagems([])
     }
     setSaved(false)
