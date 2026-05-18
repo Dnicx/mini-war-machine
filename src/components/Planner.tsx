@@ -20,6 +20,14 @@ interface PlannerProps {
   onRosterRenamed: (newName: string) => void
 }
 
+type PlannerSection = 'core' | 'detachment' | 'abilities'
+
+const PLANNER_SECTION_LABELS: Record<PlannerSection, string> = {
+  core: 'Core Stratagems',
+  detachment: 'Detachment Stratagems',
+  abilities: 'Abilities',
+}
+
 export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }: PlannerProps) {
   const [allAbilities, setAllAbilities] = useState<Ability[]>([])
   const [customStratagems, setCustomStratagems] = useState<Ability[]>([])
@@ -34,11 +42,35 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
     const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
   const [debug, setDebug] = useState(false)
   const [unitImages, setUnitImages] = useState<Record<string, string>>(() => loadUnitImages())
+  const [activeSection, setActiveSection] = useState<PlannerSection>('core')
+  const coreStratagemRef = useRef<HTMLDivElement>(null)
+  const detachmentStratagemRef = useRef<HTMLDivElement>(null)
+  const abilitiesRef = useRef<HTMLDivElement>(null)
 
   const handleImagesChange = (images: Record<string, string>) => {
     setUnitImages(images)
     saveUnitImages(images)
   }
+
+  useEffect(() => {
+    const STICKY_OFFSET = 48
+    const handleScroll = () => {
+      let current: PlannerSection = 'core'
+      const checks = [
+        { ref: coreStratagemRef, section: 'core' as PlannerSection },
+        { ref: detachmentStratagemRef, section: 'detachment' as PlannerSection },
+        { ref: abilitiesRef, section: 'abilities' as PlannerSection },
+      ]
+      for (const { ref, section } of checks) {
+        if (ref.current && ref.current.getBoundingClientRect().top <= STICKY_OFFSET) {
+          current = section
+        }
+      }
+      setActiveSection(current)
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   useEffect(() => {
     // Load saved plan
@@ -330,8 +362,8 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
   }
 
   return (
-    <div className="min-h-screen p-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen">
+      <div className="max-w-4xl mx-auto p-4 pb-16">
         <PlannerHeader
           onBackToImport={onBackToImport}
           onResetAll={handleResetAll}
@@ -392,6 +424,13 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
           </div>
         )}
 
+        {/* Sticky Section Header */}
+        <div className="sticky top-0 z-30 bg-background border-b border-surface2 -mx-4 px-4 mb-4">
+          <div className="py-2">
+            <span className="font-semibold text-text">{PLANNER_SECTION_LABELS[activeSection]}</span>
+          </div>
+        </div>
+
         <StratagemSection
           coreStratagems={coreStratagems}
           detachmentStratagems={detachmentStratagems}
@@ -401,53 +440,57 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
           onTimingChange={handleStratagemTimingChange}
           onTurnOwnerChange={handleStratagemTurnOwnerChange}
           onReset={handleStratagemReset}
+          coreRef={coreStratagemRef}
+          detachmentRef={detachmentStratagemRef}
         />
 
-        <ArmyAbilitiesSection
-          abilities={allAbilities.filter(a => !a.sourceUnit)}
-          onPhaseToggle={handlePhaseToggle}
-          onTimingChange={handleTimingChange}
-          onNotesChange={handleNotesChange}
-          onResetAbility={handleResetAbility}
-          onAbilityRef={(id, node) => {
-            if (node) abilityRefs.current[id] = node
-          }}
-        />
+        <div ref={abilitiesRef}>
+          <ArmyAbilitiesSection
+            abilities={allAbilities.filter(a => !a.sourceUnit)}
+            onPhaseToggle={handlePhaseToggle}
+            onTimingChange={handleTimingChange}
+            onNotesChange={handleNotesChange}
+            onResetAbility={handleResetAbility}
+            onAbilityRef={(id, node) => {
+              if (node) abilityRefs.current[id] = node
+            }}
+          />
 
-        <UnitAbilitiesSection
-          units={roster.units.map(unit => ({
-            id: unit.id,
-            name: unit.name,
-            abilities: allAbilities.filter(a => a.sourceUnit === unit.name),
-            keywords: unit.keywords
-          }))}
-          collapsedUnits={collapsedUnits}
-          onToggleCollapse={(unitId) => {
-            setCollapsedUnits(prev => {
-              const next = new Set(prev)
-              if (next.has(unitId)) {
-                next.delete(unitId)
-              } else {
-                next.add(unitId)
-              }
-              return next
-            })
-          }}
-          onPhaseToggle={handlePhaseToggle}
-          onTimingChange={handleTimingChange}
-          onNotesChange={handleNotesChange}
-          onResetAbility={handleResetAbility}
-          onAbilityRef={(id, node) => {
-            if (node) abilityRefs.current[id] = node
-          }}
-          unitImages={unitImages}
-          onImagesChange={handleImagesChange}
-        />
+          <UnitAbilitiesSection
+            units={roster.units.map(unit => ({
+              id: unit.id,
+              name: unit.name,
+              abilities: allAbilities.filter(a => a.sourceUnit === unit.name),
+              keywords: unit.keywords
+            }))}
+            collapsedUnits={collapsedUnits}
+            onToggleCollapse={(unitId) => {
+              setCollapsedUnits(prev => {
+                const next = new Set(prev)
+                if (next.has(unitId)) {
+                  next.delete(unitId)
+                } else {
+                  next.add(unitId)
+                }
+                return next
+              })
+            }}
+            onPhaseToggle={handlePhaseToggle}
+            onTimingChange={handleTimingChange}
+            onNotesChange={handleNotesChange}
+            onResetAbility={handleResetAbility}
+            onAbilityRef={(id, node) => {
+              if (node) abilityRefs.current[id] = node
+            }}
+            unitImages={unitImages}
+            onImagesChange={handleImagesChange}
+          />
 
-        <CustomStratagemsSection
-          customStratagems={customStratagems}
-          onDeleteStratagem={handleDeleteStratagem}
-        />
+          <CustomStratagemsSection
+            customStratagems={customStratagems}
+            onDeleteStratagem={handleDeleteStratagem}
+          />
+        </div>
       </div>
       <button
         onClick={handleScrollToNextEmpty}

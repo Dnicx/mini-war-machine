@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSwipe } from '../hooks/useSwipe'
 import { ChevronLeft, ChevronRight, Shield, Swords, ChevronDown, ChevronUp, Users } from 'lucide-react'
 import type { Roster, Phase, Timing, Ability, GameState, Stratagem, TurnOwner } from '../types/roster'
@@ -46,6 +46,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const [unitImages, setUnitImages] = useState<Record<string, string>>(() => loadUnitImages())
   const [animDir, setAnimDir] = useState<'left' | 'right'>('right')
   const [exitingPhase, setExitingPhase] = useState<Phase | null>(null)
+  const [activeTiming, setActiveTiming] = useState<Timing>('start')
 
   useEffect(() => {
     // Load saved game state
@@ -152,6 +153,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     const nextIndex = (currentIndex + 1) % PHASES.length
     setAnimDir('right')
     setExitingPhase(gameState.currentPhase)
+    setActiveTiming('start')
     updateGameState({ currentPhase: PHASES[nextIndex] })
     setTimeout(() => setExitingPhase(null), 300)
   }
@@ -162,6 +164,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     const prevIndex = (currentIndex - 1 + PHASES.length) % PHASES.length
     setAnimDir('left')
     setExitingPhase(gameState.currentPhase)
+    setActiveTiming('start')
     updateGameState({ currentPhase: PHASES[prevIndex] })
     setTimeout(() => setExitingPhase(null), 300)
   }
@@ -384,6 +387,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
                         const dir = PHASES.indexOf(phase) > PHASES.indexOf(gameState.currentPhase) ? 'right' : 'left'
                         setAnimDir(dir)
                         setExitingPhase(gameState.currentPhase)
+                        setActiveTiming('start')
                         updateGameState({ currentPhase: phase })
                         setTimeout(() => setExitingPhase(null), 300)
                       }}
@@ -447,6 +451,25 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
             </div>
           </div>
 
+          {/* Sticky Phase + Timing Headers */}
+          <div className="sticky top-0 z-30 bg-background border-b border-surface2 -mx-4 px-4 mb-4">
+            <div className="flex items-center gap-2 py-2">
+              <span className="font-semibold text-text">{gameState.currentPhase}</span>
+              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                gameState.turnOwner === 'yours' ? 'bg-accent/20 text-accent' : 'bg-surface2 text-text2'
+              }`}>
+                {gameState.turnOwner === 'yours' ? 'Your Turn' : "Opponent's Turn"}
+              </span>
+            </div>
+            {gameState.turnOwner === 'yours' &&
+             gameState.currentPhase !== 'Start of Game' &&
+             gameState.currentPhase !== 'Start of Battle Round' && (
+              <div className="py-1 border-t border-surface2 text-xs text-text2">
+                {TIMING_LABELS[activeTiming]}
+              </div>
+            )}
+          </div>
+
           {/* Animated phase content area */}
           <div style={{ position: 'relative', overflow: 'hidden' }}>
             {exitingPhase && (() => {
@@ -480,6 +503,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
                 reactiveAbilities={reactiveAbilities}
                 collapsedUnits={collapsedUnits}
                 onToggleUnit={toggleUnit}
+                onTimingChange={setActiveTiming}
               />
             </div>
           </div>
@@ -528,9 +552,32 @@ interface PhaseContentProps {
   reactiveAbilities: Record<string, Ability[]>
   collapsedUnits: Set<string>
   onToggleUnit: (unitName: string) => void
+  onTimingChange?: (timing: Timing) => void
 }
 
-function PhaseContent({ phase, turnOwner, activeAbilities, abilitiesByTiming, reactiveAbilities, collapsedUnits, onToggleUnit }: PhaseContentProps) {
+function PhaseContent({ phase, turnOwner, activeAbilities, abilitiesByTiming, reactiveAbilities, collapsedUnits, onToggleUnit, onTimingChange }: PhaseContentProps) {
+  const timingRefs = useRef<(HTMLDivElement | null)[]>([])
+
+  useEffect(() => {
+    if (!onTimingChange || turnOwner !== 'yours' || phase === 'Start of Game' || phase === 'Start of Battle Round') return
+
+    const handleScroll = () => {
+      // 64px covers the two-row sticky header height
+      const STICKY_OFFSET = 64
+      let current: Timing = TIMINGS[0]
+      TIMINGS.forEach((timing, idx) => {
+        const el = timingRefs.current[idx]
+        if (el && el.getBoundingClientRect().top <= STICKY_OFFSET) {
+          current = timing
+        }
+      })
+      onTimingChange(current)
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [onTimingChange, turnOwner, phase])
+
   return (
     <>
       {turnOwner === 'opponent' && Object.keys(reactiveAbilities).length > 0 && (
@@ -554,8 +601,8 @@ function PhaseContent({ phase, turnOwner, activeAbilities, abilitiesByTiming, re
       )}
       {turnOwner === 'yours' && phase !== 'Start of Game' && phase !== 'Start of Battle Round' ? (
         <div className="space-y-4">
-          {TIMINGS.map(timing => (
-            <div key={timing} className="bg-surface p-4 rounded-lg">
+          {TIMINGS.map((timing, idx) => (
+            <div key={timing} ref={el => { timingRefs.current[idx] = el }} className="bg-surface p-4 rounded-lg">
               <h3 className="font-semibold text-text mb-3">{TIMING_LABELS[timing]}</h3>
               <div className="space-y-4">
                 {Object.keys(abilitiesByTiming[timing]).length === 0 ? (

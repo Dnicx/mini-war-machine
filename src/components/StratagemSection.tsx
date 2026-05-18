@@ -1,3 +1,4 @@
+import { type RefObject } from 'react'
 import { StratagemCard } from './StratagemCard'
 import type { Stratagem } from '../types/roster'
 
@@ -10,6 +11,8 @@ interface StratagemSectionProps {
   onTimingChange: (id: string, timing: string, isCore: boolean) => void
   onTurnOwnerChange: (id: string, turnOwner: string, isCore: boolean) => void
   onReset: (id: string, isCore: boolean) => void
+  coreRef?: RefObject<HTMLDivElement>
+  detachmentRef?: RefObject<HTMLDivElement>
 }
 
 export function StratagemSection({
@@ -20,12 +23,14 @@ export function StratagemSection({
   onPhaseToggle,
   onTimingChange,
   onTurnOwnerChange,
-  onReset
+  onReset,
+  coreRef,
+  detachmentRef
 }: StratagemSectionProps) {
   return (
     <>
       {/* Core Stratagems Section */}
-      <div className="mb-6">
+      <div ref={coreRef} className="mb-6">
         <h2 className="text-lg font-semibold text-text mb-3">Core Stratagems</h2>
         <div className="space-y-4">
           {coreStratagems.map(stratagem => (
@@ -45,7 +50,7 @@ export function StratagemSection({
 
       {/* Detachment Stratagems Section */}
       {selectedDetachment && detachmentStratagems.length > 0 && (
-        <div className="mb-6">
+        <div ref={detachmentRef} className="mb-6">
           <h2 className="text-lg font-semibold text-text mb-3">Detachment Stratagems</h2>
           <div className="space-y-4">
             {detachmentStratagems.map(stratagem => (

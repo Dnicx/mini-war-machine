@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid'
 import type { Roster, Unit, Ability, Weapon, Rule, Keyword, Model } from '../types/roster'
 
 // Helper function to extract ability from profile
@@ -458,7 +459,7 @@ export async function parseRosFile(file: File, debug: boolean = false): Promise<
   }
 
   const rosterName = rosterElement.getAttribute('name') || 'Unknown Roster'
-  const rosterId = crypto.randomUUID()
+  const rosterId = uuidv4()
   const points = parseInt(rosterElement.querySelector('costs > cost')?.getAttribute('value') || '0')
 
   // Get faction from force
