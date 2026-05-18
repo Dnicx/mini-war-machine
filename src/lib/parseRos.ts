@@ -442,7 +442,7 @@ export async function parseRosFile(file: File, debug: boolean = false): Promise<
   }
 
   const rosterName = rosterElement.getAttribute('name') || 'Unknown Roster'
-  const rosterId = rosterElement.getAttribute('id') || Date.now().toString()
+  const rosterId = crypto.randomUUID()
   const points = parseInt(rosterElement.querySelector('costs > cost')?.getAttribute('value') || '0')
 
   // Get faction from force
