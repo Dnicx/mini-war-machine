@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom'
+import { App as CapApp } from '@capacitor/app'
+import { Capacitor } from '@capacitor/core'
 import { ImportScreen } from './components/ImportScreen'
 import { Planner } from './components/Planner'
 import { PlayDashboard } from './components/PlayDashboard'
@@ -39,6 +41,19 @@ function AppContent() {
     renameRoster(roster.id, newName)
     setRoster({ ...roster, name: newName })
   }
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return
+    // handle mobile "backButotn" logic
+    const listenerPromise = CapApp.addListener('backButton', ({ canGoBack }) => {
+      if (canGoBack) {
+        window.history.back()
+      } else {
+        CapApp.exitApp()
+      }
+    })
+    return () => { listenerPromise.then(l => l.remove()) }
+  }, [])
 
   return (
     <Routes>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { User } from 'lucide-react'
 import type { Roster } from '../types/roster'
 import { UnitDetail } from './UnitDetail'
@@ -26,6 +26,20 @@ const REDUNDANT_KEYWORD_PREFIXES = [
 export function UnitView({ roster, unitImages, onImagesChange }: UnitViewProps) {
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null)
 
+  const selectUnit = (id: string) => {
+    window.history.pushState({ unitDetail: id }, '')
+    setSelectedUnitId(id)
+  }
+
+  const closeUnit = () => setSelectedUnitId(null)
+
+  useEffect(() => {
+    if (!selectedUnitId) return
+    const handlePopState = () => setSelectedUnitId(null)
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [selectedUnitId])
+
   const selectedUnit = selectedUnitId ? roster.units.find(u => u.id === selectedUnitId) : null
 
   if (selectedUnit) {
@@ -34,7 +48,7 @@ export function UnitView({ roster, unitImages, onImagesChange }: UnitViewProps) 
         unit={selectedUnit}
         unitImages={unitImages}
         onImagesChange={onImagesChange}
-        onBack={() => setSelectedUnitId(null)}
+        onBack={closeUnit}
       />
     )
   }
@@ -49,7 +63,7 @@ export function UnitView({ roster, unitImages, onImagesChange }: UnitViewProps) 
           return (
             <button
               key={unit.id}
-              onClick={() => setSelectedUnitId(unit.id)}
+              onClick={() => selectUnit(unit.id)}
               className="w-full bg-surface rounded-xl overflow-hidden flex items-stretch text-left focus:outline-none focus:ring-2 focus:ring-accent"
             >
               {/* Left: image */}
