@@ -74,43 +74,47 @@ All core features are implemented and functional. The application can:
 - No multiplayer/sync features
 - No export of plans back to .ros format
 
+---
+
 ## Done 
 - Add Rules display in Planner and PlayDashboard
 - Add ability to manually override auto-detected phases
 - Fix detachment rule not extracted
 - Fix extract unit's models data. unit can have many model characteristic and not in same selection ( can be in profile and selection > profile)
 - Add stratagems to plan mode + play mode
+- Fix timing, when None is showing in all timing. Should have to choose one timing. And add during roll.
+- bladeguard ws not loaded.
+- Add unit list view in playmode
+- group melee and range weapon
+- in unit list, only show (somewhat) unique keyword and show all keywords in detail. 
+- Merge unit's common profile 
+- add invul save to unit list
 
 ## Bug
-- Fix timing, when None is showing in all timing. Should have to choose one timing. And add during roll.
-- Still don't see stratagem card that said can't find any detachment stratagemss
 
 ## Future Enhancements (Potential)
-- foldable section ( stratagems )
+- stores multiple roster
+- go to unit detail from stratagem's view.
 - set different bg color for each stratagems type`
+- foldable section ( stratagems )
+- foldable timing in play view
+- support model with special keyword ( centurion sergeant have grenade )
+- add timing to abilities
 - Add roll timing for remind during dice rolling ( e.g. +1 to hit, -1 hit roll )
-- Add unit list view in playmode
 - Phase tracking to reset stratagems usage
 - Add modifier tracker ( separate dice and characteristic modifiers)
 - track battleshocked state ( reset by 'new battle round' button )
 - Add visual indicators for once-per-battle abilities in play mode ( reset by 'new battle round' button )
-- stores multiple roster
+- All stratagem view
 - keep track of which units is dead and show only available weapon profile on remainnig model in unit
+---
 - Add ability to track CP usage
 - Add victory point tracking
 - Export plans to shareable format
 - Improve phase detection patterns based on user feedback
 - Add stratagem extraction to app
-- Add custom stratagem image
+- Add custom stratagem icon 
 - Rephrase stratagems
-
-## Feedback
-1. [Fixed] ability is all over the place
-2. really need to see stat
-3. need easier way to pick a unit in for reacting ( and full screen state )
-4. Fix ability and stratagem timing visual
-5. All stratagem view
-6. keep old save with new install.
 
 ## Planned Features
 
