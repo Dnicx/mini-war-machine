@@ -1,25 +1,104 @@
-import type { Roster, Plan, GameState } from '../types/roster'
+import type { Roster, RosterMeta, Plan, GameState } from '../types/roster'
 
-const ROSTER_KEY = 'wh40k_roster'
-const PLAN_KEY = 'wh40k_plan'
+const ROSTERS_KEY = 'wh40k_rosters'
+const PLANS_KEY = 'wh40k_plans'
 const GAME_STATE_KEY = 'wh40k_game_state'
+const ACTIVE_ROSTER_KEY = 'wh40k_active_roster_id'
 
-export function saveRoster(roster: Roster): void {
-  localStorage.setItem(ROSTER_KEY, JSON.stringify(roster))
+// --- Roster library ---
+
+function loadAllRosters(): Roster[] {
+  const data = localStorage.getItem(ROSTERS_KEY)
+  if (!data) return []
+  try { return JSON.parse(data) as Roster[] } catch { return [] }
 }
 
-export function loadRoster(): Roster | null {
-  const data = localStorage.getItem(ROSTER_KEY)
-  if (!data) return null
-  try {
-    return JSON.parse(data) as Roster
-  } catch {
-    return null
+function saveAllRosters(rosters: Roster[]): void {
+  localStorage.setItem(ROSTERS_KEY, JSON.stringify(rosters))
+}
+
+export function loadRostersIndex(): RosterMeta[] {
+  return loadAllRosters().map(r => ({
+    id: r.id,
+    name: r.name,
+    faction: r.faction,
+    detachment: r.detachment,
+    points: r.points,
+    lastUsed: (r as Roster & { lastUsed?: number }).lastUsed ?? 0
+  }))
+}
+
+export function saveRosterToLibrary(roster: Roster): void {
+  const rosters = loadAllRosters()
+  const idx = rosters.findIndex(r => r.id === roster.id)
+  const entry = { ...roster, lastUsed: Date.now() }
+  if (idx >= 0) {
+    rosters[idx] = entry
+  } else {
+    rosters.push(entry)
+  }
+  saveAllRosters(rosters)
+}
+
+export function loadRosterById(id: string): Roster | null {
+  return loadAllRosters().find(r => r.id === id) ?? null
+}
+
+export function deleteRosterFromLibrary(id: string): void {
+  saveAllRosters(loadAllRosters().filter(r => r.id !== id))
+  const plans = loadAllPlans()
+  delete plans[id]
+  saveAllPlans(plans)
+  if (localStorage.getItem(ACTIVE_ROSTER_KEY) === id) {
+    localStorage.removeItem(ACTIVE_ROSTER_KEY)
   }
 }
 
-export function savePlan(plan: Plan, debug: boolean = false): void {
-  localStorage.setItem(PLAN_KEY, JSON.stringify(plan))
+export function renameRoster(id: string, newName: string): void {
+  const rosters = loadAllRosters()
+  const roster = rosters.find(r => r.id === id)
+  if (roster) {
+    roster.name = newName
+    saveAllRosters(rosters)
+  }
+}
+
+// --- Active roster ---
+
+export function getActiveRosterId(): string | null {
+  return localStorage.getItem(ACTIVE_ROSTER_KEY)
+}
+
+export function setActiveRosterId(id: string): void {
+  localStorage.setItem(ACTIVE_ROSTER_KEY, id)
+  const rosters = loadAllRosters()
+  const roster = rosters.find(r => r.id === id)
+  if (roster) {
+    (roster as Roster & { lastUsed: number }).lastUsed = Date.now()
+    saveAllRosters(rosters)
+  }
+}
+
+export function clearActiveRosterId(): void {
+  localStorage.removeItem(ACTIVE_ROSTER_KEY)
+}
+
+// --- Plans ---
+
+function loadAllPlans(): Record<string, Plan> {
+  const data = localStorage.getItem(PLANS_KEY)
+  if (!data) return {}
+  try { return JSON.parse(data) as Record<string, Plan> } catch { return {} }
+}
+
+function saveAllPlans(plans: Record<string, Plan>): void {
+  localStorage.setItem(PLANS_KEY, JSON.stringify(plans))
+}
+
+export function savePlan(plan: Plan, rosterId: string, debug: boolean = false): void {
+  const plans = loadAllPlans()
+  plans[rosterId] = plan
+  saveAllPlans(plans)
 
   if (debug) {
     const json = JSON.stringify(plan, null, 2)
@@ -35,15 +114,17 @@ export function savePlan(plan: Plan, debug: boolean = false): void {
   }
 }
 
-export function loadPlan(): Plan | null {
-  const data = localStorage.getItem(PLAN_KEY)
-  if (!data) return null
-  try {
-    return JSON.parse(data) as Plan
-  } catch {
-    return null
-  }
+export function loadPlan(rosterId: string): Plan | null {
+  return loadAllPlans()[rosterId] ?? null
 }
+
+export function clearPlan(rosterId: string): void {
+  const plans = loadAllPlans()
+  delete plans[rosterId]
+  saveAllPlans(plans)
+}
+
+// --- Game state ---
 
 export function saveGameState(gameState: GameState): void {
   localStorage.setItem(GAME_STATE_KEY, JSON.stringify(gameState))
@@ -52,20 +133,14 @@ export function saveGameState(gameState: GameState): void {
 export function loadGameState(): GameState | null {
   const data = localStorage.getItem(GAME_STATE_KEY)
   if (!data) return null
-  try {
-    return JSON.parse(data) as GameState
-  } catch {
-    return null
-  }
+  try { return JSON.parse(data) as GameState } catch { return null }
 }
 
 export function clearGameState(): void {
   localStorage.removeItem(GAME_STATE_KEY)
 }
 
-export function clearPlan(): void {
-  localStorage.removeItem(PLAN_KEY)
-}
+// --- Unit images ---
 
 const UNIT_IMAGES_KEY = 'wh40k_unit_images'
 
@@ -82,9 +157,5 @@ export function saveUnitImages(images: Record<string, string>): void {
 export function loadUnitImages(): Record<string, string> {
   const data = localStorage.getItem(UNIT_IMAGES_KEY)
   if (!data) return {}
-  try {
-    return JSON.parse(data) as Record<string, string>
-  } catch {
-    return {}
-  }
+  try { return JSON.parse(data) as Record<string, string> } catch { return {} }
 }

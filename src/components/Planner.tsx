@@ -17,9 +17,10 @@ interface PlannerProps {
   roster: Roster
   onPlayMode: () => void
   onBackToImport: () => void
+  onRosterRenamed: (newName: string) => void
 }
 
-export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
+export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }: PlannerProps) {
   const [allAbilities, setAllAbilities] = useState<Ability[]>([])
   const [customStratagems, setCustomStratagems] = useState<Ability[]>([])
   const [coreStratagems, setCoreStratagems] = useState<Stratagem[]>([])
@@ -41,7 +42,7 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
 
   useEffect(() => {
     // Load saved plan
-    const savedPlan = loadPlan()
+    const savedPlan = loadPlan(roster.id)
     
     // Combine all abilities from roster
     const allAbilitiesList = [
@@ -324,7 +325,7 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
       detachmentPhasePlans
     }
 
-    savePlan(plan, debug)
+    savePlan(plan, roster.id, debug)
     setSaved(true)
   }
 
@@ -337,6 +338,8 @@ export function Planner({ roster, onPlayMode, onBackToImport }: PlannerProps) {
           onSave={handleSave}
           onPlayMode={onPlayMode}
           saved={saved}
+          rosterName={roster.name}
+          onRosterRenamed={onRosterRenamed}
         />
 
         <div className="mb-6 bg-surface p-4 rounded-lg">
