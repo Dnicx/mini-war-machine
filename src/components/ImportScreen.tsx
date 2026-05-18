@@ -122,7 +122,11 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
             </div>
             <ul className="divide-y divide-surface2">
               {rosters.map(meta => (
-                <li key={meta.id} className="flex items-center gap-3 px-4 py-3">
+                <li
+                  key={meta.id}
+                  onClick={() => handleLoadRoster(meta)}
+                  className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-surface2/40"
+                >
                   <div className="flex-1 min-w-0">
                     <p className="text-text font-medium truncate">{meta.name}</p>
                     <p className="text-text2 text-xs truncate">
@@ -130,22 +134,16 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
                     </p>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <button
-                      onClick={() => handleLoadRoster(meta)}
-                      className="px-3 py-1 bg-accent text-white rounded text-sm hover:bg-accent/80"
-                    >
-                      Load
-                    </button>
                     {confirmDeleteId === meta.id ? (
                       <>
                         <button
-                          onClick={() => handleDeleteRoster(meta.id)}
+                          onClick={e => { e.stopPropagation(); handleDeleteRoster(meta.id) }}
                           className="px-3 py-1 bg-red-700 text-white rounded text-sm hover:bg-red-600"
                         >
                           Confirm
                         </button>
                         <button
-                          onClick={() => setConfirmDeleteId(null)}
+                          onClick={e => { e.stopPropagation(); setConfirmDeleteId(null) }}
                           className="px-2 py-1 bg-surface2 text-text2 rounded text-sm hover:bg-surface2/80"
                         >
                           Cancel
@@ -153,7 +151,7 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
                       </>
                     ) : (
                       <button
-                        onClick={() => setConfirmDeleteId(meta.id)}
+                        onClick={e => { e.stopPropagation(); setConfirmDeleteId(meta.id) }}
                         className="p-1 text-text2 hover:text-red-400 rounded"
                         title="Delete roster"
                       >
