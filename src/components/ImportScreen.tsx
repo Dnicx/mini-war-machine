@@ -34,7 +34,7 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
       setRosterName(roster.name)
     } catch (err) {
       console.error(err)
-      setError("Failed to parse .ros file. Make sure it's a valid BattleScribe roster.")
+      setError(`Failed to parse .ros file. Make sure it's a valid BattleScribe roster. "${err}"`)
     } finally {
       setLoading(false)
     }
