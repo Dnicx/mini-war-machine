@@ -1,4 +1,5 @@
 import type { Ability, Phase, Timing } from '../types/roster'
+import { detectTurnOwner } from './turnOwnerHeuristics'
 
 const PHASE_PATTERNS: Record<Phase, RegExp[]> = {
   'Start of Game': [/start of (the )?game/i, /before the battle/i, /pre-battle/i, /deployment/i, /model can be attached/i, /capacity of/i],
@@ -17,15 +18,6 @@ const TIMING_PATTERNS: Record<Timing, RegExp[]> = {
   afterTargeted: [/after/i, /when targeted/i, /when hit/i],
   end: [/end of/i, /at the end/i]
 }
-
-const REACTIVE_PATTERNS = [
-  /when targeted/i,
-  /when hit/i,
-  /when charged/i,
-  /react/i,
-  /intercept/i,
-  /counter/i
-]
 
 const ONCE_PER_BATTLE = [/once per battle/i, /one use only/i]
 const ONCE_PER_ROUND = [/once per battle round/i, /once per turn/i]
@@ -54,10 +46,6 @@ export function detectTiming(description: string): Timing | undefined {
   return undefined
 }
 
-export function detectReactive(description: string): boolean {
-  return REACTIVE_PATTERNS.some(pattern => pattern.test(description))
-}
-
 export function detectOncePerBattle(description: string): boolean {
   return ONCE_PER_BATTLE.some(pattern => pattern.test(description))
 }
@@ -69,7 +57,7 @@ export function detectOncePerRound(description: string): boolean {
 export function applyHeuristics(ability: Ability): Ability {
   const phases = detectPhases(ability.description)
   const timing = detectTiming(ability.description)
-  const isReactive = detectReactive(ability.description)
+  const autoDetectedTurnOwner = detectTurnOwner(ability.description, ability.name)
   const oncePerBattle = detectOncePerBattle(ability.description)
   const oncePerRound = detectOncePerRound(ability.description)
 
@@ -84,7 +72,7 @@ export function applyHeuristics(ability: Ability): Ability {
   console.log(`[Phase Detection] "${ability.name}":`, {
     phases: finalPhases.length > 0 ? finalPhases : 'None',
     timing: timing,
-    isReactive,
+    autoDetectedTurnOwner,
     oncePerBattle,
     oncePerRound
   })
@@ -93,7 +81,7 @@ export function applyHeuristics(ability: Ability): Ability {
     ...ability,
     autoDetectedPhases: finalPhases,
     autoDetectedTiming: timing ?? 'start',
-    isReactive,
+    autoDetectedTurnOwner,
     oncePerBattle,
     oncePerBattleRound: oncePerRound
   }

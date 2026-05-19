@@ -9,7 +9,8 @@ export interface Ability {
   sourceUnit?: string
   autoDetectedPhases?: Phase[]
   autoDetectedTiming?: Timing
-  isReactive?: boolean
+  autoDetectedTurnOwner?: TurnOwner
+  turnOwner?: TurnOwner
   oncePerBattle?: boolean
   oncePerBattleRound?: boolean
   phases?: Phase[]
