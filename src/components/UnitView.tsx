@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { User } from 'lucide-react'
-import type { Roster } from '../types/roster'
+import type { Roster, Unit } from '../types/roster'
 import { UnitDetail } from './UnitDetail'
 
 interface UnitViewProps {
   roster: Roster
   unitImages: Record<string, string>
   onImagesChange: (images: Record<string, string>) => void
+  attachments?: Record<string, string>
 }
 
 // Keywords hidden in the unit list view (still shown in unit detail).
@@ -23,7 +24,53 @@ const REDUNDANT_KEYWORD_PREFIXES = [
   'faction:',
 ]
 
-export function UnitView({ roster, unitImages, onImagesChange }: UnitViewProps) {
+function UnitStatBlock({ unit }: { unit: Unit }) {
+  const groups = new Map<string, { names: string[]; m: typeof unit.models[0] }>()
+  for (const model of unit.models) {
+    const key = [model.movement, model.toughness, model.save, model.wounds, model.leadership, model.objectiveControl].join('|')
+    const existing = groups.get(key)
+    if (existing) existing.names.push(model.name)
+    else groups.set(key, { names: [model.name], m: model })
+  }
+  const entries = Array.from(groups.values())
+  const showNames = entries.length > 1
+
+  const invulnValues = [...new Set(unit.models.map(m => m.invulnerableSave).filter(v => v && v !== '-'))]
+
+  return (
+    <div>
+      <div className="space-y-0.5">
+        {entries.map(({ names, m }) => (
+          <div key={names.join(',')} className="text-xs leading-relaxed">
+            {showNames && (
+              <span className="font-semibold text-text">{names.join(' / ')}{'  '}</span>
+            )}
+            <span className="text-sm/3">
+              {[
+                ['M', m.movement], ['T', m.toughness], ['Sv', m.save],
+                ['W', m.wounds], ['Ld', m.leadership], ['OC', m.objectiveControl],
+              ].map(([label, value], i) => (
+                <span key={label}>
+                  {i > 0 && ' '}
+                  <span className="text-text/40">{label} </span>
+                  <span className="text-text font-medium">{value}</span>
+                </span>
+              ))}
+            </span>
+          </div>
+        ))}
+      </div>
+      {invulnValues.length > 0 && (
+        <div className="mt-0.5 text-xs leading-relaxed">
+          <span className="text-text/40">Inv. Save </span>
+          <span className="text-text font-medium">{invulnValues.join(' / ')}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function UnitView({ roster, unitImages, onImagesChange, attachments = {} }: UnitViewProps) {
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null)
 
   const selectUnit = (id: string) => {
@@ -40,12 +87,34 @@ export function UnitView({ roster, unitImages, onImagesChange }: UnitViewProps) 
     return () => window.removeEventListener('popstate', handlePopState)
   }, [selectedUnitId])
 
+  // Build inverse map: hostUnitId → leader units attached to it
+  const leadersByHost = new Map<string, Unit[]>()
+  for (const unit of roster.units) {
+    const hostId = attachments[unit.id]
+    if (hostId) {
+      const arr = leadersByHost.get(hostId) ?? []
+      arr.push(unit)
+      leadersByHost.set(hostId, arr)
+    }
+  }
+
+  // Leaders with an assigned host are rendered inside the host card, not standalone
+  const attachedLeaderIds = new Set(
+    Object.entries(attachments)
+      .filter(([, hostId]) => hostId)
+      .map(([leaderId]) => leaderId)
+  )
+
+  const topLevelUnits = roster.units.filter(u => !attachedLeaderIds.has(u.id))
+
   const selectedUnit = selectedUnitId ? roster.units.find(u => u.id === selectedUnitId) : null
+  const attachedLeadersForSelected = selectedUnit ? (leadersByHost.get(selectedUnit.id) ?? []) : []
 
   if (selectedUnit) {
     return (
       <UnitDetail
         unit={selectedUnit}
+        attachedUnits={attachedLeadersForSelected}
         unitImages={unitImages}
         onImagesChange={onImagesChange}
         onBack={closeUnit}
@@ -58,8 +127,16 @@ export function UnitView({ roster, unitImages, onImagesChange }: UnitViewProps) 
       {roster.units.length === 0 ? (
         <p className="text-text2 text-center py-12 text-sm">No units in roster</p>
       ) : (
-        roster.units.map(unit => {
+        topLevelUnits.map(unit => {
           const imageUrl = unitImages[unit.id]
+          const attachedLeaders = leadersByHost.get(unit.id) ?? []
+          const unitNameLower = unit.name.toLowerCase()
+          const visibleKeywords = unit.keywords.filter(kw => {
+            const n = kw.name.toLowerCase()
+            return !REDUNDANT_KEYWORDS.has(n)
+              && !REDUNDANT_KEYWORD_PREFIXES.some(p => n.startsWith(p))
+              && n !== unitNameLower
+          })
           return (
             <button
               key={unit.id}
@@ -80,78 +157,31 @@ export function UnitView({ roster, unitImages, onImagesChange }: UnitViewProps) 
               {/* Right: content */}
               <div className="flex-1 p-3 min-w-0">
                 <h3 className="text-text2 font-bold text-lg leading-tight">{unit.name}</h3>
-
-                {/* Model stats — merged by identical stat profile */}
-                {(() => {
-                  const groups = new Map<string, { names: string[]; m: typeof unit.models[0] }>()
-                  for (const model of unit.models) {
-                    const key = [model.movement, model.toughness, model.save, model.wounds, model.leadership, model.objectiveControl].join('|')
-                    const existing = groups.get(key)
-                    if (existing) existing.names.push(model.name)
-                    else groups.set(key, { names: [model.name], m: model })
-                  }
-                  const entries = Array.from(groups.values())
-                  const showNames = entries.length > 1
-                  return (
-                    <div className="mt-1.5 space-y-0.5">
-                      {entries.map(({ names, m }) => (
-                        <div key={names.join(',')} className="text-xs leading-relaxed">
-                          {showNames && (
-                            <span className="font-semibold text-text">{names.join(' / ')}{'  '}</span>
-                          )}
-                          <span className="text-sm/3">
-                            {[
-                              ['M', m.movement], ['T', m.toughness], ['Sv', m.save],
-                              ['W', m.wounds], ['Ld', m.leadership], ['OC', m.objectiveControl],
-                            ].map(([label, value], i) => (
-                              <span key={label}>
-                                {i > 0 && ' '}
-                                <span className="text-text/40">{label} </span>
-                                <span className="text-text font-medium">{value}</span>
-                              </span>
-                            ))}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )
-                })()}
-
-                {/* Invulnerable save */}
-                {(() => {
-                  const invulnValues = [...new Set(
-                    unit.models.map(m => m.invulnerableSave).filter(v => v && v !== '-')
-                  )]
-                  return invulnValues.length > 0 ? (
-                    <div className="mt-1.5 text-xs leading-relaxed">
-                      <span className="text-text/40">Inv. Save </span>
-                      <span className="text-text font-medium">{invulnValues.join(' / ')}</span>
-                    </div>
-                  ) : null
-                })()}
+                <div className="mt-1.5">
+                  <UnitStatBlock unit={unit} />
+                </div>
 
                 {/* Keywords */}
-                {(() => {
-                  const unitNameLower = unit.name.toLowerCase()
-                  const visibleKeywords = unit.keywords.filter(kw => {
-                    const n = kw.name.toLowerCase()
-                    return !REDUNDANT_KEYWORDS.has(n)
-                      && !REDUNDANT_KEYWORD_PREFIXES.some(p => n.startsWith(p))
-                      && n !== unitNameLower
-                  })
-                  return visibleKeywords.length > 0 ? (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {visibleKeywords.map(kw => (
-                        <span
-                          key={kw.id}
-                          className="text-xs bg-surface2 text-accent px-2 py-0.5 rounded-full uppercase font-medium tracking-wide"
-                        >
-                          {kw.name}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null
-                })()}
+                {visibleKeywords.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {visibleKeywords.map(kw => (
+                      <span
+                        key={kw.id}
+                        className="text-xs bg-surface2 text-accent px-2 py-0.5 rounded-full uppercase font-medium tracking-wide"
+                      >
+                        {kw.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Attached leaders — fused stat blocks */}
+                {attachedLeaders.map(leader => (
+                  <div key={leader.id} className="mt-2 pt-2 border-t border-surface2/50">
+                    <p className="text-xs text-accent font-semibold mb-0.5">{leader.name}</p>
+                    <UnitStatBlock unit={leader} />
+                  </div>
+                ))}
               </div>
             </button>
           )

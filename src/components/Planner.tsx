@@ -40,6 +40,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
   const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
   const [debug, setDebug] = useState(false)
   const [unitImages, setUnitImages] = useState<Record<string, string>>(() => loadUnitImages())
+  const [attachments, setAttachments] = useState<Record<string, string>>(() => loadPlan(roster.id)?.attachments ?? {})
   const [activeSection, setActiveSection] = useState<PlannerSection>('core')
   const coreStratagemRef = useRef<HTMLDivElement>(null)
   const detachmentStratagemRef = useRef<HTMLDivElement>(null)
@@ -97,6 +98,8 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
     }
 
     if (savedPlan && savedPlan.rosterId === roster.id) {
+      setAttachments(savedPlan.attachments ?? {})
+
       const withOverrides = withHeuristics.map(ability => {
         const saved = savedPlan.phasePlans.find(p => p.abilityId === ability.id)
         if (saved) {
@@ -319,7 +322,8 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
       customStratagems,
       selectedDetachment,
       corePhasePlans,
-      detachmentPhasePlans
+      detachmentPhasePlans,
+      attachments
     }
 
     savePlan(plan, roster.id, debug)
@@ -449,6 +453,12 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
             }}
             unitImages={unitImages}
             onImagesChange={handleImagesChange}
+            allUnits={roster.units.map(u => ({ id: u.id, name: u.name }))}
+            attachments={attachments}
+            onAttachmentChange={(leaderId, hostId) => {
+              setAttachments(prev => ({ ...prev, [leaderId]: hostId }))
+              setSaved(false)
+            }}
           />
 
           <CustomStratagemsSection

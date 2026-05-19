@@ -7,6 +7,7 @@ import { PlayAbilityCard } from './PlayAbilityCard'
 
 interface UnitDetailProps {
   unit: Unit
+  attachedUnits?: Unit[]
   unitImages: Record<string, string>
   onImagesChange: (images: Record<string, string>) => void
   onBack: () => void
@@ -33,7 +34,7 @@ function resizeImage(file: File, maxPx: number, quality: number): Promise<string
   })
 }
 
-function WeaponsSubView({ unit }: { unit: Unit }) {
+function UnitWeaponsBlock({ unit }: { unit: Unit }) {
   const mergedMap = new Map<string, { weapon: Unit['models'][0]['weapons'][0]; count: number }>()
 
   for (const model of unit.models) {
@@ -52,9 +53,7 @@ function WeaponsSubView({ unit }: { unit: Unit }) {
   const ranged = all.filter(({ weapon }) => weapon.range.toLowerCase() !== 'melee')
   const melee = all.filter(({ weapon }) => weapon.range.toLowerCase() === 'melee')
 
-  if (all.length === 0) {
-    return <p className="text-text2 text-sm italic">No weapons</p>
-  }
+  if (all.length === 0) return null
 
   const renderWeapon = ({ weapon, count }: { weapon: Unit['models'][0]['weapons'][0]; count: number }, i: number) => (
     <div key={i} className="bg-surface rounded-lg p-3">
@@ -98,8 +97,62 @@ function WeaponsSubView({ unit }: { unit: Unit }) {
   )
 }
 
-function ModelsSubView({ unit, collapsedModels, onToggleModel }: {
+function WeaponsSubView({ unit, attachedUnits }: { unit: Unit; attachedUnits?: Unit[] }) {
+  const hasHostWeapons = unit.models.some(m => m.weapons.length > 0)
+  const hasAnyWeapons = hasHostWeapons || attachedUnits?.some(u => u.models.some(m => m.weapons.length > 0))
+
+  if (!hasAnyWeapons) {
+    return <p className="text-text2 text-sm italic">No weapons</p>
+  }
+
+  return (
+    <div className="space-y-4">
+      <UnitWeaponsBlock unit={unit} />
+      {attachedUnits?.map(leader => (
+        <div key={leader.id} className="pt-4 border-t border-surface2/50">
+          <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-3">Leader: {leader.name}</p>
+          <UnitWeaponsBlock unit={leader} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function ModelBlock({ model, showName, collapsedModels, onToggleModel }: {
+  model: Model
+  showName: boolean
+  collapsedModels: Set<string>
+  onToggleModel: (id: string) => void
+}) {
+  return (
+    <div>
+      {showName && (
+        <button
+          onClick={() => onToggleModel(model.id)}
+          className="flex items-center gap-2 mb-3 text-sm font-semibold text-text hover:text-accent transition-colors"
+        >
+          {collapsedModels.has(model.id) ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+          {model.name}
+          <span className="text-text2 text-xs font-normal">×{model.count}</span>
+        </button>
+      )}
+      {!collapsedModels.has(model.id) && (
+        <div className="grid grid-cols-3 gap-2">
+          <StatTile label="M" value={model.movement} />
+          <StatTile label="T" value={model.toughness} />
+          <StatTile label="W" value={model.wounds} />
+          <StatTile label="SV" value={model.save} />
+          <StatTile label="LD" value={model.leadership} />
+          <StatTile label="OC" value={model.objectiveControl} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ModelsSubView({ unit, attachedUnits, collapsedModels, onToggleModel }: {
   unit: Unit
+  attachedUnits?: Unit[]
   collapsedModels: Set<string>
   onToggleModel: (id: string) => void
 }) {
@@ -108,34 +161,33 @@ function ModelsSubView({ unit, collapsedModels, onToggleModel }: {
   return (
     <div className="space-y-4">
       {unit.models.map((model: Model) => (
-        <div key={model.id}>
-          {multiModel && (
-            <button
-              onClick={() => onToggleModel(model.id)}
-              className="flex items-center gap-2 mb-3 text-sm font-semibold text-text hover:text-accent transition-colors"
-            >
-              {collapsedModels.has(model.id) ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-              {model.name}
-              <span className="text-text2 text-xs font-normal">×{model.count}</span>
-            </button>
-          )}
-          {!collapsedModels.has(model.id) && (
-            <div className="grid grid-cols-3 gap-2">
-              <StatTile label="M" value={model.movement} />
-              <StatTile label="T" value={model.toughness} />
-              <StatTile label="W" value={model.wounds} />
-              <StatTile label="SV" value={model.save} />
-              <StatTile label="LD" value={model.leadership} />
-              <StatTile label="OC" value={model.objectiveControl} />
-            </div>
-          )}
+        <ModelBlock
+          key={model.id}
+          model={model}
+          showName={multiModel}
+          collapsedModels={collapsedModels}
+          onToggleModel={onToggleModel}
+        />
+      ))}
+      {attachedUnits?.map(leader => (
+        <div key={leader.id} className="pt-4 border-t border-surface2/50">
+          <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-3">Leader: {leader.name}</p>
+          {leader.models.map(model => (
+            <ModelBlock
+              key={model.id}
+              model={model}
+              showName={leader.models.length > 1}
+              collapsedModels={collapsedModels}
+              onToggleModel={onToggleModel}
+            />
+          ))}
         </div>
       ))}
     </div>
   )
 }
 
-export function UnitDetail({ unit, unitImages, onImagesChange, onBack }: UnitDetailProps) {
+export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, onBack }: UnitDetailProps) {
   const [activeContent, setActiveContent] = useState<'models' | 'weapons' | 'abilities'>('models')
   const [collapsedModels, setCollapsedModels] = useState<Set<string>>(new Set())
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -246,19 +298,29 @@ export function UnitDetail({ unit, unitImages, onImagesChange, onBack }: UnitDet
       {/* Scrollable content area */}
       <div className="pt-3 pb-20">
         {activeContent === 'models' && (
-          <ModelsSubView unit={unit} collapsedModels={collapsedModels} onToggleModel={toggleModel} />
+          <ModelsSubView unit={unit} attachedUnits={attachedUnits} collapsedModels={collapsedModels} onToggleModel={toggleModel} />
         )}
         {activeContent === 'weapons' && (
-          <WeaponsSubView unit={unit} />
+          <WeaponsSubView unit={unit} attachedUnits={attachedUnits} />
         )}
         {activeContent === 'abilities' && (
           <div className="space-y-2">
-            {unit.abilities.length === 0 ? (
+            {unit.abilities.length === 0 && (!attachedUnits || attachedUnits.length === 0) ? (
               <p className="text-text2 text-sm text-center py-8">No abilities defined for this unit</p>
             ) : (
-              unit.abilities.map(ability => (
-                <PlayAbilityCard key={ability.id} ability={ability} />
-              ))
+              <>
+                {unit.abilities.map(ability => (
+                  <PlayAbilityCard key={ability.id} ability={ability} />
+                ))}
+                {attachedUnits?.map(leader => (
+                  <div key={leader.id} className="pt-4 border-t border-surface2/50">
+                    <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-2">Leader: {leader.name}</p>
+                    {leader.abilities.map(ability => (
+                      <PlayAbilityCard key={ability.id} ability={ability} />
+                    ))}
+                  </div>
+                ))}
+              </>
             )}
           </div>
         )}

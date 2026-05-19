@@ -40,6 +40,9 @@ interface UnitAbilitiesSectionProps {
   onAbilityRef: (id: string, node: HTMLDivElement | null) => void
   unitImages?: Record<string, string>
   onImagesChange?: (images: Record<string, string>) => void
+  allUnits?: Array<{ id: string; name: string }>
+  attachments?: Record<string, string>
+  onAttachmentChange?: (leaderId: string, hostId: string) => void
 }
 
 export function UnitAbilitiesSection({
@@ -52,7 +55,10 @@ export function UnitAbilitiesSection({
   onResetAbility,
   onAbilityRef,
   unitImages,
-  onImagesChange
+  onImagesChange,
+  allUnits,
+  attachments,
+  onAttachmentChange
 }: UnitAbilitiesSectionProps) {
   const unitsWithAbilities = units.filter(unit => unit.abilities.length > 0 || unit.keywords.length > 0)
 
@@ -61,24 +67,31 @@ export function UnitAbilitiesSection({
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold text-text mt-6">Unit Abilities</h2>
-      {unitsWithAbilities.map(unit => (
-        <UnitAbilityCard
-          key={unit.id}
-          unitName={unit.name}
-          unitId={unit.id}
-          abilities={unit.abilities}
-          keywords={unit.keywords}
-          isCollapsed={collapsedUnits.has(unit.id)}
-          onToggleCollapse={onToggleCollapse}
-          onPhaseToggle={onPhaseToggle}
-          onTimingChange={onTimingChange}
-          onNotesChange={onNotesChange}
-          onResetAbility={onResetAbility}
-          onAbilityRef={onAbilityRef}
-          unitImage={unitImages?.[unit.id]}
-          onImageChange={onImagesChange ? (dataUrl) => onImagesChange({ ...unitImages, [unit.id]: dataUrl }) : undefined}
-        />
-      ))}
+      {unitsWithAbilities.map(unit => {
+        const isLeader = unit.abilities.some(a => /model can be attached/i.test(a.description))
+        return (
+          <UnitAbilityCard
+            key={unit.id}
+            unitName={unit.name}
+            unitId={unit.id}
+            abilities={unit.abilities}
+            keywords={unit.keywords}
+            isCollapsed={collapsedUnits.has(unit.id)}
+            onToggleCollapse={onToggleCollapse}
+            onPhaseToggle={onPhaseToggle}
+            onTimingChange={onTimingChange}
+            onNotesChange={onNotesChange}
+            onResetAbility={onResetAbility}
+            onAbilityRef={onAbilityRef}
+            unitImage={unitImages?.[unit.id]}
+            onImageChange={onImagesChange ? (dataUrl) => onImagesChange({ ...unitImages, [unit.id]: dataUrl }) : undefined}
+            isLeader={isLeader}
+            allUnits={allUnits}
+            currentAttachment={isLeader ? attachments?.[unit.id] : undefined}
+            onAttachmentChange={isLeader ? (hostId) => onAttachmentChange?.(unit.id, hostId) : undefined}
+          />
+        )
+      })}
     </div>
   )
 }
@@ -97,6 +110,10 @@ interface UnitAbilityCardProps {
   onAbilityRef: (id: string, node: HTMLDivElement | null) => void
   unitImage?: string
   onImageChange?: (dataUrl: string) => void
+  isLeader?: boolean
+  allUnits?: Array<{ id: string; name: string }>
+  currentAttachment?: string
+  onAttachmentChange?: (hostId: string) => void
 }
 
 function UnitAbilityCard({
@@ -112,7 +129,11 @@ function UnitAbilityCard({
   onResetAbility,
   onAbilityRef,
   unitImage,
-  onImageChange
+  onImageChange,
+  isLeader,
+  allUnits,
+  currentAttachment,
+  onAttachmentChange
 }: UnitAbilityCardProps) {
   const imageInputRef = useRef<HTMLInputElement>(null)
 
@@ -155,6 +176,20 @@ function UnitAbilityCard({
               </button>
               <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
             </>
+          )}
+          {isLeader && allUnits && onAttachmentChange && (
+            <select
+              value={currentAttachment ?? ''}
+              onChange={e => onAttachmentChange(e.target.value)}
+              onClick={e => e.stopPropagation()}
+              className="text-xs bg-surface2 border border-surface2 rounded px-2 py-0.5 text-text flex-shrink-0"
+            >
+              <option value="">Attach to...</option>
+              {allUnits
+                .filter(u => u.id !== unitId)
+                .map(u => <option key={u.id} value={u.id}>{u.name}</option>)
+              }
+            </select>
           )}
         </div>
         <button

@@ -44,6 +44,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState<'phase' | 'unit'>('phase')
   const [unitImages, setUnitImages] = useState<Record<string, string>>(() => loadUnitImages())
+  const [attachments, setAttachments] = useState<Record<string, string>>({})
   const [animDir, setAnimDir] = useState<'left' | 'right'>('right')
   const [exitingPhase, setExitingPhase] = useState<Phase | null>(null)
   const [activeTiming, setActiveTiming] = useState<Timing>('start')
@@ -91,6 +92,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
 
       setAllAbilities(withOverrides)
       setCustomStratagems(plan.customStratagems || [])
+      setAttachments(plan.attachments ?? {})
 
       // Load core stratagems
       const coreStrats = getCoreStratagems()
@@ -516,6 +518,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
           roster={roster}
           unitImages={unitImages}
           onImagesChange={handleImagesChange}
+          attachments={attachments}
         />
       )}
 
