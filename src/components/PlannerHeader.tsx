@@ -1,17 +1,15 @@
 import { useState } from 'react'
-import { Save, Play, ChevronLeft, Pencil, Check, X } from 'lucide-react'
+import { Play, ChevronLeft, Pencil, Check, X } from 'lucide-react'
 
 interface PlannerHeaderProps {
   onBackToImport: () => void
   onResetAll: () => void
-  onSave: () => void
   onPlayMode: () => void
-  saved: boolean
   rosterName: string
   onRosterRenamed: (newName: string) => void
 }
 
-export function PlannerHeader({ onBackToImport, onResetAll, onSave, onPlayMode, saved, rosterName, onRosterRenamed }: PlannerHeaderProps) {
+export function PlannerHeader({ onBackToImport, onResetAll, onPlayMode, rosterName, onRosterRenamed }: PlannerHeaderProps) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
 
@@ -80,13 +78,6 @@ export function PlannerHeader({ onBackToImport, onResetAll, onSave, onPlayMode, 
           className="px-4 py-2 bg-surface2 text-text rounded hover:bg-surface2/80 flex items-center gap-2"
         >
           Reset All
-        </button>
-        <button
-          onClick={onSave}
-          className="px-4 py-2 bg-surface2 text-text rounded hover:bg-surface2/80 flex items-center gap-2"
-        >
-          <Save size={18} />
-          {saved ? 'Saved' : 'Save Plan'}
         </button>
         <button
           onClick={onPlayMode}

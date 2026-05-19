@@ -37,9 +37,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
   const [selectedDetachment, setSelectedDetachment] = useState<string>('')
   const [currentEmptyIndex, setCurrentEmptyIndex] = useState(0)
   const abilityRefs = useRef<Record<string, HTMLDivElement>>({})
-  const [saved, setSaved] = useState(true)
   const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
-  const [debug, setDebug] = useState(false)
   const [unitImages, setUnitImages] = useState<Record<string, string>>(() => loadUnitImages())
   const [attachments, setAttachments] = useState<Record<string, string>>(() => loadPlan(roster.id)?.attachments ?? {})
   const [activeSection, setActiveSection] = useState<PlannerSection>('core')
@@ -165,68 +163,107 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
     }
   }, [roster, factionFolder, availableDetachments])
 
+  const save = (
+    overrides: {
+      abilities?: Ability[]
+      custom?: Ability[]
+      core?: Stratagem[]
+      detachment?: Stratagem[]
+      det?: string
+      att?: Record<string, string>
+    } = {},
+    debug = false
+  ) => {
+    const abilities = overrides.abilities ?? allAbilities
+    const custom = overrides.custom ?? customStratagems
+    const core = overrides.core ?? coreStratagems
+    const detachment = overrides.detachment ?? detachmentStratagems
+    const det = overrides.det ?? selectedDetachment
+    const att = overrides.att ?? attachments
+    savePlan({
+      rosterId: roster.id,
+      phasePlans: abilities.map(a => ({
+        abilityId: a.id,
+        phases: a.phases || [],
+        timing: (a.timing || '') as Timing,
+        turnOwner: a.turnOwner,
+        notes: a.notes || ''
+      })),
+      customStratagems: custom,
+      selectedDetachment: det,
+      corePhasePlans: core.map(s => ({
+        abilityId: s.id,
+        phases: s.phases || [],
+        timing: (s.timing || '') as Timing,
+        notes: '',
+        turnOwner: s.turnOwner,
+        enabled: s.enabled
+      })),
+      detachmentPhasePlans: detachment.map(s => ({
+        abilityId: s.id,
+        phases: s.phases || [],
+        timing: (s.timing || '') as Timing,
+        notes: '',
+        turnOwner: s.turnOwner
+      })),
+      attachments: att
+    }, roster.id, debug)
+  }
+
+  const handleDebugDump = () => save({}, true)
+
   const handlePhaseToggle = (abilityId: string, phase: Phase) => {
-    setAllAbilities(prev => prev.map(a => {
+    const updated = allAbilities.map(a => {
       if (a.id !== abilityId) return a
       const currentPhases = a.phases || []
       const newPhases = currentPhases.includes(phase)
         ? currentPhases.filter(p => p !== phase)
         : [...currentPhases, phase]
       return { ...a, phases: newPhases.length > 0 ? newPhases : undefined }
-    }))
-    setSaved(false)
+    })
+    setAllAbilities(updated)
+    save({ abilities: updated })
   }
 
   const handleTimingChange = (abilityId: string, timing: Timing) => {
-    setAllAbilities(prev => prev.map(a =>
-      a.id === abilityId ? { ...a, timing } : a
-    ))
-    setSaved(false)
+    const updated = allAbilities.map(a => a.id === abilityId ? { ...a, timing } : a)
+    setAllAbilities(updated)
+    save({ abilities: updated })
   }
 
   const handleTurnOwnerChange = (abilityId: string, turnOwner: TurnOwner) => {
-    setAllAbilities(prev => prev.map(a =>
-      a.id === abilityId ? { ...a, turnOwner } : a
-    ))
-    setSaved(false)
+    const updated = allAbilities.map(a => a.id === abilityId ? { ...a, turnOwner } : a)
+    setAllAbilities(updated)
+    save({ abilities: updated })
   }
 
   const handleNotesChange = (abilityId: string, notes: string) => {
-    setAllAbilities(prev => prev.map(a =>
-      a.id === abilityId ? { ...a, notes } : a
-    ))
-    setSaved(false)
+    const updated = allAbilities.map(a => a.id === abilityId ? { ...a, notes } : a)
+    setAllAbilities(updated)
+    save({ abilities: updated })
   }
 
   const handleResetAbility = (abilityId: string) => {
-    setAllAbilities(prev => prev.map(a => {
+    const updated = allAbilities.map(a => {
       if (a.id !== abilityId) return a
-      return {
-        ...a,
-        phases: a.autoDetectedPhases,
-        timing: a.autoDetectedTiming,
-        turnOwner: a.autoDetectedTurnOwner
-      }
-    }))
-    setSaved(false)
+      return { ...a, phases: a.autoDetectedPhases, timing: a.autoDetectedTiming, turnOwner: a.autoDetectedTurnOwner }
+    })
+    setAllAbilities(updated)
+    save({ abilities: updated })
   }
 
   const handleResetAll = () => {
     if (window.confirm('Are you sure you want to reset all phase selections to auto-detected values?')) {
-      setAllAbilities(prev => prev.map(a => ({
-        ...a,
-        phases: a.autoDetectedPhases,
-        timing: a.autoDetectedTiming,
-        turnOwner: a.autoDetectedTurnOwner
-      })))
-      setSaved(false)
+      const updated = allAbilities.map(a => ({ ...a, phases: a.autoDetectedPhases, timing: a.autoDetectedTiming, turnOwner: a.autoDetectedTurnOwner }))
+      setAllAbilities(updated)
+      save({ abilities: updated })
     }
   }
 
-  
   const handleDeleteStratagem = (id: string) => {
-    setCustomStratagems(prev => prev.filter(s => s.id !== id))
-    setSaved(false)
+    const updated = customStratagems.filter(s => s.id !== id)
+    setCustomStratagems(updated)
+    save({ custom: updated })
   }
 
   const handleScrollToNextEmpty = () => {
@@ -244,103 +281,57 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
 
   // Stratagem handlers
   const handleStratagemPhaseToggle = (stratagemId: string, phase: Phase, isCore: boolean) => {
-    const setState = isCore ? setCoreStratagems : setDetachmentStratagems
-    setState(prev => prev.map(s => {
+    const source = isCore ? coreStratagems : detachmentStratagems
+    const updated = source.map(s => {
       if (s.id !== stratagemId) return s
       const currentPhases = s.phases || []
       const newPhases = currentPhases.includes(phase)
         ? currentPhases.filter(p => p !== phase)
         : [...currentPhases, phase]
       return { ...s, phases: newPhases.length > 0 ? newPhases : undefined }
-    }))
-    setSaved(false)
+    })
+    if (isCore) { setCoreStratagems(updated); save({ core: updated }) }
+    else { setDetachmentStratagems(updated); save({ detachment: updated }) }
   }
 
   const handleStratagemTimingChange = (stratagemId: string, timing: Timing, isCore: boolean) => {
-    const setState = isCore ? setCoreStratagems : setDetachmentStratagems
-    setState(prev => prev.map(s =>
+    const updated = (isCore ? coreStratagems : detachmentStratagems).map(s =>
       s.id === stratagemId ? { ...s, timing } : s
-    ))
-    setSaved(false)
+    )
+    if (isCore) { setCoreStratagems(updated); save({ core: updated }) }
+    else { setDetachmentStratagems(updated); save({ detachment: updated }) }
   }
 
   const handleStratagemTurnOwnerChange = (stratagemId: string, turnOwner: TurnOwner, isCore: boolean) => {
-    const setState = isCore ? setCoreStratagems : setDetachmentStratagems
-    setState(prev => prev.map(s =>
+    const updated = (isCore ? coreStratagems : detachmentStratagems).map(s =>
       s.id === stratagemId ? { ...s, turnOwner } : s
-    ))
-    setSaved(false)
+    )
+    if (isCore) { setCoreStratagems(updated); save({ core: updated }) }
+    else { setDetachmentStratagems(updated); save({ detachment: updated }) }
   }
 
   const handleStratagemEnableToggle = (stratagemId: string, enabled: boolean) => {
-    setCoreStratagems(prev => prev.map(s =>
-      s.id === stratagemId ? { ...s, enabled } : s
-    ))
-    setSaved(false)
+    const updated = coreStratagems.map(s => s.id === stratagemId ? { ...s, enabled } : s)
+    setCoreStratagems(updated)
+    save({ core: updated })
   }
 
   const handleStratagemReset = (stratagemId: string, isCore: boolean) => {
-    const setState = isCore ? setCoreStratagems : setDetachmentStratagems
-    setState(prev => prev.map(s => {
+    const updated = (isCore ? coreStratagems : detachmentStratagems).map(s => {
       if (s.id !== stratagemId) return s
-      return {
-        ...s,
-        phases: s.autoDetectedPhases,
-        timing: s.autoDetectedTiming,
-        turnOwner: s.autoDetectedTurnOwner
-      }
-    }))
-    setSaved(false)
+      return { ...s, phases: s.autoDetectedPhases, timing: s.autoDetectedTiming, turnOwner: s.autoDetectedTurnOwner }
+    })
+    if (isCore) { setCoreStratagems(updated); save({ core: updated }) }
+    else { setDetachmentStratagems(updated); save({ detachment: updated }) }
   }
 
   const handleDetachmentChange = (detachment: string) => {
+    const newStrats = detachment && factionFolder
+      ? getDetachmentStratagems(factionFolder, detachment)
+      : []
     setSelectedDetachment(detachment)
-    if (detachment && factionFolder) {
-      setDetachmentStratagems(getDetachmentStratagems(factionFolder, detachment))
-    } else {
-      setDetachmentStratagems([])
-    }
-    setSaved(false)
-  }
-
-  const handleSave = () => {
-    const phasePlans = allAbilities.map(ability => ({
-      abilityId: ability.id,
-      phases: ability.phases || [],
-      timing: (ability.timing || '') as Timing,
-      turnOwner: ability.turnOwner,
-      notes: ability.notes || ''
-    }))
-
-    const corePhasePlans = coreStratagems.map(strat => ({
-      abilityId: strat.id,
-      phases: strat.phases || [],
-      timing: (strat.timing || '') as Timing,
-      notes: '',
-      turnOwner: strat.turnOwner,
-      enabled: strat.enabled
-    }))
-
-    const detachmentPhasePlans = detachmentStratagems.map(strat => ({
-      abilityId: strat.id,
-      phases: strat.phases || [],
-      timing: (strat.timing || '') as Timing,
-      notes: '',
-      turnOwner: strat.turnOwner
-    }))
-
-    const plan = {
-      rosterId: roster.id,
-      phasePlans,
-      customStratagems,
-      selectedDetachment,
-      corePhasePlans,
-      detachmentPhasePlans,
-      attachments
-    }
-
-    savePlan(plan, roster.id, debug)
-    setSaved(true)
+    setDetachmentStratagems(newStrats)
+    save({ det: detachment, detachment: newStrats })
   }
 
   return (
@@ -349,33 +340,26 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
         <PlannerHeader
           onBackToImport={onBackToImport}
           onResetAll={handleResetAll}
-          onSave={handleSave}
           onPlayMode={onPlayMode}
-          saved={saved}
           rosterName={roster.name}
           onRosterRenamed={onRosterRenamed}
         />
 
         <div className="mb-6 bg-surface p-4 rounded-lg">
           <div className="flex items-center gap-2 mb-4">
-            <input
-              type="checkbox"
-              id="debug"
-              checked={debug}
-              onChange={(e) => setDebug(e.target.checked)}
-              className="w-4 h-4 accent-accent"
-            />
-            <label htmlFor="debug" className="text-sm text-text2">Debug mode (dump plan to JSON on save)</label>
+            <button
+              onClick={handleDebugDump}
+              className="px-3 py-1 text-sm bg-surface2 text-text2 rounded hover:bg-surface2/80"
+            >
+              Export Debug JSON
+            </button>
           </div>
           <CustomStratagemForm
             onAddStratagem={(name, description) => {
-              const newStratagem: Ability = {
-                id: `custom-${Date.now()}`,
-                name,
-                description
-              }
-              setCustomStratagems(prev => [...prev, newStratagem])
-              setSaved(false)
+              const newStratagem: Ability = { id: `custom-${Date.now()}`, name, description }
+              const updated = [...customStratagems, newStratagem]
+              setCustomStratagems(updated)
+              save({ custom: updated })
             }}
           />
         </div>
@@ -480,8 +464,9 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
                 allUnits={roster.units.map(u => ({ id: u.id, name: u.name }))}
                 attachments={attachments}
                 onAttachmentChange={(leaderId, hostId) => {
-                  setAttachments(prev => ({ ...prev, [leaderId]: hostId }))
-                  setSaved(false)
+                  const updated = { ...attachments, [leaderId]: hostId }
+                  setAttachments(updated)
+                  save({ att: updated })
                 }}
               />
 
