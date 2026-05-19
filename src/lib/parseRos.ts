@@ -70,8 +70,7 @@ function extractRuleFromProfile(profile: Element, idPrefix: string, sourceUnit: 
   const ruleName = profile.getAttribute('name')
   if (!ruleName) return null
 
-  let description = ''
-  description = profile.querySelectorAll('description')[0]?.textContent || ''
+  const description = profile.querySelectorAll('description')[0]?.textContent || ''
   // console.log( ruleName, description)
   return {
     id: `${idPrefix}-rule-${ruleName}`,
@@ -166,7 +165,7 @@ function extractAbilities(selection: Element, unitId: string, unitName: string):
   // Extract from nested selections
   const nestedSelections = selection.querySelectorAll('selections selection')
   nestedSelections.forEach((nested) => {
-    const nestedName = nested.getAttribute('name')
+    const nestedName = nested.getAttribute('name') ?? undefined
     const nestedAbilityProfiles = nested.querySelectorAll('profiles > profile[typeName="Abilities"]')
     nestedAbilityProfiles.forEach((profile) => {
       const ability = extractAbilityFromProfile(profile, unitId, unitName, nestedName)
@@ -407,7 +406,8 @@ function mergeUnits(units: Unit[], rosterId: string): Unit[] {
 function extractArmyAbilities(force: Element): Ability[] {
   const armyAbilities: Ability[] = []
   const sharedRulesSelector = force.querySelector('rules')
-  const sharedRules = sharedRulesSelector.querySelectorAll( 'rule' )
+  if (!sharedRulesSelector) return armyAbilities
+  const sharedRules = sharedRulesSelector.querySelectorAll('rule')
   sharedRules.forEach((rule) => {
     const ruleName = rule.getAttribute('name')
     const description = rule.querySelector('description')?.textContent || ''
@@ -464,6 +464,7 @@ export async function parseRosFile(file: File, debug: boolean = false): Promise<
 
   // Get faction from force
   const force = doc.querySelector('forces > force')
+  if (!force) throw new Error('Invalid .ros file: no force element found')
   const faction = force?.getAttribute('catalogueName') || 'Unknown Faction'
 
   // Get detatchment from force selections

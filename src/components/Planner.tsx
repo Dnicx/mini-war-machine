@@ -34,7 +34,13 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
   const [customStratagems, setCustomStratagems] = useState<Ability[]>([])
   const [coreStratagems, setCoreStratagems] = useState<Stratagem[]>([])
   const [detachmentStratagems, setDetachmentStratagems] = useState<Stratagem[]>([])
-  const [selectedDetachment, setSelectedDetachment] = useState<string>('')
+  const factionFolder = useMemo(() => getStratagemFolderName(roster.faction), [roster.faction])
+  const availableDetachments = useMemo(() => factionFolder ? getAvailableDetachments(factionFolder) : [], [factionFolder])
+  const [selectedDetachment, setSelectedDetachment] = useState<string>(() => {
+    const savedPlan = loadPlan(roster.id)
+    const detected = detectDetachment(roster.detachment, availableDetachments)
+    return savedPlan?.selectedDetachment || detected || ''
+  })
   const [currentEmptyIndex, setCurrentEmptyIndex] = useState(0)
   const abilityRefs = useRef<Record<string, HTMLDivElement>>({})
   const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
@@ -45,9 +51,6 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
   const coreStratagemRef = useRef<HTMLDivElement>(null)
   const detachmentStratagemRef = useRef<HTMLDivElement>(null)
   const abilitiesRef = useRef<HTMLDivElement>(null)
-
-  const factionFolder = useMemo(() => getStratagemFolderName(roster.faction), [roster.faction])
-  const availableDetachments = useMemo(() => factionFolder ? getAvailableDetachments(factionFolder) : [], [factionFolder])
 
   const handleImagesChange = (images: Record<string, string>) => {
     setUnitImages(images)
@@ -88,16 +91,13 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
     const withHeuristics = applyHeuristicsToAll(allAbilitiesList)
     const coreStrats = getCoreStratagems()
 
-    const detectedDetachment = detectDetachment(roster.detachment, availableDetachments)
-    const initialDetachment = savedPlan?.selectedDetachment || detectedDetachment || ''
-    setSelectedDetachment(initialDetachment)
-
     let detachmentStrats: Stratagem[] = []
-    if (initialDetachment && factionFolder) {
-      detachmentStrats = getDetachmentStratagems(factionFolder, initialDetachment)
+    if (selectedDetachment && factionFolder) {
+      detachmentStrats = getDetachmentStratagems(factionFolder, selectedDetachment)
     }
 
     if (savedPlan && savedPlan.rosterId === roster.id) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- batch init from persisted storage
       setAttachments(savedPlan.attachments ?? {})
 
       const withOverrides = withHeuristics.map(ability => {
