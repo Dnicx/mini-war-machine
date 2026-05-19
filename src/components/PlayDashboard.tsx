@@ -25,7 +25,7 @@ const TIMING_LABELS: Record<Timing, string> = {
 }
 
 export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
-  const [gameState, setGameState] = useState<GameState>({
+  const [gameState, setGameState] = useState<GameState>(() => loadGameState() ?? {
     battleRound: 1,
     turnOwner: 'yours',
     currentPhase: 'Command',
@@ -49,12 +49,6 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const [activeTiming, setActiveTiming] = useState<Timing>('start')
 
   useEffect(() => {
-    // Load saved game state
-    const savedState = loadGameState()
-    if (savedState) {
-      setGameState(savedState)
-    }
-
     // Load plan and get abilities
     const plan = loadPlan(roster.id)
     if (plan) {
@@ -89,6 +83,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
         }
       })
 
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- batch init from persisted storage
       setAllAbilities(withOverrides)
       setCustomStratagems(plan.customStratagems || [])
 

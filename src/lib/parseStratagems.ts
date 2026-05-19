@@ -1,4 +1,4 @@
-import type { Stratagem } from '../types/roster'
+import type { Stratagem, Ability } from '../types/roster'
 import { applyHeuristics } from './phaseHeuristics'
 import { detectTurnOwner } from './turnOwnerHeuristics'
 
@@ -41,7 +41,7 @@ export function parseStratagemXml(xml: string): Stratagem[] {
     }
 
     // Apply phase heuristics (returns Ability, need to merge back)
-    const withPhaseHeuristics = applyHeuristics(stratagem as any)
+    const withPhaseHeuristics = applyHeuristics(stratagem as unknown as Ability)
 
     // Apply turn owner heuristics
     const turnOwner = detectTurnOwner(when, name)
