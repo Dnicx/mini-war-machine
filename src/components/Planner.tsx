@@ -36,7 +36,6 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
   const [selectedDetachment, setSelectedDetachment] = useState<string>('')
   const [currentEmptyIndex, setCurrentEmptyIndex] = useState(0)
   const abilityRefs = useRef<Record<string, HTMLDivElement>>({})
-  const isInitialized = useRef(false)
   const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
   const [unitImages, setUnitImages] = useState<Record<string, string>>(() => loadUnitImages())
   const [activeSection, setActiveSection] = useState<PlannerSection>('core')
@@ -156,92 +155,99 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
         timing: s.autoDetectedTiming
       })))
     }
-    isInitialized.current = true
   }, [roster, factionFolder, availableDetachments])
 
-  const buildCurrentPlan = () => ({
-    rosterId: roster.id,
-    phasePlans: allAbilities.map(ability => ({
-      abilityId: ability.id,
-      phases: ability.phases || [],
-      timing: (ability.timing || '') as Timing,
-      notes: ability.notes || ''
-    })),
-    customStratagems,
-    selectedDetachment,
-    corePhasePlans: coreStratagems.map(strat => ({
-      abilityId: strat.id,
-      phases: strat.phases || [],
-      timing: (strat.timing || '') as Timing,
-      notes: '',
-      turnOwner: strat.turnOwner,
-      enabled: strat.enabled
-    })),
-    detachmentPhasePlans: detachmentStratagems.map(strat => ({
-      abilityId: strat.id,
-      phases: strat.phases || [],
-      timing: (strat.timing || '') as Timing,
-      notes: '',
-      turnOwner: strat.turnOwner
-    }))
-  })
+  const save = (
+    overrides: {
+      abilities?: Ability[]
+      custom?: Ability[]
+      core?: Stratagem[]
+      detachment?: Stratagem[]
+      det?: string
+    } = {},
+    debug = false
+  ) => {
+    const abilities = overrides.abilities ?? allAbilities
+    const custom = overrides.custom ?? customStratagems
+    const core = overrides.core ?? coreStratagems
+    const detachment = overrides.detachment ?? detachmentStratagems
+    const det = overrides.det ?? selectedDetachment
+    savePlan({
+      rosterId: roster.id,
+      phasePlans: abilities.map(a => ({
+        abilityId: a.id,
+        phases: a.phases || [],
+        timing: (a.timing || '') as Timing,
+        notes: a.notes || ''
+      })),
+      customStratagems: custom,
+      selectedDetachment: det,
+      corePhasePlans: core.map(s => ({
+        abilityId: s.id,
+        phases: s.phases || [],
+        timing: (s.timing || '') as Timing,
+        notes: '',
+        turnOwner: s.turnOwner,
+        enabled: s.enabled
+      })),
+      detachmentPhasePlans: detachment.map(s => ({
+        abilityId: s.id,
+        phases: s.phases || [],
+        timing: (s.timing || '') as Timing,
+        notes: '',
+        turnOwner: s.turnOwner
+      }))
+    }, roster.id, debug)
+  }
 
-  // Auto-save whenever planner state changes, debounced to avoid excessive writes
-  useEffect(() => {
-    if (!isInitialized.current) return
-    const plan = buildCurrentPlan()
-    const timeout = setTimeout(() => savePlan(plan, roster.id), 300)
-    return () => clearTimeout(timeout)
-  }, [allAbilities, customStratagems, coreStratagems, detachmentStratagems, selectedDetachment]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleDebugDump = () => savePlan(buildCurrentPlan(), roster.id, true)
+  const handleDebugDump = () => save({}, true)
 
   const handlePhaseToggle = (abilityId: string, phase: Phase) => {
-    setAllAbilities(prev => prev.map(a => {
+    const updated = allAbilities.map(a => {
       if (a.id !== abilityId) return a
       const currentPhases = a.phases || []
       const newPhases = currentPhases.includes(phase)
         ? currentPhases.filter(p => p !== phase)
         : [...currentPhases, phase]
       return { ...a, phases: newPhases.length > 0 ? newPhases : undefined }
-    }))
+    })
+    setAllAbilities(updated)
+    save({ abilities: updated })
   }
 
   const handleTimingChange = (abilityId: string, timing: Timing) => {
-    setAllAbilities(prev => prev.map(a =>
-      a.id === abilityId ? { ...a, timing } : a
-    ))
+    const updated = allAbilities.map(a => a.id === abilityId ? { ...a, timing } : a)
+    setAllAbilities(updated)
+    save({ abilities: updated })
   }
 
   const handleNotesChange = (abilityId: string, notes: string) => {
-    setAllAbilities(prev => prev.map(a =>
-      a.id === abilityId ? { ...a, notes } : a
-    ))
+    const updated = allAbilities.map(a => a.id === abilityId ? { ...a, notes } : a)
+    setAllAbilities(updated)
+    save({ abilities: updated })
   }
 
   const handleResetAbility = (abilityId: string) => {
-    setAllAbilities(prev => prev.map(a => {
+    const updated = allAbilities.map(a => {
       if (a.id !== abilityId) return a
-      return {
-        ...a,
-        phases: a.autoDetectedPhases,
-        timing: a.autoDetectedTiming
-      }
-    }))
+      return { ...a, phases: a.autoDetectedPhases, timing: a.autoDetectedTiming }
+    })
+    setAllAbilities(updated)
+    save({ abilities: updated })
   }
 
   const handleResetAll = () => {
     if (window.confirm('Are you sure you want to reset all phase selections to auto-detected values?')) {
-      setAllAbilities(prev => prev.map(a => ({
-        ...a,
-        phases: a.autoDetectedPhases,
-        timing: a.autoDetectedTiming
-      })))
+      const updated = allAbilities.map(a => ({ ...a, phases: a.autoDetectedPhases, timing: a.autoDetectedTiming }))
+      setAllAbilities(updated)
+      save({ abilities: updated })
     }
   }
 
   const handleDeleteStratagem = (id: string) => {
-    setCustomStratagems(prev => prev.filter(s => s.id !== id))
+    const updated = customStratagems.filter(s => s.id !== id)
+    setCustomStratagems(updated)
+    save({ custom: updated })
   }
 
   const handleScrollToNextEmpty = () => {
@@ -259,57 +265,57 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
 
   // Stratagem handlers
   const handleStratagemPhaseToggle = (stratagemId: string, phase: Phase, isCore: boolean) => {
-    const setState = isCore ? setCoreStratagems : setDetachmentStratagems
-    setState(prev => prev.map(s => {
+    const source = isCore ? coreStratagems : detachmentStratagems
+    const updated = source.map(s => {
       if (s.id !== stratagemId) return s
       const currentPhases = s.phases || []
       const newPhases = currentPhases.includes(phase)
         ? currentPhases.filter(p => p !== phase)
         : [...currentPhases, phase]
       return { ...s, phases: newPhases.length > 0 ? newPhases : undefined }
-    }))
+    })
+    if (isCore) { setCoreStratagems(updated); save({ core: updated }) }
+    else { setDetachmentStratagems(updated); save({ detachment: updated }) }
   }
 
   const handleStratagemTimingChange = (stratagemId: string, timing: Timing, isCore: boolean) => {
-    const setState = isCore ? setCoreStratagems : setDetachmentStratagems
-    setState(prev => prev.map(s =>
+    const updated = (isCore ? coreStratagems : detachmentStratagems).map(s =>
       s.id === stratagemId ? { ...s, timing } : s
-    ))
+    )
+    if (isCore) { setCoreStratagems(updated); save({ core: updated }) }
+    else { setDetachmentStratagems(updated); save({ detachment: updated }) }
   }
 
   const handleStratagemTurnOwnerChange = (stratagemId: string, turnOwner: TurnOwner, isCore: boolean) => {
-    const setState = isCore ? setCoreStratagems : setDetachmentStratagems
-    setState(prev => prev.map(s =>
+    const updated = (isCore ? coreStratagems : detachmentStratagems).map(s =>
       s.id === stratagemId ? { ...s, turnOwner } : s
-    ))
+    )
+    if (isCore) { setCoreStratagems(updated); save({ core: updated }) }
+    else { setDetachmentStratagems(updated); save({ detachment: updated }) }
   }
 
   const handleStratagemEnableToggle = (stratagemId: string, enabled: boolean) => {
-    setCoreStratagems(prev => prev.map(s =>
-      s.id === stratagemId ? { ...s, enabled } : s
-    ))
+    const updated = coreStratagems.map(s => s.id === stratagemId ? { ...s, enabled } : s)
+    setCoreStratagems(updated)
+    save({ core: updated })
   }
 
   const handleStratagemReset = (stratagemId: string, isCore: boolean) => {
-    const setState = isCore ? setCoreStratagems : setDetachmentStratagems
-    setState(prev => prev.map(s => {
+    const updated = (isCore ? coreStratagems : detachmentStratagems).map(s => {
       if (s.id !== stratagemId) return s
-      return {
-        ...s,
-        phases: s.autoDetectedPhases,
-        timing: s.autoDetectedTiming,
-        turnOwner: s.autoDetectedTurnOwner
-      }
-    }))
+      return { ...s, phases: s.autoDetectedPhases, timing: s.autoDetectedTiming, turnOwner: s.autoDetectedTurnOwner }
+    })
+    if (isCore) { setCoreStratagems(updated); save({ core: updated }) }
+    else { setDetachmentStratagems(updated); save({ detachment: updated }) }
   }
 
   const handleDetachmentChange = (detachment: string) => {
+    const newStrats = detachment && factionFolder
+      ? getDetachmentStratagems(factionFolder, detachment)
+      : []
     setSelectedDetachment(detachment)
-    if (detachment && factionFolder) {
-      setDetachmentStratagems(getDetachmentStratagems(factionFolder, detachment))
-    } else {
-      setDetachmentStratagems([])
-    }
+    setDetachmentStratagems(newStrats)
+    save({ det: detachment, detachment: newStrats })
   }
 
   return (
@@ -334,12 +340,10 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
           </div>
           <CustomStratagemForm
             onAddStratagem={(name, description) => {
-              const newStratagem: Ability = {
-                id: `custom-${Date.now()}`,
-                name,
-                description
-              }
-              setCustomStratagems(prev => [...prev, newStratagem])
+              const newStratagem: Ability = { id: `custom-${Date.now()}`, name, description }
+              const updated = [...customStratagems, newStratagem]
+              setCustomStratagems(updated)
+              save({ custom: updated })
             }}
           />
         </div>
