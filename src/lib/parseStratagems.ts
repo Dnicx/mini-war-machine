@@ -51,7 +51,6 @@ export function parseStratagemXml(xml: string): Stratagem[] {
       ...stratagem,
       autoDetectedPhases: withPhaseHeuristics.autoDetectedPhases,
       autoDetectedTiming: withPhaseHeuristics.autoDetectedTiming ?? 'start',
-      isReactive: withPhaseHeuristics.isReactive,
       oncePerBattle: withPhaseHeuristics.oncePerBattle,
       oncePerBattleRound: withPhaseHeuristics.oncePerBattleRound,
       autoDetectedTurnOwner: turnOwner,

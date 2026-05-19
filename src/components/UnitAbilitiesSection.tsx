@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { ChevronDown, ChevronUp, Camera } from 'lucide-react'
-import type { Ability, Phase, Timing, Keyword } from '../types/roster'
+import type { Ability, Phase, Timing, TurnOwner, Keyword } from '../types/roster'
 import { SafeMarkdownRenderer } from './SafeMarkdownRenderer'
 
 function resizeImage(file: File, maxPx: number, quality: number): Promise<string> {
@@ -35,6 +35,7 @@ interface UnitAbilitiesSectionProps {
   onToggleCollapse: (unitId: string) => void
   onPhaseToggle: (id: string, phase: Phase) => void
   onTimingChange: (id: string, timing: Timing) => void
+  onTurnOwnerChange: (id: string, turnOwner: TurnOwner) => void
   onNotesChange: (id: string, notes: string) => void
   onResetAbility: (id: string) => void
   onAbilityRef: (id: string, node: HTMLDivElement | null) => void
@@ -51,6 +52,7 @@ export function UnitAbilitiesSection({
   onToggleCollapse,
   onPhaseToggle,
   onTimingChange,
+  onTurnOwnerChange,
   onNotesChange,
   onResetAbility,
   onAbilityRef,
@@ -80,6 +82,7 @@ export function UnitAbilitiesSection({
             onToggleCollapse={onToggleCollapse}
             onPhaseToggle={onPhaseToggle}
             onTimingChange={onTimingChange}
+            onTurnOwnerChange={onTurnOwnerChange}
             onNotesChange={onNotesChange}
             onResetAbility={onResetAbility}
             onAbilityRef={onAbilityRef}
@@ -105,6 +108,7 @@ interface UnitAbilityCardProps {
   onToggleCollapse: (unitId: string) => void
   onPhaseToggle: (id: string, phase: Phase) => void
   onTimingChange: (id: string, timing: Timing) => void
+  onTurnOwnerChange: (id: string, turnOwner: TurnOwner) => void
   onNotesChange: (id: string, notes: string) => void
   onResetAbility: (id: string) => void
   onAbilityRef: (id: string, node: HTMLDivElement | null) => void
@@ -125,6 +129,7 @@ function UnitAbilityCard({
   onToggleCollapse,
   onPhaseToggle,
   onTimingChange,
+  onTurnOwnerChange,
   onNotesChange,
   onResetAbility,
   onAbilityRef,
@@ -225,9 +230,6 @@ function UnitAbilityCard({
                   <div className="flex justify-between items-start mb-2">
                     <h4 className="font-semibold text-text">{ability.name}</h4>
                     <div className="flex gap-2">
-                      {ability.isReactive && (
-                        <span className="text-xs bg-yellow-600/30 text-yellow-200 px-2 py-1 rounded">Reactive</span>
-                      )}
                       {(ability.phases || []).length > 0 && (
                         <span className="text-xs bg-surface2 text-text2 px-2 py-1 rounded">
                           {(ability.phases || []).join(', ')}
@@ -243,7 +245,7 @@ function UnitAbilityCard({
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-xs text-text2">Phases</label>
-                        {(JSON.stringify(ability.phases) !== JSON.stringify(ability.autoDetectedPhases) || ability.timing !== ability.autoDetectedTiming) && (
+                        {(JSON.stringify(ability.phases) !== JSON.stringify(ability.autoDetectedPhases) || ability.timing !== ability.autoDetectedTiming || ability.turnOwner !== ability.autoDetectedTurnOwner) && (
                           <button
                             onClick={() => onResetAbility(ability.id)}
                             className="text-xs text-accent hover:text-accent/80"
@@ -276,18 +278,32 @@ function UnitAbilityCard({
                         })}
                       </div>
                     </div>
-                    <div>
-                      <label className="text-xs text-text2 block mb-1">Timing</label>
-                      <select
-                        value={ability.timing || ability.autoDetectedTiming || ''}
-                        onChange={(e) => onTimingChange(ability.id, e.target.value as Timing)}
-                        className="w-full px-2 py-1 bg-surface2 border border-surface2 rounded text-text text-sm focus:outline-none focus:border-accent"
-                      >
-                        <option value="">Auto ({ability.autoDetectedTiming || 'None'})</option>
-                        {TIMINGS.map(timing => (
-                          <option key={timing} value={timing}>{timing}</option>
-                        ))}
-                      </select>
+                    <div className="space-y-2">
+                      <div>
+                        <label className="text-xs text-text2 block mb-1">Timing</label>
+                        <select
+                          value={ability.timing || ability.autoDetectedTiming || ''}
+                          onChange={(e) => onTimingChange(ability.id, e.target.value as Timing)}
+                          className="w-full px-2 py-1 bg-surface2 border border-surface2 rounded text-text text-sm focus:outline-none focus:border-accent"
+                        >
+                          <option value="">Auto ({ability.autoDetectedTiming || 'None'})</option>
+                          {TIMINGS.map(timing => (
+                            <option key={timing} value={timing}>{timing}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-text2 block mb-1">Turn</label>
+                        <select
+                          value={ability.turnOwner || ability.autoDetectedTurnOwner || 'yours'}
+                          onChange={(e) => onTurnOwnerChange(ability.id, e.target.value as TurnOwner)}
+                          className="w-full px-2 py-1 bg-surface2 border border-surface2 rounded text-text text-sm focus:outline-none focus:border-accent"
+                        >
+                          <option value="yours">Yours</option>
+                          <option value="opponent">Opponent</option>
+                          <option value="either">Either</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
 

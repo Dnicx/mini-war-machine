@@ -107,6 +107,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
             ...ability,
             phases: saved.phases,
             timing: saved.timing,
+            turnOwner: saved.turnOwner,
             notes: saved.notes
           }
         }
@@ -181,6 +182,13 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
     setSaved(false)
   }
 
+  const handleTurnOwnerChange = (abilityId: string, turnOwner: TurnOwner) => {
+    setAllAbilities(prev => prev.map(a =>
+      a.id === abilityId ? { ...a, turnOwner } : a
+    ))
+    setSaved(false)
+  }
+
   const handleNotesChange = (abilityId: string, notes: string) => {
     setAllAbilities(prev => prev.map(a =>
       a.id === abilityId ? { ...a, notes } : a
@@ -194,7 +202,8 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
       return {
         ...a,
         phases: a.autoDetectedPhases,
-        timing: a.autoDetectedTiming
+        timing: a.autoDetectedTiming,
+        turnOwner: a.autoDetectedTurnOwner
       }
     }))
     setSaved(false)
@@ -205,7 +214,8 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
       setAllAbilities(prev => prev.map(a => ({
         ...a,
         phases: a.autoDetectedPhases,
-        timing: a.autoDetectedTiming
+        timing: a.autoDetectedTiming,
+        turnOwner: a.autoDetectedTurnOwner
       })))
       setSaved(false)
     }
@@ -296,6 +306,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
       abilityId: ability.id,
       phases: ability.phases || [],
       timing: (ability.timing || '') as Timing,
+      turnOwner: ability.turnOwner,
       notes: ability.notes || ''
     }))
 
@@ -418,6 +429,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
             abilities={allAbilities.filter(a => !a.sourceUnit)}
             onPhaseToggle={handlePhaseToggle}
             onTimingChange={handleTimingChange}
+            onTurnOwnerChange={handleTurnOwnerChange}
             onNotesChange={handleNotesChange}
             onResetAbility={handleResetAbility}
             onAbilityRef={(id, node) => {
@@ -446,6 +458,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
             }}
             onPhaseToggle={handlePhaseToggle}
             onTimingChange={handleTimingChange}
+            onTurnOwnerChange={handleTurnOwnerChange}
             onNotesChange={handleNotesChange}
             onResetAbility={handleResetAbility}
             onAbilityRef={(id, node) => {
