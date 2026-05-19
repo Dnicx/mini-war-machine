@@ -31,6 +31,7 @@ Avoid:
 - Avoid framework-like solutions unless requested.
 - Avoid rewriting working code.
 - Do not assume, always confirm assumption with user.
+- Keep a line of code less than 100 character, if it still make sense.
 
 When uncertain:
 - ask questions
