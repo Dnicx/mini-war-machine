@@ -36,9 +36,8 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
   const [selectedDetachment, setSelectedDetachment] = useState<string>('')
   const [currentEmptyIndex, setCurrentEmptyIndex] = useState(0)
   const abilityRefs = useRef<Record<string, HTMLDivElement>>({})
-  const [saved, setSaved] = useState(true)
+  const isInitialized = useRef(false)
   const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
-  const [debug, setDebug] = useState(false)
   const [unitImages, setUnitImages] = useState<Record<string, string>>(() => loadUnitImages())
   const [activeSection, setActiveSection] = useState<PlannerSection>('core')
   const coreStratagemRef = useRef<HTMLDivElement>(null)
@@ -157,7 +156,45 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
         timing: s.autoDetectedTiming
       })))
     }
+    isInitialized.current = true
   }, [roster, factionFolder, availableDetachments])
+
+  const buildCurrentPlan = () => ({
+    rosterId: roster.id,
+    phasePlans: allAbilities.map(ability => ({
+      abilityId: ability.id,
+      phases: ability.phases || [],
+      timing: (ability.timing || '') as Timing,
+      notes: ability.notes || ''
+    })),
+    customStratagems,
+    selectedDetachment,
+    corePhasePlans: coreStratagems.map(strat => ({
+      abilityId: strat.id,
+      phases: strat.phases || [],
+      timing: (strat.timing || '') as Timing,
+      notes: '',
+      turnOwner: strat.turnOwner,
+      enabled: strat.enabled
+    })),
+    detachmentPhasePlans: detachmentStratagems.map(strat => ({
+      abilityId: strat.id,
+      phases: strat.phases || [],
+      timing: (strat.timing || '') as Timing,
+      notes: '',
+      turnOwner: strat.turnOwner
+    }))
+  })
+
+  // Auto-save whenever planner state changes, debounced to avoid excessive writes
+  useEffect(() => {
+    if (!isInitialized.current) return
+    const plan = buildCurrentPlan()
+    const timeout = setTimeout(() => savePlan(plan, roster.id), 300)
+    return () => clearTimeout(timeout)
+  }, [allAbilities, customStratagems, coreStratagems, detachmentStratagems, selectedDetachment]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleDebugDump = () => savePlan(buildCurrentPlan(), roster.id, true)
 
   const handlePhaseToggle = (abilityId: string, phase: Phase) => {
     setAllAbilities(prev => prev.map(a => {
@@ -168,21 +205,18 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
         : [...currentPhases, phase]
       return { ...a, phases: newPhases.length > 0 ? newPhases : undefined }
     }))
-    setSaved(false)
   }
 
   const handleTimingChange = (abilityId: string, timing: Timing) => {
     setAllAbilities(prev => prev.map(a =>
       a.id === abilityId ? { ...a, timing } : a
     ))
-    setSaved(false)
   }
 
   const handleNotesChange = (abilityId: string, notes: string) => {
     setAllAbilities(prev => prev.map(a =>
       a.id === abilityId ? { ...a, notes } : a
     ))
-    setSaved(false)
   }
 
   const handleResetAbility = (abilityId: string) => {
@@ -194,7 +228,6 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
         timing: a.autoDetectedTiming
       }
     }))
-    setSaved(false)
   }
 
   const handleResetAll = () => {
@@ -204,14 +237,11 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
         phases: a.autoDetectedPhases,
         timing: a.autoDetectedTiming
       })))
-      setSaved(false)
     }
   }
 
-  
   const handleDeleteStratagem = (id: string) => {
     setCustomStratagems(prev => prev.filter(s => s.id !== id))
-    setSaved(false)
   }
 
   const handleScrollToNextEmpty = () => {
@@ -238,7 +268,6 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
         : [...currentPhases, phase]
       return { ...s, phases: newPhases.length > 0 ? newPhases : undefined }
     }))
-    setSaved(false)
   }
 
   const handleStratagemTimingChange = (stratagemId: string, timing: Timing, isCore: boolean) => {
@@ -246,7 +275,6 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
     setState(prev => prev.map(s =>
       s.id === stratagemId ? { ...s, timing } : s
     ))
-    setSaved(false)
   }
 
   const handleStratagemTurnOwnerChange = (stratagemId: string, turnOwner: TurnOwner, isCore: boolean) => {
@@ -254,14 +282,12 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
     setState(prev => prev.map(s =>
       s.id === stratagemId ? { ...s, turnOwner } : s
     ))
-    setSaved(false)
   }
 
   const handleStratagemEnableToggle = (stratagemId: string, enabled: boolean) => {
     setCoreStratagems(prev => prev.map(s =>
       s.id === stratagemId ? { ...s, enabled } : s
     ))
-    setSaved(false)
   }
 
   const handleStratagemReset = (stratagemId: string, isCore: boolean) => {
@@ -275,7 +301,6 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
         turnOwner: s.autoDetectedTurnOwner
       }
     }))
-    setSaved(false)
   }
 
   const handleDetachmentChange = (detachment: string) => {
@@ -285,45 +310,6 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
     } else {
       setDetachmentStratagems([])
     }
-    setSaved(false)
-  }
-
-  const handleSave = () => {
-    const phasePlans = allAbilities.map(ability => ({
-      abilityId: ability.id,
-      phases: ability.phases || [],
-      timing: (ability.timing || '') as Timing,
-      notes: ability.notes || ''
-    }))
-
-    const corePhasePlans = coreStratagems.map(strat => ({
-      abilityId: strat.id,
-      phases: strat.phases || [],
-      timing: (strat.timing || '') as Timing,
-      notes: '',
-      turnOwner: strat.turnOwner,
-      enabled: strat.enabled
-    }))
-
-    const detachmentPhasePlans = detachmentStratagems.map(strat => ({
-      abilityId: strat.id,
-      phases: strat.phases || [],
-      timing: (strat.timing || '') as Timing,
-      notes: '',
-      turnOwner: strat.turnOwner
-    }))
-
-    const plan = {
-      rosterId: roster.id,
-      phasePlans,
-      customStratagems,
-      selectedDetachment,
-      corePhasePlans,
-      detachmentPhasePlans
-    }
-
-    savePlan(plan, roster.id, debug)
-    setSaved(true)
   }
 
   return (
@@ -332,23 +318,19 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
         <PlannerHeader
           onBackToImport={onBackToImport}
           onResetAll={handleResetAll}
-          onSave={handleSave}
           onPlayMode={onPlayMode}
-          saved={saved}
           rosterName={roster.name}
           onRosterRenamed={onRosterRenamed}
         />
 
         <div className="mb-6 bg-surface p-4 rounded-lg">
           <div className="flex items-center gap-2 mb-4">
-            <input
-              type="checkbox"
-              id="debug"
-              checked={debug}
-              onChange={(e) => setDebug(e.target.checked)}
-              className="w-4 h-4 accent-accent"
-            />
-            <label htmlFor="debug" className="text-sm text-text2">Debug mode (dump plan to JSON on save)</label>
+            <button
+              onClick={handleDebugDump}
+              className="px-3 py-1 text-sm bg-surface2 text-text2 rounded hover:bg-surface2/80"
+            >
+              Export Debug JSON
+            </button>
           </div>
           <CustomStratagemForm
             onAddStratagem={(name, description) => {
@@ -358,7 +340,6 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
                 description
               }
               setCustomStratagems(prev => [...prev, newStratagem])
-              setSaved(false)
             }}
           />
         </div>
