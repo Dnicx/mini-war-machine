@@ -507,6 +507,7 @@ interface PhaseContentProps {
 
 function PhaseContent({ phase, turnOwner, activeAbilities, abilitiesByTiming, collapsedUnits, onToggleUnit, onTimingChange }: PhaseContentProps) {
   const timingRefs = useRef<(HTMLDivElement | null)[]>([])
+  const [collapsedTimings, setCollapsedTimings] = useState<Set<Timing>>(new Set())
 
   useEffect(() => {
     if (!onTimingChange || phase === 'Start of Game' || phase === 'Start of Battle Round') return
@@ -534,22 +535,34 @@ function PhaseContent({ phase, turnOwner, activeAbilities, abilitiesByTiming, co
         <div className="space-y-4">
           {TIMINGS.map((timing, idx) => (
             <div key={timing} ref={el => { timingRefs.current[idx] = el }} className="bg-surface p-4 rounded-lg">
-              <h3 className="font-semibold text-text mb-3">{TIMING_LABELS[timing]}</h3>
-              <div className="space-y-4">
-                {Object.keys(abilitiesByTiming[timing]).length === 0 ? (
-                  <p className="text-text2 text-center py-4 text-sm">No abilities for this timing</p>
-                ) : (
-                  Object.entries(abilitiesByTiming[timing]).map(([unitName, abilities]) => (
-                    <CollapsibleUnitSection
-                      key={unitName}
-                      unitName={unitName}
-                      abilities={abilities}
-                      isCollapsed={collapsedUnits.has(unitName)}
-                      onToggle={() => onToggleUnit(unitName)}
-                    />
-                  ))
-                )}
-              </div>
+              <button
+                onClick={() => setCollapsedTimings(prev => {
+                  const next = new Set(prev)
+                  next.has(timing) ? next.delete(timing) : next.add(timing)
+                  return next
+                })}
+                className="flex items-center gap-2 font-semibold text-text mb-3 hover:text-accent transition-colors w-full text-left"
+              >
+                {collapsedTimings.has(timing) ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                {TIMING_LABELS[timing]}
+              </button>
+              {!collapsedTimings.has(timing) && (
+                <div className="space-y-4">
+                  {Object.keys(abilitiesByTiming[timing]).length === 0 ? (
+                    <p className="text-text2 text-center py-4 text-sm">No abilities for this timing</p>
+                  ) : (
+                    Object.entries(abilitiesByTiming[timing]).map(([unitName, abilities]) => (
+                      <CollapsibleUnitSection
+                        key={unitName}
+                        unitName={unitName}
+                        abilities={abilities}
+                        isCollapsed={collapsedUnits.has(unitName)}
+                        onToggle={() => onToggleUnit(unitName)}
+                      />
+                    ))
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
