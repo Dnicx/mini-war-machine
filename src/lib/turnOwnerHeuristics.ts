@@ -3,13 +3,19 @@ import type { TurnOwner } from '../types/roster'
 const OPPONENT_PATTERNS = [
   /your opponent('s)?/i,
   /opponent('s)? (movement|shooting|charge|fight|command)/i,
-  /during the opponent('s)?/i
+  /during the opponent('s)?/i,
+  // Ability-description reactive cues — these implicitly happen in the opponent's turn
+  /when targeted/i,
+  /when hit/i,
+  /when charged/i,
+  /intercept/i,
+  /counter/i
 ]
 
 const YOURS_PATTERNS = [
   /your (movement|shooting|charge|fight|command) phase/i,
   /start of your turn/i,
-  /during your turn/i,
+  /during your/i,
   /in your (movement|shooting|charge|fight|command) phase/i
 ]
 
