@@ -1,10 +1,11 @@
-import type { Ability, Phase, Timing } from '../types/roster'
+import type { Ability, Phase, Timing, TurnOwner } from '../types/roster'
 import { SafeMarkdownRenderer } from './SafeMarkdownRenderer'
 
 interface ArmyAbilitiesSectionProps {
   abilities: Ability[]
   onPhaseToggle: (id: string, phase: Phase) => void
   onTimingChange: (id: string, timing: Timing) => void
+  onTurnOwnerChange: (id: string, turnOwner: TurnOwner) => void
   onNotesChange: (id: string, notes: string) => void
   onResetAbility: (id: string) => void
   onAbilityRef: (id: string, node: HTMLDivElement | null) => void
@@ -14,6 +15,7 @@ export function ArmyAbilitiesSection({
   abilities,
   onPhaseToggle,
   onTimingChange,
+  onTurnOwnerChange,
   onNotesChange,
   onResetAbility,
   onAbilityRef
@@ -28,6 +30,7 @@ export function ArmyAbilitiesSection({
           ability={ability}
           onPhaseToggle={onPhaseToggle}
           onTimingChange={onTimingChange}
+          onTurnOwnerChange={onTurnOwnerChange}
           onNotesChange={onNotesChange}
           onResetAbility={onResetAbility}
           ref={(node) => onAbilityRef(ability.id, node)}
@@ -41,19 +44,21 @@ interface AbilityCardProps {
   ability: Ability
   onPhaseToggle: (id: string, phase: Phase) => void
   onTimingChange: (id: string, timing: Timing) => void
+  onTurnOwnerChange: (id: string, turnOwner: TurnOwner) => void
   onNotesChange: (id: string, notes: string) => void
   onResetAbility: (id: string) => void
   ref?: (node: HTMLDivElement | null) => void
 }
 
-function AbilityCard({ ability, onPhaseToggle, onTimingChange, onNotesChange, onResetAbility, ref }: AbilityCardProps) {
+function AbilityCard({ ability, onPhaseToggle, onTimingChange, onTurnOwnerChange, onNotesChange, onResetAbility, ref }: AbilityCardProps) {
   const PHASES: Phase[] = ['Start of Game', 'Start of Battle Round', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight']
   const TIMINGS: Timing[] = ['start', 'beforeTarget', 'attacking', 'afterTargeted', 'end']
   
   const currentPhases = ability.phases || []
   const currentTiming = ability.timing || ''
   const autoPhases = ability.autoDetectedPhases || []
-  const hasUserOverride = JSON.stringify(ability.phases) !== JSON.stringify(ability.autoDetectedPhases) || ability.timing !== ability.autoDetectedTiming
+  const hasUserOverride = JSON.stringify(ability.phases) !== JSON.stringify(ability.autoDetectedPhases) || ability.timing !== ability.autoDetectedTiming || ability.turnOwner !== ability.autoDetectedTurnOwner
+  const currentTurnOwner = ability.turnOwner || ability.autoDetectedTurnOwner || 'yours'
   const hasEmptyPhases = !currentPhases || currentPhases.length === 0
 
   return (
@@ -63,9 +68,6 @@ function AbilityCard({ ability, onPhaseToggle, onTimingChange, onNotesChange, on
       <div className="flex justify-between items-start mb-2">
         <h4 className="font-semibold text-text">{ability.name}</h4>
         <div className="flex gap-2">
-          {ability.isReactive && (
-            <span className="text-xs bg-yellow-600/30 text-yellow-200 px-2 py-1 rounded">Reactive</span>
-          )}
           {currentPhases.length > 0 && (
             <span className="text-xs bg-surface2 text-text2 px-2 py-1 rounded">{currentPhases.join(', ')}</span>
           )}
@@ -113,18 +115,32 @@ function AbilityCard({ ability, onPhaseToggle, onTimingChange, onNotesChange, on
             })}
           </div>
         </div>
-        <div>
-          <label className="text-xs text-text2 block mb-1">Timing</label>
-          <select
-            value={currentTiming || ''}
-            onChange={(e) => onTimingChange(ability.id, e.target.value as Timing)}
-            className="w-full px-2 py-1 bg-surface2 border border-surface2 rounded text-text text-sm focus:outline-none focus:border-accent"
-          >
-            <option value="">Auto ({ability.autoDetectedTiming || 'None'})</option>
-            {TIMINGS.map(timing => (
-              <option key={timing} value={timing}>{timing}</option>
-            ))}
-          </select>
+        <div className="space-y-2">
+          <div>
+            <label className="text-xs text-text2 block mb-1">Timing</label>
+            <select
+              value={currentTiming || ''}
+              onChange={(e) => onTimingChange(ability.id, e.target.value as Timing)}
+              className="w-full px-2 py-1 bg-surface2 border border-surface2 rounded text-text text-sm focus:outline-none focus:border-accent"
+            >
+              <option value="">Auto ({ability.autoDetectedTiming || 'None'})</option>
+              {TIMINGS.map(timing => (
+                <option key={timing} value={timing}>{timing}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-text2 block mb-1">Turn</label>
+            <select
+              value={currentTurnOwner}
+              onChange={(e) => onTurnOwnerChange(ability.id, e.target.value as TurnOwner)}
+              className="w-full px-2 py-1 bg-surface2 border border-surface2 rounded text-text text-sm focus:outline-none focus:border-accent"
+            >
+              <option value="yours">Yours</option>
+              <option value="opponent">Opponent</option>
+              <option value="either">Either</option>
+            </select>
+          </div>
         </div>
       </div>
 

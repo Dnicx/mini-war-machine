@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSwipe } from '../hooks/useSwipe'
-import { ChevronLeft, ChevronRight, Shield, Swords, ChevronDown, ChevronUp, Users } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Swords, ChevronDown, ChevronUp, Users } from 'lucide-react'
 import type { Roster, Phase, Timing, Ability, GameState, Stratagem, TurnOwner } from '../types/roster'
 import { loadPlan, saveGameState, loadGameState, loadUnitImages, saveUnitImages } from '../lib/storage'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
@@ -222,16 +222,10 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
         return false
       }
 
-      // For reactive abilities, show during opponent's turn
-      if (ability.isReactive && turnOwner === 'opponent') {
-        return phaseMatch
-      }
-
-      // For non-reactive, only show during your turn
-      if (!ability.isReactive && turnOwner === 'yours') {
-        return phaseMatch
-      }
-
+      const abilityTurnOwner = ability.turnOwner || ability.autoDetectedTurnOwner || 'yours'
+      if (abilityTurnOwner === 'either') return phaseMatch
+      if (abilityTurnOwner === 'yours' && turnOwner === 'yours') return phaseMatch
+      if (abilityTurnOwner === 'opponent' && turnOwner === 'opponent') return phaseMatch
       return false
     })
   }
@@ -278,50 +272,8 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     return byTiming
   }
 
-  const getReactiveAbilities = (phase: Phase, turnOwner: TurnOwner) => {
-    if (turnOwner !== 'opponent') return {}
-
-    // Filter core stratagems (only enabled ones)
-    const enabledCoreStrats = coreStratagems.filter(s => s.enabled !== false)
-
-    const abilities = [...allAbilities, ...customStratagems, ...enabledCoreStrats, ...detachmentStratagems].filter(ability => {
-      const abilityPhases = ability.phases || ability.autoDetectedPhases || []
-      // If no phases are set, show in all phases (fallback)
-      const phaseMatch = abilityPhases.length === 0 || abilityPhases.includes(phase)
-
-      // For stratagems, check if they can be used on opponent's turn
-      if ('turnOwner' in ability) {
-        const stratagemTurnOwner = (ability as Stratagem).turnOwner || (ability as Stratagem).autoDetectedTurnOwner || 'yours'
-        // Show if turn owner is 'either' or 'opponent'
-        if (stratagemTurnOwner === 'either' || stratagemTurnOwner === 'opponent') {
-          return phaseMatch
-        }
-        return false
-      }
-
-      return ability.isReactive && phaseMatch
-    })
-
-    // Group by unit and deduplicate by name
-    const byUnit: Record<string, Ability[]> = {}
-    abilities.forEach(ability => {
-      const sourceUnit = ability.sourceUnit || 'Army Abilities'
-      if (!byUnit[sourceUnit]) {
-        byUnit[sourceUnit] = []
-      }
-      // Deduplicate by name within the unit
-      const existing = byUnit[sourceUnit].find(a => a.name === ability.name)
-      if (!existing) {
-        byUnit[sourceUnit].push(ability)
-      }
-    })
-
-    return byUnit
-  }
-
   const activeAbilities = getActiveAbilities(gameState.currentPhase, gameState.turnOwner)
   const abilitiesByTiming = getAbilitiesByTiming(gameState.currentPhase, gameState.turnOwner)
-  const reactiveAbilities = getReactiveAbilities(gameState.currentPhase, gameState.turnOwner)
 
   const handleImagesChange = (images: Record<string, string>) => {
     setUnitImages(images)
@@ -461,8 +413,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
                 {gameState.turnOwner === 'yours' ? 'Your Turn' : "Opponent's Turn"}
               </span>
             </div>
-            {gameState.turnOwner === 'yours' &&
-             gameState.currentPhase !== 'Start of Game' &&
+            {gameState.currentPhase !== 'Start of Game' &&
              gameState.currentPhase !== 'Start of Battle Round' && (
               <div className="py-1 border-t border-surface2 text-xs text-text2">
                 {TIMING_LABELS[activeTiming]}
@@ -475,7 +426,6 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
             {exitingPhase && (() => {
               const exitActive = getActiveAbilities(exitingPhase, gameState.turnOwner)
               const exitByTiming = getAbilitiesByTiming(exitingPhase, gameState.turnOwner)
-              const exitReactive = getReactiveAbilities(exitingPhase, gameState.turnOwner)
               return (
                 <div
                   key={`exit-${exitingPhase}`}
@@ -487,7 +437,6 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
                     turnOwner={gameState.turnOwner}
                     activeAbilities={exitActive}
                     abilitiesByTiming={exitByTiming}
-                    reactiveAbilities={exitReactive}
                     collapsedUnits={collapsedUnits}
                     onToggleUnit={toggleUnit}
                   />
@@ -500,7 +449,6 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
                 turnOwner={gameState.turnOwner}
                 activeAbilities={activeAbilities}
                 abilitiesByTiming={abilitiesByTiming}
-                reactiveAbilities={reactiveAbilities}
                 collapsedUnits={collapsedUnits}
                 onToggleUnit={toggleUnit}
                 onTimingChange={setActiveTiming}
@@ -549,17 +497,16 @@ interface PhaseContentProps {
   turnOwner: TurnOwner
   activeAbilities: Ability[]
   abilitiesByTiming: Record<Timing, Record<string, Ability[]>>
-  reactiveAbilities: Record<string, Ability[]>
   collapsedUnits: Set<string>
   onToggleUnit: (unitName: string) => void
   onTimingChange?: (timing: Timing) => void
 }
 
-function PhaseContent({ phase, turnOwner, activeAbilities, abilitiesByTiming, reactiveAbilities, collapsedUnits, onToggleUnit, onTimingChange }: PhaseContentProps) {
+function PhaseContent({ phase, turnOwner, activeAbilities, abilitiesByTiming, collapsedUnits, onToggleUnit, onTimingChange }: PhaseContentProps) {
   const timingRefs = useRef<(HTMLDivElement | null)[]>([])
 
   useEffect(() => {
-    if (!onTimingChange || turnOwner !== 'yours' || phase === 'Start of Game' || phase === 'Start of Battle Round') return
+    if (!onTimingChange || phase === 'Start of Game' || phase === 'Start of Battle Round') return
 
     const handleScroll = () => {
       // 64px covers the two-row sticky header height
@@ -580,26 +527,7 @@ function PhaseContent({ phase, turnOwner, activeAbilities, abilitiesByTiming, re
 
   return (
     <>
-      {turnOwner === 'opponent' && Object.keys(reactiveAbilities).length > 0 && (
-        <div className="bg-surface2 p-4 rounded-lg mb-4 border-l-4 border-yellow-500">
-          <div className="flex items-center gap-2 mb-3">
-            <Shield className="text-yellow-500" size={20} />
-            <h3 className="font-semibold text-text">Reactive Abilities</h3>
-          </div>
-          <div className="space-y-4">
-            {Object.entries(reactiveAbilities).map(([unitName, abilities]) => (
-              <CollapsibleUnitSection
-                key={unitName}
-                unitName={unitName}
-                abilities={abilities}
-                isCollapsed={collapsedUnits.has(unitName)}
-                onToggle={() => onToggleUnit(unitName)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-      {turnOwner === 'yours' && phase !== 'Start of Game' && phase !== 'Start of Battle Round' ? (
+      {phase !== 'Start of Game' && phase !== 'Start of Battle Round' ? (
         <div className="space-y-4">
           {TIMINGS.map((timing, idx) => (
             <div key={timing} ref={el => { timingRefs.current[idx] = el }} className="bg-surface p-4 rounded-lg">

@@ -102,6 +102,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
             ...ability,
             phases: saved.phases,
             timing: saved.timing,
+            turnOwner: saved.turnOwner,
             notes: saved.notes
           }
         }
@@ -178,6 +179,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
         abilityId: a.id,
         phases: a.phases || [],
         timing: (a.timing || '') as Timing,
+        turnOwner: a.turnOwner,
         notes: a.notes || ''
       })),
       customStratagems: custom,
@@ -221,6 +223,12 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
     save({ abilities: updated })
   }
 
+  const handleTurnOwnerChange = (abilityId: string, turnOwner: TurnOwner) => {
+    const updated = allAbilities.map(a => a.id === abilityId ? { ...a, turnOwner } : a)
+    setAllAbilities(updated)
+    save({ abilities: updated })
+  }
+
   const handleNotesChange = (abilityId: string, notes: string) => {
     const updated = allAbilities.map(a => a.id === abilityId ? { ...a, notes } : a)
     setAllAbilities(updated)
@@ -230,7 +238,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
   const handleResetAbility = (abilityId: string) => {
     const updated = allAbilities.map(a => {
       if (a.id !== abilityId) return a
-      return { ...a, phases: a.autoDetectedPhases, timing: a.autoDetectedTiming }
+      return { ...a, phases: a.autoDetectedPhases, timing: a.autoDetectedTiming, turnOwner: a.autoDetectedTurnOwner }
     })
     setAllAbilities(updated)
     save({ abilities: updated })
@@ -238,7 +246,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
 
   const handleResetAll = () => {
     if (window.confirm('Are you sure you want to reset all phase selections to auto-detected values?')) {
-      const updated = allAbilities.map(a => ({ ...a, phases: a.autoDetectedPhases, timing: a.autoDetectedTiming }))
+      const updated = allAbilities.map(a => ({ ...a, phases: a.autoDetectedPhases, timing: a.autoDetectedTiming, turnOwner: a.autoDetectedTurnOwner }))
       setAllAbilities(updated)
       save({ abilities: updated })
     }
@@ -399,6 +407,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
             abilities={allAbilities.filter(a => !a.sourceUnit)}
             onPhaseToggle={handlePhaseToggle}
             onTimingChange={handleTimingChange}
+            onTurnOwnerChange={handleTurnOwnerChange}
             onNotesChange={handleNotesChange}
             onResetAbility={handleResetAbility}
             onAbilityRef={(id, node) => {
@@ -427,6 +436,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
             }}
             onPhaseToggle={handlePhaseToggle}
             onTimingChange={handleTimingChange}
+            onTurnOwnerChange={handleTurnOwnerChange}
             onNotesChange={handleNotesChange}
             onResetAbility={handleResetAbility}
             onAbilityRef={(id, node) => {
