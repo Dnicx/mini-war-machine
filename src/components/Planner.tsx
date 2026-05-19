@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import type { Roster, Ability, Phase, Timing, Stratagem, TurnOwner } from '../types/roster'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
 import { savePlan, loadPlan, loadUnitImages, saveUnitImages } from '../lib/storage'
@@ -41,6 +42,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
   const [debug, setDebug] = useState(false)
   const [unitImages, setUnitImages] = useState<Record<string, string>>(() => loadUnitImages())
   const [activeSection, setActiveSection] = useState<PlannerSection>('core')
+  const [isAbilitiesCollapsed, setIsAbilitiesCollapsed] = useState(false)
   const coreStratagemRef = useRef<HTMLDivElement>(null)
   const detachmentStratagemRef = useRef<HTMLDivElement>(null)
   const abilitiesRef = useRef<HTMLDivElement>(null)
@@ -409,52 +411,63 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
           detachmentRef={detachmentStratagemRef}
         />
 
-        <div ref={abilitiesRef}>
-          <ArmyAbilitiesSection
-            abilities={allAbilities.filter(a => !a.sourceUnit)}
-            onPhaseToggle={handlePhaseToggle}
-            onTimingChange={handleTimingChange}
-            onNotesChange={handleNotesChange}
-            onResetAbility={handleResetAbility}
-            onAbilityRef={(id, node) => {
-              if (node) abilityRefs.current[id] = node
-            }}
-          />
+        <div>
+          <button
+            onClick={() => setIsAbilitiesCollapsed(prev => !prev)}
+            className="flex items-center gap-2 text-lg font-semibold text-text mb-3 hover:text-accent transition-colors"
+          >
+            {isAbilitiesCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+            Abilities
+          </button>
+          {!isAbilitiesCollapsed && (
+            <div ref={abilitiesRef}>
+              <ArmyAbilitiesSection
+                abilities={allAbilities.filter(a => !a.sourceUnit)}
+                onPhaseToggle={handlePhaseToggle}
+                onTimingChange={handleTimingChange}
+                onNotesChange={handleNotesChange}
+                onResetAbility={handleResetAbility}
+                onAbilityRef={(id, node) => {
+                  if (node) abilityRefs.current[id] = node
+                }}
+              />
 
-          <UnitAbilitiesSection
-            units={roster.units.map(unit => ({
-              id: unit.id,
-              name: unit.name,
-              abilities: allAbilities.filter(a => a.sourceUnit === unit.name),
-              keywords: unit.keywords
-            }))}
-            collapsedUnits={collapsedUnits}
-            onToggleCollapse={(unitId) => {
-              setCollapsedUnits(prev => {
-                const next = new Set(prev)
-                if (next.has(unitId)) {
-                  next.delete(unitId)
-                } else {
-                  next.add(unitId)
-                }
-                return next
-              })
-            }}
-            onPhaseToggle={handlePhaseToggle}
-            onTimingChange={handleTimingChange}
-            onNotesChange={handleNotesChange}
-            onResetAbility={handleResetAbility}
-            onAbilityRef={(id, node) => {
-              if (node) abilityRefs.current[id] = node
-            }}
-            unitImages={unitImages}
-            onImagesChange={handleImagesChange}
-          />
+              <UnitAbilitiesSection
+                units={roster.units.map(unit => ({
+                  id: unit.id,
+                  name: unit.name,
+                  abilities: allAbilities.filter(a => a.sourceUnit === unit.name),
+                  keywords: unit.keywords
+                }))}
+                collapsedUnits={collapsedUnits}
+                onToggleCollapse={(unitId) => {
+                  setCollapsedUnits(prev => {
+                    const next = new Set(prev)
+                    if (next.has(unitId)) {
+                      next.delete(unitId)
+                    } else {
+                      next.add(unitId)
+                    }
+                    return next
+                  })
+                }}
+                onPhaseToggle={handlePhaseToggle}
+                onTimingChange={handleTimingChange}
+                onNotesChange={handleNotesChange}
+                onResetAbility={handleResetAbility}
+                onAbilityRef={(id, node) => {
+                  if (node) abilityRefs.current[id] = node
+                }}
+                unitImages={unitImages}
+                onImagesChange={handleImagesChange}
+              />
 
-          <CustomStratagemsSection
-            customStratagems={customStratagems}
-            onDeleteStratagem={handleDeleteStratagem}
-          />
+              <CustomStratagemsSection
+                customStratagems={customStratagems}
+                onDeleteStratagem={handleDeleteStratagem}
+              />
+            </div>
+          )}
         </div>
       </div>
       <button

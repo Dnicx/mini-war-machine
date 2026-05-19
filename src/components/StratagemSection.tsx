@@ -1,4 +1,5 @@
-import { type RefObject } from 'react'
+import { useState, type RefObject } from 'react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import { StratagemCard } from './StratagemCard'
 import type { Stratagem } from '../types/roster'
 
@@ -27,44 +28,63 @@ export function StratagemSection({
   coreRef,
   detachmentRef
 }: StratagemSectionProps) {
+  const [isCoreCollapsed, setIsCoreCollapsed] = useState(false)
+  const [isDetachmentCollapsed, setIsDetachmentCollapsed] = useState(false)
+
   return (
     <>
       {/* Core Stratagems Section */}
       <div ref={coreRef} className="mb-6">
-        <h2 className="text-lg font-semibold text-text mb-3">Core Stratagems</h2>
-        <div className="space-y-4">
-          {coreStratagems.map(stratagem => (
-            <StratagemCard
-              key={stratagem.id}
-              stratagem={stratagem}
-              type="core"
-              onToggleEnable={onToggleEnable}
-              onPhaseToggle={(id, phase) => onPhaseToggle(id, phase, true)}
-              onTimingChange={(id, timing) => onTimingChange(id, timing, true)}
-              onTurnOwnerChange={(id, turnOwner) => onTurnOwnerChange(id, turnOwner, true)}
-              onReset={(id) => onReset(id, true)}
-            />
-          ))}
-        </div>
+        <button
+          onClick={() => setIsCoreCollapsed(prev => !prev)}
+          className="flex items-center gap-2 text-lg font-semibold text-text mb-3 hover:text-accent transition-colors"
+        >
+          {isCoreCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+          Core Stratagems
+        </button>
+        {!isCoreCollapsed && (
+          <div className="space-y-4">
+            {coreStratagems.map(stratagem => (
+              <StratagemCard
+                key={stratagem.id}
+                stratagem={stratagem}
+                type="core"
+                onToggleEnable={onToggleEnable}
+                onPhaseToggle={(id, phase) => onPhaseToggle(id, phase, true)}
+                onTimingChange={(id, timing) => onTimingChange(id, timing, true)}
+                onTurnOwnerChange={(id, turnOwner) => onTurnOwnerChange(id, turnOwner, true)}
+                onReset={(id) => onReset(id, true)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Detachment Stratagems Section */}
       {selectedDetachment && detachmentStratagems.length > 0 && (
         <div ref={detachmentRef} className="mb-6">
-          <h2 className="text-lg font-semibold text-text mb-3">Detachment Stratagems</h2>
-          <div className="space-y-4">
-            {detachmentStratagems.map(stratagem => (
-              <StratagemCard
-                key={stratagem.id}
-                stratagem={stratagem}
-                type="detachment"
-                onPhaseToggle={(id, phase) => onPhaseToggle(id, phase, false)}
-                onTimingChange={(id, timing) => onTimingChange(id, timing, false)}
-                onTurnOwnerChange={(id, turnOwner) => onTurnOwnerChange(id, turnOwner, false)}
-                onReset={(id) => onReset(id, false)}
-              />
-            ))}
-          </div>
+          <button
+            onClick={() => setIsDetachmentCollapsed(prev => !prev)}
+            className="flex items-center gap-2 text-lg font-semibold text-text mb-3 hover:text-accent transition-colors"
+          >
+            {isDetachmentCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+            Detachment Stratagems
+          </button>
+          {!isDetachmentCollapsed && (
+            <div className="space-y-4">
+              {detachmentStratagems.map(stratagem => (
+                <StratagemCard
+                  key={stratagem.id}
+                  stratagem={stratagem}
+                  type="detachment"
+                  onPhaseToggle={(id, phase) => onPhaseToggle(id, phase, false)}
+                  onTimingChange={(id, timing) => onTimingChange(id, timing, false)}
+                  onTurnOwnerChange={(id, turnOwner) => onTurnOwnerChange(id, turnOwner, false)}
+                  onReset={(id) => onReset(id, false)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </>
