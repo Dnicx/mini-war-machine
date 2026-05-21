@@ -159,7 +159,7 @@ function UnitAbilityCard({
   const unitId = _unitId
   return (
     <div className="bg-surface p-4 rounded-lg border-l-4 border-surface2">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           {unitImage ? (
             <img src={unitImage} alt={unitName} className="w-8 h-8 rounded object-cover flex-shrink-0" />
@@ -182,20 +182,6 @@ function UnitAbilityCard({
               <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
             </>
           )}
-          {isLeader && allUnits && onAttachmentChange && (
-            <select
-              value={currentAttachment ?? ''}
-              onChange={e => onAttachmentChange(e.target.value)}
-              onClick={e => e.stopPropagation()}
-              className="text-xs bg-surface2 border border-surface2 rounded px-2 py-0.5 text-text flex-shrink-0"
-            >
-              <option value="">Attach to...</option>
-              {allUnits
-                .filter(u => u.id !== unitId)
-                .map(u => <option key={u.id} value={u.id}>{u.name}</option>)
-              }
-            </select>
-          )}
         </div>
         <button
           onClick={() => onToggleCollapse(unitId)}
@@ -204,22 +190,24 @@ function UnitAbilityCard({
           {isCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
         </button>
       </div>
+      {isLeader && allUnits && onAttachmentChange && (
+        <div className="mb-3">
+          <select
+            value={currentAttachment ?? ''}
+            onChange={e => onAttachmentChange(e.target.value)}
+            className="w-full text-xs bg-surface2 border border-surface2 rounded px-2 py-1 text-text"
+          >
+            <option value="">Attach to...</option>
+            {allUnits
+              .filter(u => u.id !== unitId)
+              .map(u => <option key={u.id} value={u.id}>{u.name}</option>)
+            }
+          </select>
+        </div>
+      )}
       {!isCollapsed && (
-        <>
-          {keywords.length > 0 && (
-            <div className="mb-4 p-3 bg-surface2/50 rounded-lg">
-              <h4 className="text-sm font-semibold text-text2 mb-2">Keywords</h4>
-              <div className="flex flex-wrap gap-2">
-                {keywords.map((keyword, index) => (
-                  <span key={`${keyword.id}-${index}`} className="text-xs bg-surface2 text-text2 px-2 py-1 rounded">
-                    {keyword.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-          <div className="space-y-4">
-            {abilities.map(ability => {
+        <div className="space-y-4 mt-3">
+          {abilities.map(ability => {
               const hasEmptyPhases = !ability.phases || ability.phases.length === 0
               return (
                 <div
@@ -318,7 +306,6 @@ function UnitAbilityCard({
               )
             })}
           </div>
-        </>
       )}
     </div>
   )

@@ -128,65 +128,75 @@ export function UnitView({ roster, unitImages, onImagesChange, attachments = {} 
         <p className="text-text2 text-center py-12 text-sm">No units in roster</p>
       ) : (
         topLevelUnits.map(unit => {
-          const imageUrl = unitImages[unit.id]
           const attachedLeaders = leadersByHost.get(unit.id) ?? []
-          const unitNameLower = unit.name.toLowerCase()
-          const visibleKeywords = unit.keywords.filter(kw => {
-            const n = kw.name.toLowerCase()
-            return !REDUNDANT_KEYWORDS.has(n)
-              && !REDUNDANT_KEYWORD_PREFIXES.some(p => n.startsWith(p))
-              && n !== unitNameLower
-          })
-          return (
-            <button
-              key={unit.id}
-              onClick={() => selectUnit(unit.id)}
-              className="w-full bg-surface rounded-xl overflow-hidden flex items-stretch text-left focus:outline-none focus:ring-2 focus:ring-accent"
-            >
-              {/* Left: image */}
-              <div className="w-24 flex-shrink-0 self-stretch min-h-[120px] relative">
-                {imageUrl ? (
-                  <img src={imageUrl} alt={unit.name} className="absolute inset-0 w-full h-full object-cover" />
-                ) : (
-                  <div className="absolute inset-0 bg-surface2 flex items-center justify-center">
-                    <User size={40} className="text-text2 opacity-40" />
-                  </div>
-                )}
-              </div>
+          const hasAttachments = attachedLeaders.length > 0
 
-              {/* Right: content */}
-              <div className="flex-1 p-3 min-w-0">
-                <h3 className="text-text2 font-bold text-lg leading-tight">{unit.name}</h3>
-                <div className="mt-1.5">
-                  <UnitStatBlock unit={unit} />
-                </div>
-
-                {/* Keywords */}
-                {visibleKeywords.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {visibleKeywords.map(kw => (
-                      <span
-                        key={kw.id}
-                        className="text-xs bg-surface2 text-accent px-2 py-0.5 rounded-full uppercase font-medium tracking-wide"
-                      >
-                        {kw.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Attached leaders — fused stat blocks */}
+          if (hasAttachments) {
+            // Outer wrapper groups host + leaders as separate cards
+            return (
+              <div key={unit.id} className="bg-surface2/30 rounded-2xl p-1.5 space-y-1.5">
+                <UnitCard unit={unit} unitImages={unitImages} onSelect={selectUnit} />
                 {attachedLeaders.map(leader => (
-                  <div key={leader.id} className="mt-2 pt-2 border-t border-surface2/50">
-                    <p className="text-xs text-accent font-semibold mb-0.5">{leader.name}</p>
-                    <UnitStatBlock unit={leader} />
-                  </div>
+                  <UnitCard key={leader.id} unit={leader} unitImages={unitImages} onSelect={selectUnit} />
                 ))}
               </div>
-            </button>
+            )
+          }
+
+          return (
+            <UnitCard key={unit.id} unit={unit} unitImages={unitImages} onSelect={selectUnit} />
           )
         })
       )}
     </div>
+  )
+}
+
+function UnitCard({ unit, unitImages, onSelect }: { unit: Unit; unitImages: Record<string, string>; onSelect: (id: string) => void }) {
+  const imageUrl = unitImages[unit.id]
+  const unitNameLower = unit.name.toLowerCase()
+  const visibleKeywords = unit.keywords.filter(kw => {
+    const n = kw.name.toLowerCase()
+    return !REDUNDANT_KEYWORDS.has(n)
+      && !REDUNDANT_KEYWORD_PREFIXES.some(p => n.startsWith(p))
+      && n !== unitNameLower
+  })
+
+  return (
+    <button
+      onClick={() => onSelect(unit.id)}
+      className="w-full bg-surface rounded-xl overflow-hidden flex items-stretch text-left focus:outline-none focus:ring-2 focus:ring-accent"
+    >
+      {/* Left: image */}
+      <div className="w-24 flex-shrink-0 self-stretch min-h-[120px] relative">
+        {imageUrl ? (
+          <img src={imageUrl} alt={unit.name} className="absolute inset-0 w-full h-full object-cover" />
+        ) : (
+          <div className="absolute inset-0 bg-surface2 flex items-center justify-center">
+            <User size={40} className="text-text2 opacity-40" />
+          </div>
+        )}
+      </div>
+
+      {/* Right: content */}
+      <div className="flex-1 p-3 min-w-0">
+        <h3 className="text-text2 font-bold text-lg leading-tight">{unit.name}</h3>
+        <div className="mt-1.5">
+          <UnitStatBlock unit={unit} />
+        </div>
+        {visibleKeywords.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {visibleKeywords.map(kw => (
+              <span
+                key={kw.id}
+                className="text-xs bg-surface2 text-accent px-2 py-0.5 rounded-full uppercase font-medium tracking-wide"
+              >
+                {kw.name}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </button>
   )
 }
