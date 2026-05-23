@@ -461,7 +461,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
                 }}
                 unitImages={unitImages}
                 onImagesChange={handleImagesChange}
-                allUnits={roster.units.map(u => ({ id: u.id, name: u.name }))}
+                attachableUnits={roster.units.map(u => ({ id: u.id, name: u.name }))}
                 attachments={attachments}
                 onAttachmentChange={(leaderId, hostId) => {
                   const updated = { ...attachments, [leaderId]: hostId }

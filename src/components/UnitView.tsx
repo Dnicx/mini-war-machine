@@ -92,6 +92,7 @@ export function UnitView({ roster, unitImages, onImagesChange, attachments = {} 
   for (const unit of roster.units) {
     const hostId = attachments[unit.id]
     if (hostId) {
+      // add leader unit to host
       const arr = leadersByHost.get(hostId) ?? []
       arr.push(unit)
       leadersByHost.set(hostId, arr)

@@ -110,7 +110,7 @@ function WeaponsSubView({ unit, attachedUnits }: { unit: Unit; attachedUnits?: U
       <UnitWeaponsBlock unit={unit} />
       {attachedUnits?.map(leader => (
         <div key={leader.id} className="pt-4 border-t border-surface2/50">
-          <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-3">Leader: {leader.name}</p>
+          <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-3">Attaching: {leader.name}</p>
           <UnitWeaponsBlock unit={leader} />
         </div>
       ))}

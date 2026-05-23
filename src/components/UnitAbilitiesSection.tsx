@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { ChevronDown, ChevronUp, Camera } from 'lucide-react'
-import type { Ability, Phase, Timing, TurnOwner, Keyword } from '../types/roster'
+import type { Ability, Phase, Timing, TurnOwner } from '../types/roster'
 import { SafeMarkdownRenderer } from './SafeMarkdownRenderer'
 
 function resizeImage(file: File, maxPx: number, quality: number): Promise<string> {
@@ -29,7 +29,6 @@ interface UnitAbilitiesSectionProps {
     id: string
     name: string
     abilities: Ability[]
-    keywords: Keyword[]
   }>
   collapsedUnits: Set<string>
   onToggleCollapse: (unitId: string) => void
@@ -41,7 +40,7 @@ interface UnitAbilitiesSectionProps {
   onAbilityRef: (id: string, node: HTMLDivElement | null) => void
   unitImages?: Record<string, string>
   onImagesChange?: (images: Record<string, string>) => void
-  allUnits?: Array<{ id: string; name: string }>
+  attachableUnits?: Array<{ id: string; name: string }>
   attachments?: Record<string, string>
   onAttachmentChange?: (leaderId: string, hostId: string) => void
 }
@@ -58,11 +57,11 @@ export function UnitAbilitiesSection({
   onAbilityRef,
   unitImages,
   onImagesChange,
-  allUnits,
+  attachableUnits,
   attachments,
   onAttachmentChange
 }: UnitAbilitiesSectionProps) {
-  const unitsWithAbilities = units.filter(unit => unit.abilities.length > 0 || unit.keywords.length > 0)
+  const unitsWithAbilities = units.filter(unit => unit.abilities.length > 0)
 
   if (unitsWithAbilities.length === 0) return null
 
@@ -77,7 +76,6 @@ export function UnitAbilitiesSection({
             unitName={unit.name}
             unitId={unit.id}
             abilities={unit.abilities}
-            keywords={unit.keywords}
             isCollapsed={collapsedUnits.has(unit.id)}
             onToggleCollapse={onToggleCollapse}
             onPhaseToggle={onPhaseToggle}
@@ -89,7 +87,7 @@ export function UnitAbilitiesSection({
             unitImage={unitImages?.[unit.id]}
             onImageChange={onImagesChange ? (dataUrl) => onImagesChange({ ...unitImages, [unit.id]: dataUrl }) : undefined}
             isLeader={isLeader}
-            allUnits={allUnits}
+            attachableUnits={attachableUnits}
             currentAttachment={isLeader ? attachments?.[unit.id] : undefined}
             onAttachmentChange={isLeader ? (hostId) => onAttachmentChange?.(unit.id, hostId) : undefined}
           />
@@ -103,7 +101,6 @@ interface UnitAbilityCardProps {
   unitName: string
   unitId: string
   abilities: Ability[]
-  keywords: Keyword[]
   isCollapsed: boolean
   onToggleCollapse: (unitId: string) => void
   onPhaseToggle: (id: string, phase: Phase) => void
@@ -115,7 +112,7 @@ interface UnitAbilityCardProps {
   unitImage?: string
   onImageChange?: (dataUrl: string) => void
   isLeader?: boolean
-  allUnits?: Array<{ id: string; name: string }>
+  attachableUnits?: Array<{ id: string; name: string }>
   currentAttachment?: string
   onAttachmentChange?: (hostId: string) => void
 }
@@ -124,7 +121,6 @@ function UnitAbilityCard({
   unitName,
   unitId: _unitId,
   abilities,
-  keywords,
   isCollapsed,
   onToggleCollapse,
   onPhaseToggle,
@@ -136,7 +132,7 @@ function UnitAbilityCard({
   unitImage,
   onImageChange,
   isLeader,
-  allUnits,
+  attachableUnits,
   currentAttachment,
   onAttachmentChange
 }: UnitAbilityCardProps) {
@@ -190,7 +186,7 @@ function UnitAbilityCard({
           {isCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
         </button>
       </div>
-      {isLeader && allUnits && onAttachmentChange && (
+      {isLeader && attachableUnits && onAttachmentChange && (
         <div className="mb-3">
           <select
             value={currentAttachment ?? ''}
@@ -198,7 +194,7 @@ function UnitAbilityCard({
             className="w-full text-xs bg-surface2 border border-surface2 rounded px-2 py-1 text-text"
           >
             <option value="">Attach to...</option>
-            {allUnits
+            {attachableUnits
               .filter(u => u.id !== unitId)
               .map(u => <option key={u.id} value={u.id}>{u.name}</option>)
             }
