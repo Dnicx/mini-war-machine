@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { ChevronDown, ChevronUp, Camera } from 'lucide-react'
-import type { Ability, Phase, Timing, TurnOwner, Keyword } from '../types/roster'
+import type { Ability, Phase, Timing, TurnOwner } from '../types/roster'
 import { SafeMarkdownRenderer } from './SafeMarkdownRenderer'
 
 function resizeImage(file: File, maxPx: number, quality: number): Promise<string> {
@@ -29,7 +29,6 @@ interface UnitAbilitiesSectionProps {
     id: string
     name: string
     abilities: Ability[]
-    keywords: Keyword[]
   }>
   collapsedUnits: Set<string>
   onToggleCollapse: (unitId: string) => void
@@ -41,6 +40,9 @@ interface UnitAbilitiesSectionProps {
   onAbilityRef: (id: string, node: HTMLDivElement | null) => void
   unitImages?: Record<string, string>
   onImagesChange?: (images: Record<string, string>) => void
+  attachableUnits?: Array<{ id: string; name: string }>
+  attachments?: Record<string, string>
+  onAttachmentChange?: (leaderId: string, hostId: string) => void
 }
 
 export function UnitAbilitiesSection({
@@ -54,34 +56,43 @@ export function UnitAbilitiesSection({
   onResetAbility,
   onAbilityRef,
   unitImages,
-  onImagesChange
+  onImagesChange,
+  attachableUnits,
+  attachments,
+  onAttachmentChange
 }: UnitAbilitiesSectionProps) {
-  const unitsWithAbilities = units.filter(unit => unit.abilities.length > 0 || unit.keywords.length > 0)
+  const unitsWithAbilities = units.filter(unit => unit.abilities.length > 0)
 
   if (unitsWithAbilities.length === 0) return null
 
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold text-text mt-6">Unit Abilities</h2>
-      {unitsWithAbilities.map(unit => (
-        <UnitAbilityCard
-          key={unit.id}
-          unitName={unit.name}
-          unitId={unit.id}
-          abilities={unit.abilities}
-          keywords={unit.keywords}
-          isCollapsed={collapsedUnits.has(unit.id)}
-          onToggleCollapse={onToggleCollapse}
-          onPhaseToggle={onPhaseToggle}
-          onTimingChange={onTimingChange}
-          onTurnOwnerChange={onTurnOwnerChange}
-          onNotesChange={onNotesChange}
-          onResetAbility={onResetAbility}
-          onAbilityRef={onAbilityRef}
-          unitImage={unitImages?.[unit.id]}
-          onImageChange={onImagesChange ? (dataUrl) => onImagesChange({ ...unitImages, [unit.id]: dataUrl }) : undefined}
-        />
-      ))}
+      {unitsWithAbilities.map(unit => {
+        const isLeader = unit.abilities.some(a => /model can be attached/i.test(a.description))
+        return (
+          <UnitAbilityCard
+            key={unit.id}
+            unitName={unit.name}
+            unitId={unit.id}
+            abilities={unit.abilities}
+            isCollapsed={collapsedUnits.has(unit.id)}
+            onToggleCollapse={onToggleCollapse}
+            onPhaseToggle={onPhaseToggle}
+            onTimingChange={onTimingChange}
+            onTurnOwnerChange={onTurnOwnerChange}
+            onNotesChange={onNotesChange}
+            onResetAbility={onResetAbility}
+            onAbilityRef={onAbilityRef}
+            unitImage={unitImages?.[unit.id]}
+            onImageChange={onImagesChange ? (dataUrl) => onImagesChange({ ...unitImages, [unit.id]: dataUrl }) : undefined}
+            isLeader={isLeader}
+            attachableUnits={attachableUnits}
+            currentAttachment={isLeader ? attachments?.[unit.id] : undefined}
+            onAttachmentChange={isLeader ? (hostId) => onAttachmentChange?.(unit.id, hostId) : undefined}
+          />
+        )
+      })}
     </div>
   )
 }
@@ -90,7 +101,6 @@ interface UnitAbilityCardProps {
   unitName: string
   unitId: string
   abilities: Ability[]
-  keywords: Keyword[]
   isCollapsed: boolean
   onToggleCollapse: (unitId: string) => void
   onPhaseToggle: (id: string, phase: Phase) => void
@@ -101,13 +111,16 @@ interface UnitAbilityCardProps {
   onAbilityRef: (id: string, node: HTMLDivElement | null) => void
   unitImage?: string
   onImageChange?: (dataUrl: string) => void
+  isLeader?: boolean
+  attachableUnits?: Array<{ id: string; name: string }>
+  currentAttachment?: string
+  onAttachmentChange?: (hostId: string) => void
 }
 
 function UnitAbilityCard({
   unitName,
   unitId: _unitId,
   abilities,
-  keywords,
   isCollapsed,
   onToggleCollapse,
   onPhaseToggle,
@@ -117,7 +130,11 @@ function UnitAbilityCard({
   onResetAbility,
   onAbilityRef,
   unitImage,
-  onImageChange
+  onImageChange,
+  isLeader,
+  attachableUnits,
+  currentAttachment,
+  onAttachmentChange
 }: UnitAbilityCardProps) {
   const imageInputRef = useRef<HTMLInputElement>(null)
 
@@ -138,7 +155,7 @@ function UnitAbilityCard({
   const unitId = _unitId
   return (
     <div className="bg-surface p-4 rounded-lg border-l-4 border-surface2">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           {unitImage ? (
             <img src={unitImage} alt={unitName} className="w-8 h-8 rounded object-cover flex-shrink-0" />
@@ -169,22 +186,24 @@ function UnitAbilityCard({
           {isCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
         </button>
       </div>
+      {isLeader && attachableUnits && onAttachmentChange && (
+        <div className="mb-3">
+          <select
+            value={currentAttachment ?? ''}
+            onChange={e => onAttachmentChange(e.target.value)}
+            className="w-full text-xs bg-surface2 border border-surface2 rounded px-2 py-1 text-text"
+          >
+            <option value="">Attach to...</option>
+            {attachableUnits
+              .filter(u => u.id !== unitId)
+              .map(u => <option key={u.id} value={u.id}>{u.name}</option>)
+            }
+          </select>
+        </div>
+      )}
       {!isCollapsed && (
-        <>
-          {keywords.length > 0 && (
-            <div className="mb-4 p-3 bg-surface2/50 rounded-lg">
-              <h4 className="text-sm font-semibold text-text2 mb-2">Keywords</h4>
-              <div className="flex flex-wrap gap-2">
-                {keywords.map((keyword, index) => (
-                  <span key={`${keyword.id}-${index}`} className="text-xs bg-surface2 text-text2 px-2 py-1 rounded">
-                    {keyword.name}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-          <div className="space-y-4">
-            {abilities.map(ability => {
+        <div className="space-y-4 mt-3">
+          {abilities.map(ability => {
               const hasEmptyPhases = !ability.phases || ability.phases.length === 0
               return (
                 <div
@@ -283,7 +302,6 @@ function UnitAbilityCard({
               )
             })}
           </div>
-        </>
       )}
     </div>
   )

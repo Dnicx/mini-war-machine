@@ -116,6 +116,8 @@ export interface Plan {
   selectedDetachment?: string
   corePhasePlans?: (PhasePlan & { enabled?: boolean })[]
   detachmentPhasePlans?: PhasePlan[]
+  // leaderUnitId → hostUnitId; a leader can only attach to one unit
+  attachments?: Record<string, string>
 }
 
 export interface GameState {

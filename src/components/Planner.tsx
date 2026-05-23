@@ -39,6 +39,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
   const abilityRefs = useRef<Record<string, HTMLDivElement>>({})
   const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
   const [unitImages, setUnitImages] = useState<Record<string, string>>(() => loadUnitImages())
+  const [attachments, setAttachments] = useState<Record<string, string>>(() => loadPlan(roster.id)?.attachments ?? {})
   const [activeSection, setActiveSection] = useState<PlannerSection>('core')
   const [isAbilitiesCollapsed, setIsAbilitiesCollapsed] = useState(false)
   const coreStratagemRef = useRef<HTMLDivElement>(null)
@@ -97,6 +98,8 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
     }
 
     if (savedPlan && savedPlan.rosterId === roster.id) {
+      setAttachments(savedPlan.attachments ?? {})
+
       const withOverrides = withHeuristics.map(ability => {
         const saved = savedPlan.phasePlans.find(p => p.abilityId === ability.id)
         if (saved) {
@@ -167,6 +170,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
       core?: Stratagem[]
       detachment?: Stratagem[]
       det?: string
+      att?: Record<string, string>
     } = {},
     debug = false
   ) => {
@@ -175,6 +179,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
     const core = overrides.core ?? coreStratagems
     const detachment = overrides.detachment ?? detachmentStratagems
     const det = overrides.det ?? selectedDetachment
+    const att = overrides.att ?? attachments
     savePlan({
       rosterId: roster.id,
       phasePlans: abilities.map(a => ({
@@ -200,7 +205,8 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
         timing: (s.timing || '') as Timing,
         notes: '',
         turnOwner: s.turnOwner
-      }))
+      })),
+      attachments: att
     }, roster.id, debug)
   }
 
@@ -455,6 +461,13 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
                 }}
                 unitImages={unitImages}
                 onImagesChange={handleImagesChange}
+                attachableUnits={roster.units.map(u => ({ id: u.id, name: u.name }))}
+                attachments={attachments}
+                onAttachmentChange={(leaderId, hostId) => {
+                  const updated = { ...attachments, [leaderId]: hostId }
+                  setAttachments(updated)
+                  save({ att: updated })
+                }}
               />
 
               <CustomStratagemsSection
