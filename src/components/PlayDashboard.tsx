@@ -25,7 +25,7 @@ const TIMING_LABELS: Record<Timing, string> = {
 }
 
 export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
-  const [gameState, setGameState] = useState<GameState>({
+  const [gameState, setGameState] = useState<GameState>(() => loadGameState() ?? {
     battleRound: 1,
     turnOwner: 'yours',
     currentPhase: 'Command',
@@ -50,12 +50,6 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const [activeTiming, setActiveTiming] = useState<Timing>('start')
 
   useEffect(() => {
-    // Load saved game state
-    const savedState = loadGameState()
-    if (savedState) {
-      setGameState(savedState)
-    }
-
     // Load plan and get abilities
     const plan = loadPlan(roster.id)
     if (plan) {
@@ -90,6 +84,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
         }
       })
 
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- batch init from persisted storage
       setAllAbilities(withOverrides)
       setCustomStratagems(plan.customStratagems || [])
       setAttachments(plan.attachments ?? {})
@@ -538,7 +533,7 @@ function PhaseContent({ phase, turnOwner, activeAbilities, abilitiesByTiming, co
               <button
                 onClick={() => setCollapsedTimings(prev => {
                   const next = new Set(prev)
-                  next.has(timing) ? next.delete(timing) : next.add(timing)
+                  if (next.has(timing)) { next.delete(timing) } else { next.add(timing) }
                   return next
                 })}
                 className="flex items-center gap-2 font-semibold text-text mb-3 hover:text-accent transition-colors w-full text-left"
