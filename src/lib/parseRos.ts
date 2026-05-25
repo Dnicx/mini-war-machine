@@ -169,7 +169,7 @@ function extractAbilities(selection: Element, unitId: string, unitName: string):
     const nestedName = nested.getAttribute('name')
     const nestedAbilityProfiles = nested.querySelectorAll('profiles > profile[typeName="Abilities"]')
     nestedAbilityProfiles.forEach((profile) => {
-      const ability = extractAbilityFromProfile(profile, unitId, unitName, nestedName)
+      const ability = extractAbilityFromProfile(profile, unitId, unitName, nestedName ?? undefined)
       if (ability) abilities.push(ability)
     })
   })
@@ -407,7 +407,7 @@ function mergeUnits(units: Unit[], rosterId: string): Unit[] {
 function extractArmyAbilities(force: Element): Ability[] {
   const armyAbilities: Ability[] = []
   const sharedRulesSelector = force.querySelector('rules')
-  const sharedRules = sharedRulesSelector.querySelectorAll( 'rule' )
+  const sharedRules = sharedRulesSelector?.querySelectorAll( 'rule' ) ?? []
   sharedRules.forEach((rule) => {
     const ruleName = rule.getAttribute('name')
     const description = rule.querySelector('description')?.textContent || ''
@@ -473,7 +473,7 @@ export async function parseRosFile(file: File, debug: boolean = false): Promise<
 
   // Extract units
   const units: Unit[] = []
-  const selectionsEl = force.querySelector('selections')
+  const selectionsEl = force?.querySelector('selections')
   const selections = selectionsEl ? Array.from(selectionsEl.querySelectorAll(':scope > selection[from="entry"]')) : []
 
   selections.forEach((selection) => {
@@ -509,7 +509,7 @@ export async function parseRosFile(file: File, debug: boolean = false): Promise<
   const mergedUnits = mergeUnits(units, rosterId)
 
   // Extract army abilities
-  const armyAbilities = extractArmyAbilities(force)
+  const armyAbilities = force ? extractArmyAbilities(force) : []
 
   const roster: Roster = {
     id: rosterId,

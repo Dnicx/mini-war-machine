@@ -1,19 +1,19 @@
 import { useState, type RefObject } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { StratagemCard } from './StratagemCard'
-import type { Stratagem } from '../types/roster'
+import type { Stratagem, Phase, Timing, TurnOwner } from '../types/roster'
 
 interface StratagemSectionProps {
   coreStratagems: Stratagem[]
   detachmentStratagems: Stratagem[]
   selectedDetachment: string
   onToggleEnable: (id: string, enabled: boolean) => void
-  onPhaseToggle: (id: string, phase: string, isCore: boolean) => void
-  onTimingChange: (id: string, timing: string, isCore: boolean) => void
-  onTurnOwnerChange: (id: string, turnOwner: string, isCore: boolean) => void
+  onPhaseToggle: (id: string, phase: Phase, isCore: boolean) => void
+  onTimingChange: (id: string, timing: Timing, isCore: boolean) => void
+  onTurnOwnerChange: (id: string, turnOwner: TurnOwner, isCore: boolean) => void
   onReset: (id: string, isCore: boolean) => void
-  coreRef?: RefObject<HTMLDivElement>
-  detachmentRef?: RefObject<HTMLDivElement>
+  coreRef?: RefObject<HTMLDivElement | null>
+  detachmentRef?: RefObject<HTMLDivElement | null>
 }
 
 export function StratagemSection({
