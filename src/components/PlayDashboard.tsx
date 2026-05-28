@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useSwipe } from '../hooks/useSwipe'
 import { ChevronLeft, ChevronRight, Swords, ChevronDown, ChevronUp, Users } from 'lucide-react'
 import type { Roster, Phase, Timing, Ability, GameState, Stratagem, TurnOwner } from '../types/roster'
@@ -25,7 +25,7 @@ const TIMING_LABELS: Record<Timing, string> = {
 }
 
 export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
-  const [gameState, setGameState] = useState<GameState>({
+  const [gameState, setGameState] = useState<GameState>(() => loadGameState() ?? {
     battleRound: 1,
     turnOwner: 'yours',
     currentPhase: 'Command',
@@ -37,102 +37,60 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     usedAbilities: {}
   })
 
-  const [allAbilities, setAllAbilities] = useState<Ability[]>([])
-  const [customStratagems, setCustomStratagems] = useState<Ability[]>([])
-  const [coreStratagems, setCoreStratagems] = useState<Stratagem[]>([])
-  const [detachmentStratagems, setDetachmentStratagems] = useState<Stratagem[]>([])
   const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState<'phase' | 'unit'>('phase')
   const [unitImages, setUnitImages] = useState<Record<string, string>>(() => loadUnitImages())
-  const [attachments, setAttachments] = useState<Record<string, string>>({})
   const [animDir, setAnimDir] = useState<'left' | 'right'>('right')
   const [exitingPhase, setExitingPhase] = useState<Phase | null>(null)
   const [activeTiming, setActiveTiming] = useState<Timing>('start')
 
-  useEffect(() => {
-    // Load saved game state
-    const savedState = loadGameState()
-    if (savedState) {
-      setGameState(savedState)
-    }
+  const plan = useMemo(() => loadPlan(roster.id), [roster.id])
 
-    // Load plan and get abilities
-    const plan = loadPlan(roster.id)
-    if (plan) {
-      const abilities: Ability[] = [...roster.armyAbilities]
-      roster.units.forEach(unit => {
-        unit.abilities.forEach(ability => {
-          abilities.push({
-            ...ability,
-            sourceUnit: unit.name
-          })
-        })
-      })
-
-      // Apply heuristics to get auto-detected phases
-      const withHeuristics = applyHeuristicsToAll(abilities)
-
-      // Apply plan overrides
-      const withOverrides = withHeuristics.map(ability => {
-        const planEntry = plan.phasePlans.find(p => p.abilityId === ability.id)
-        if (planEntry) {
-          return {
-            ...ability,
-            phases: planEntry.phases,
-            timing: planEntry.timing,
-            notes: planEntry.notes
-          }
-        }
-        // If no plan entry, use auto-detected phases as default
-        return {
-          ...ability,
-          phases: ability.autoDetectedPhases
-        }
-      })
-
-      setAllAbilities(withOverrides)
-      setCustomStratagems(plan.customStratagems || [])
-      setAttachments(plan.attachments ?? {})
-
-      // Load core stratagems
-      const coreStrats = getCoreStratagems()
-      const coreOverrides = coreStrats.map(strat => {
-        const saved = plan.corePhasePlans?.find(p => p.abilityId === strat.id)
-        if (saved) {
-          return {
-            ...strat,
-            phases: saved.phases,
-            timing: saved.timing,
-            turnOwner: saved.turnOwner,
-            enabled: saved.enabled ?? true
-          }
-        }
-        return strat
-      })
-      setCoreStratagems(coreOverrides)
-
-      // Load detachment stratagems if selected
-      if (plan.selectedDetachment) {
-        const factionFolder = getStratagemFolderName(roster.faction)
-        if (factionFolder) {
-          const detachmentStrats = getDetachmentStratagems(factionFolder, plan.selectedDetachment)
-          const detachmentOverrides = detachmentStrats.map(strat => {
-            const saved = plan.detachmentPhasePlans?.find(p => p.abilityId === strat.id)
-            if (saved) {
-              return {
-                ...strat,
-                phases: saved.phases,
-                timing: saved.timing,
-                turnOwner: saved.turnOwner
-              }
-            }
-            return strat
-          })
-          setDetachmentStratagems(detachmentOverrides)
-        }
+  const allAbilities = useMemo(() => {
+    if (!plan) return []
+    const abilities: Ability[] = [
+      ...roster.armyAbilities,
+      ...roster.units.flatMap(unit => unit.abilities.map(a => ({ ...a, sourceUnit: unit.name })))
+    ]
+    const withHeuristics = applyHeuristicsToAll(abilities)
+    return withHeuristics.map(ability => {
+      const planEntry = plan.phasePlans.find(p => p.abilityId === ability.id)
+      if (planEntry) {
+        return { ...ability, phases: planEntry.phases, timing: planEntry.timing, notes: planEntry.notes }
       }
-    }
-  }, [roster])
+      return { ...ability, phases: ability.autoDetectedPhases }
+    })
+  }, [plan, roster.armyAbilities, roster.units])
+
+  const customStratagems = useMemo(() => plan?.customStratagems || [], [plan])
+
+  const attachments = useMemo(() => plan?.attachments ?? {}, [plan])
+
+  const coreStratagems = useMemo(() => {
+    const coreStrats = getCoreStratagems()
+    if (!plan) return coreStrats
+    return coreStrats.map(strat => {
+      const saved = plan.corePhasePlans?.find(p => p.abilityId === strat.id)
+      if (saved) {
+        return { ...strat, phases: saved.phases, timing: saved.timing, turnOwner: saved.turnOwner, enabled: saved.enabled ?? true }
+      }
+      return strat
+    })
+  }, [plan])
+
+  const detachmentStratagems = useMemo(() => {
+    if (!plan?.selectedDetachment) return []
+    const factionFolder = getStratagemFolderName(roster.faction)
+    if (!factionFolder) return []
+    const detachmentStrats = getDetachmentStratagems(factionFolder, plan.selectedDetachment)
+    return detachmentStrats.map(strat => {
+      const saved = plan.detachmentPhasePlans?.find(p => p.abilityId === strat.id)
+      if (saved) {
+        return { ...strat, phases: saved.phases, timing: saved.timing, turnOwner: saved.turnOwner }
+      }
+      return strat
+    })
+  }, [plan, roster.faction])
 
   const updateGameState = (updates: Partial<GameState>) => {
     const newState = { ...gameState, ...updates }
@@ -538,7 +496,7 @@ function PhaseContent({ phase, turnOwner, activeAbilities, abilitiesByTiming, co
               <button
                 onClick={() => setCollapsedTimings(prev => {
                   const next = new Set(prev)
-                  next.has(timing) ? next.delete(timing) : next.add(timing)
+                  if (next.has(timing)) { next.delete(timing) } else { next.add(timing) }
                   return next
                 })}
                 className="flex items-center gap-2 font-semibold text-text mb-3 hover:text-accent transition-colors w-full text-left"

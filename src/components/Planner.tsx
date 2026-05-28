@@ -90,6 +90,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
 
     const detectedDetachment = detectDetachment(roster.detachment, availableDetachments)
     const initialDetachment = savedPlan?.selectedDetachment || detectedDetachment || ''
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedDetachment(initialDetachment)
 
     let detachmentStrats: Stratagem[] = []

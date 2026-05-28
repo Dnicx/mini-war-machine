@@ -41,7 +41,7 @@ export function parseStratagemXml(xml: string): Stratagem[] {
     }
 
     // Apply phase heuristics (returns Ability, need to merge back)
-    const withPhaseHeuristics = applyHeuristics(stratagem as any)
+    const withPhaseHeuristics = applyHeuristics(stratagem)
 
     // Apply turn owner heuristics
     const turnOwner = detectTurnOwner(when, name)

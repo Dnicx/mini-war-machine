@@ -70,8 +70,7 @@ function extractRuleFromProfile(profile: Element, idPrefix: string, sourceUnit: 
   const ruleName = profile.getAttribute('name')
   if (!ruleName) return null
 
-  let description = ''
-  description = profile.querySelectorAll('description')[0]?.textContent || ''
+  const description = profile.querySelectorAll('description')[0]?.textContent || ''
   // console.log( ruleName, description)
   return {
     id: `${idPrefix}-rule-${ruleName}`,
