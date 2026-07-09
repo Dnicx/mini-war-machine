@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { Upload, Trash2 } from 'lucide-react'
 import type { Roster, RosterMeta } from '../types/roster'
 import { parseRosFile } from '../lib/parseRos'
+import { parseRosJsonFile } from '../lib/parseRosJson'
 import { loadRostersIndex, loadRosterById, deleteRosterFromLibrary } from '../lib/storage'
 
 interface ImportScreenProps {
@@ -29,12 +30,13 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
     setError('')
 
     try {
-      const roster = await parseRosFile(file, debug)
+      const isJson = file.name.toLowerCase().endsWith('.json')
+      const roster = isJson ? await parseRosJsonFile(file, debug) : await parseRosFile(file, debug)
       setPendingRoster(roster)
       setRosterName(roster.name)
     } catch (err) {
       console.error(err)
-      setError(`Failed to parse .ros file. Make sure it's a valid BattleScribe roster. "${err}"`)
+      setError(`Failed to parse roster file. Make sure it's a valid BattleScribe roster (.ros or .json). "${err}"`)
     } finally {
       setLoading(false)
     }
@@ -169,7 +171,7 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
           <input
             ref={fileInputRef}
             type="file"
-            accept=".ros,.txt,application/octet-stream,*/*"
+            accept=".ros,.json,.txt,application/octet-stream,*/*"
             onChange={handleFileUpload}
             disabled={loading}
             className="hidden"
@@ -179,7 +181,7 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
             <p className="text-text font-medium text-sm">
               {loading ? 'Importing…' : 'Add New Roster'}
             </p>
-            <p className="text-text2 text-xs mt-1">Click to upload a .ros file</p>
+            <p className="text-text2 text-xs mt-1">Click to upload a .ros or .json file</p>
           </div>
         </label>
 
