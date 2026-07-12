@@ -13,12 +13,14 @@ export function PlayAbilityCard({ ability }: PlayAbilityCardProps) {
   const stratagem = isStratagem ? ability as Stratagem : null
 
   return (
-    <div className={`p-3 rounded-lg border-l-4 bg-surface2 ${isStratagem ? 'border-purple-500' : 'border-accent'}`}>
+    <div
+      onClick={() => setIsCollapsed(prev => !prev)}
+      className={`p-3 rounded-lg border-l-4 bg-surface2 cursor-pointer ${
+        isStratagem ? 'border-purple-500' : 'border-accent'
+      }`}
+    >
       <div className="flex-1">
-        <button
-          onClick={() => setIsCollapsed(prev => !prev)}
-          className="flex items-center gap-2 w-full text-left"
-        >
+        <div className="flex items-center gap-2 w-full text-left">
           {isCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
           <h4 className="font-semibold text-text flex-1">{ability.name}</h4>
           {stratagem && (
@@ -26,7 +28,7 @@ export function PlayAbilityCard({ ability }: PlayAbilityCardProps) {
               {stratagem.cpCost}
             </span>
           )}
-        </button>
+        </div>
         {!isCollapsed && (
           <>
             {ability.sourceUnit && (

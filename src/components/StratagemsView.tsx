@@ -138,19 +138,19 @@ function StratagemGridCard({ stratagem }: StratagemGridCardProps) {
   const bandColor = turnOwnerColor(turnOwnerOf(stratagem))
 
   return (
-    <div className="bg-surface rounded-lg overflow-hidden flex">
+    <div
+      onClick={() => setIsCollapsed(prev => !prev)}
+      className="bg-surface rounded-lg overflow-hidden flex cursor-pointer"
+    >
       <div className="flex-1 min-w-0">
         {/* Title bar: name + CP cost, like the rulebook card header */}
-        <button
-          onClick={() => setIsCollapsed(prev => !prev)}
-          className="w-full flex items-center gap-2 bg-black/40 px-3 py-2 text-left"
-        >
+        <div className="w-full flex items-center gap-2 bg-black/40 px-3 py-2 text-left">
           {isCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
           <h4 className="font-bold text-text text-sm uppercase flex-1">{stratagem.name}</h4>
           <span className="font-bold text-text text-sm whitespace-nowrap">
             {stratagem.cpCost}
           </span>
-        </button>
+        </div>
         {/* Turn-owner colored band with the stratagem's source */}
         <div className={`px-3 py-0.5 text-[10px] font-bold text-white uppercase ${bandColor}`}>
           {stratagem.type} Stratagem
