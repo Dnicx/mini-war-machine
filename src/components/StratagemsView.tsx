@@ -118,7 +118,7 @@ function PhaseSection({ label, Icon, stratagems }: PhaseSectionProps) {
         <h3 className="text-sm font-semibold uppercase">{label}</h3>
       </button>
       {!isCollapsed && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="space-y-3">
           {stratagems.map(stratagem => (
             <StratagemGridCard key={stratagem.id} stratagem={stratagem} />
           ))}
@@ -133,7 +133,7 @@ interface StratagemGridCardProps {
 }
 
 function StratagemGridCard({ stratagem }: StratagemGridCardProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(true)
   const phases = phasesOf(stratagem)
   const bandColor = turnOwnerColor(turnOwnerOf(stratagem))
 
