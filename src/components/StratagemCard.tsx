@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { Stratagem, Phase, Timing, TurnOwner } from '../types/roster'
 
 const PHASES: Phase[] = ['Start of Game', 'Start of Battle Round', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight']
-const TIMINGS: Timing[] = ['start', 'beforeTarget', 'attacking', 'afterTargeted', 'end']
+const TIMINGS: Timing[] = ['start', 'beforeTarget', 'attacking/saving', 'afterTargeted', 'end']
 
 interface StratagemCardProps {
   stratagem: Stratagem

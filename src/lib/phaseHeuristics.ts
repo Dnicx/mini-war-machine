@@ -12,7 +12,7 @@ const PHASE_PATTERNS: Record<Phase, RegExp[]> = {
 }
 
 const TIMING_PATTERNS: Record<Timing, RegExp[]> = {
-  attacking: [/hit roll/i, /wound roll/i, /save roll/i, /damage roll/i, /re-?roll/i],
+  'attacking/saving': [/hit roll/i, /wound roll/i, /save roll/i, /damage roll/i, /re-?roll/i],
   start: [/start of/i, /beginning of/i, /at the start/i],
   beforeTarget: [/before/i, /when selecting/i, /when choosing/i],
   afterTargeted: [/after/i, /when targeted/i, /when hit/i],
@@ -54,9 +54,12 @@ export function detectOncePerRound(description: string): boolean {
   return ONCE_PER_ROUND.some(pattern => pattern.test(description))
 }
 
-export function applyHeuristics(ability: Ability): Ability {
+// timingSource: text to detect timing from. Stratagems pass their `when`
+// trigger so timing is not skewed by keywords in effect/restrictions text.
+// Defaults to the full description for regular abilities.
+export function applyHeuristics(ability: Ability, timingSource?: string): Ability {
   const phases = detectPhases(ability.description)
-  const timing = detectTiming(ability.description)
+  const timing = detectTiming(timingSource ?? ability.description)
   const autoDetectedTurnOwner = detectTurnOwner(ability.description, ability.name)
   const oncePerBattle = detectOncePerBattle(ability.description)
   const oncePerRound = detectOncePerRound(ability.description)
@@ -88,5 +91,5 @@ export function applyHeuristics(ability: Ability): Ability {
 }
 
 export function applyHeuristicsToAll(abilities: Ability[]): Ability[] {
-  return abilities.map(applyHeuristics)
+  return abilities.map(ability => applyHeuristics(ability))
 }
