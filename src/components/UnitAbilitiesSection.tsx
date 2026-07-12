@@ -3,6 +3,28 @@ import { ChevronDown, ChevronUp, Camera } from 'lucide-react'
 import type { Ability, Phase, Timing, TurnOwner } from '../types/roster'
 import { SafeMarkdownRenderer } from './SafeMarkdownRenderer'
 
+// Normalize a unit/datasheet name for comparison: uppercase, collapse whitespace.
+function normalizeUnitName(name: string): string {
+  return name.toUpperCase().replace(/\s+/g, ' ').trim()
+}
+
+// A Leader's ability lists the datasheets it can attach to as bulleted lines
+// after "following units:". Extract those names so the "Attach to..." dropdown
+// can be filtered. Returns null when no list is found (caller shows all units).
+function extractAttachableUnitNames(abilities: Ability[]): Set<string> | null {
+  const leaderAbility = abilities.find(a => /can be attached to the following units/i.test(a.description))
+  if (!leaderAbility) return null
+
+  const names = new Set<string>()
+  for (const line of leaderAbility.description.split('\n')) {
+    // Bulleted lines (■ ▪ • ▫ or -) hold the unit names; the trailing
+    // explanatory paragraph has no bullet and is skipped.
+    const match = line.match(/^\s*[■▪•▫-]\s*(.+?)\s*$/)
+    if (match) names.add(normalizeUnitName(match[1]))
+  }
+  return names.size > 0 ? names : null
+}
+
 function resizeImage(file: File, maxPx: number, quality: number): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -153,6 +175,8 @@ function UnitAbilityCard({
   const TIMINGS: Timing[] = ['start', 'beforeTarget', 'attacking/saving', 'afterTargeted', 'end']
 
   const unitId = _unitId
+  // Datasheets this leader may attach to, per its ability text (null = no list).
+  const allowedUnitNames = extractAttachableUnitNames(abilities)
   return (
     <div className="bg-surface p-4 rounded-lg border-l-4 border-surface2">
       <div className="flex items-center justify-between mb-1">
@@ -196,6 +220,9 @@ function UnitAbilityCard({
             <option value="">Attach to...</option>
             {attachableUnits
               .filter(u => u.id !== unitId)
+              // Restrict to datasheets named in this leader's ability; if the
+              // ability has no parseable list, allowedUnitNames is null → show all.
+              .filter(u => !allowedUnitNames || allowedUnitNames.has(normalizeUnitName(u.name)))
               .map(u => <option key={u.id} value={u.id}>{u.name}</option>)
             }
           </select>

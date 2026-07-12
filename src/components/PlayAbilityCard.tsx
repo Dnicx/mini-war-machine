@@ -8,9 +8,10 @@ interface PlayAbilityCardProps {
 }
 
 export function PlayAbilityCard({ ability }: PlayAbilityCardProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false)
   const isStratagem = 'cpCost' in ability
   const stratagem = isStratagem ? ability as Stratagem : null
+  // Stratagems start folded (showing CP + effect), like the Stratagems view.
+  const [isCollapsed, setIsCollapsed] = useState(isStratagem)
 
   return (
     <div
@@ -29,6 +30,12 @@ export function PlayAbilityCard({ ability }: PlayAbilityCardProps) {
             </span>
           )}
         </div>
+        {/* Folded stratagem still shows its effect, like the Stratagems view */}
+        {stratagem && isCollapsed && (
+          <p className="text-text2 text-sm mt-1">
+            <span className="font-semibold text-purple-400">EFFECT: </span>{stratagem.effect}
+          </p>
+        )}
         {!isCollapsed && (
           <>
             {ability.sourceUnit && (

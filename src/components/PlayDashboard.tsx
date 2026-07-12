@@ -253,11 +253,15 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     }
 
     abilities.forEach(ability => {
-      const timing = ability.timing || ability.autoDetectedTiming
+      let timing = ability.timing || ability.autoDetectedTiming
+      // Legacy saved data used 'attacking' before it was renamed to 'attacking/saving'.
+      if ((timing as string) === 'attacking') timing = 'attacking/saving'
       // For stratagems, use "Stratagems" as the source unit
       const sourceUnit = 'turnOwner' in ability ? 'Stratagems' : (ability.sourceUnit || 'Army Abilities')
 
-      if (timing) {
+      // Guard against unknown timing values (e.g. stale persisted data) so an
+      // unrecognized key falls through to the "show in all sections" branch.
+      if (timing && byTiming[timing]) {
         if (!byTiming[timing][sourceUnit]) {
           byTiming[timing][sourceUnit] = []
         }
