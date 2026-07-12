@@ -71,7 +71,7 @@ function extractRuleFromProfile(profile: Element, idPrefix: string, sourceUnit: 
   if (!ruleName) return null
 
   let description = ''
-  description = profile.querySelectorAll('description')[0]?.textContent || ''
+  description = profile.querySelectorAll('description')[0]?.textContent?.trim() || ''
   // console.log( ruleName, description)
   return {
     id: `${idPrefix}-rule-${ruleName}`,
@@ -119,8 +119,10 @@ function extractModelCharacteristics(profile: Element): {
     if (charName === 'M') movement = charValue
     if (charName === 'T') toughness = charValue
     if (charName === 'W') wounds = charValue
-    if (charName === 'SV') save = charValue
-    if (charName === 'Invulnerable Save') invulnerableSave = charValue
+    // 10th edition exports use "SV"; 11th edition New Recruit exports renamed it to "Sv"
+    if (charName === 'SV' || charName === 'Sv') save = charValue
+    // 11th edition moved the invulnerable save into an "InSv" characteristic
+    if (charName === 'Invulnerable Save' || charName === 'InSv') invulnerableSave = charValue
     if (charName === 'LD') leadership = charValue
     if (charName === 'OC') objectiveControl = charValue
   })
@@ -238,10 +240,15 @@ function extractModels(unitSelection: Element, unitId: string, unitName: string,
     else {
       console.warn( unitName, 'character is missing model profile')
     }
-    stats.invulnerableSave = extractInvulnerableSave(unitSelection)
+    // Older (10th edition) exports keep the invuln in a separate Abilities profile
+    // instead of the InSv characteristic
+    if (stats.invulnerableSave === '-') {
+      stats.invulnerableSave = extractInvulnerableSave(unitSelection)
+    }
 
-    // Extract weapons from all nested wargear selections
-    const wargearSelections = unitSelection.querySelectorAll('selections > selection')
+    // Extract weapons from direct wargear selections only; a descendant query would
+    // also return wargear nested inside other wargear and double-count its weapons
+    const wargearSelections = unitSelection.querySelectorAll(':scope > selections > selection')
     const modelWeapons: Weapon[] = []
     const modelRules: Rule[] = []
 
@@ -293,11 +300,14 @@ function extractModels(unitSelection: Element, unitId: string, unitName: string,
         else
           console.error( unitName, modelName, 'profile is blank')
       }
-      const invuln = extractInvulnerableSave(modelSelection)
-      stats.invulnerableSave = invuln !== '-' ? invuln : extractInvulnerableSave(unitSelection)
+      // Same 10th edition fallback as the character path above
+      if (stats.invulnerableSave === '-') {
+        const invuln = extractInvulnerableSave(modelSelection)
+        stats.invulnerableSave = invuln !== '-' ? invuln : extractInvulnerableSave(unitSelection)
+      }
 
-      // Extract weapons from model's nested wargear selections
-      const wargearSelections = modelSelection.querySelectorAll('selections > selection')
+      // Direct wargear selections only, see comment on the character path above
+      const wargearSelections = modelSelection.querySelectorAll(':scope > selections > selection')
       const modelWeapons: Weapon[] = []
       const modelRules: Rule[] = []
 
@@ -320,8 +330,8 @@ function extractModels(unitSelection: Element, unitId: string, unitName: string,
   return models
 }
 
-// Merge units with the same name
-function mergeUnits(units: Unit[], rosterId: string): Unit[] {
+// Merge units with the same name. Shared with parseRosJson.ts
+export function mergeUnits(units: Unit[], rosterId: string): Unit[] {
   const mergedUnits: Unit[] = []
   const unitsByName = new Map<string, Unit[]>()
 
@@ -410,7 +420,7 @@ function extractArmyAbilities(force: Element): Ability[] {
   const sharedRules = sharedRulesSelector?.querySelectorAll( 'rule' ) ?? []
   sharedRules.forEach((rule) => {
     const ruleName = rule.getAttribute('name')
-    const description = rule.querySelector('description')?.textContent || ''
+    const description = rule.querySelector('description')?.textContent?.trim() || ''
     if (ruleName) {
       armyAbilities.push({
         id: `army-${ruleName}`,
@@ -432,7 +442,7 @@ function extractArmyAbilities(force: Element): Ability[] {
     const rules = detachmentRules.querySelectorAll('rule')
     rules.forEach((rule) => {
       const ruleName = rule.getAttribute('name')
-      const description = rule.querySelector('description')?.textContent || ''
+      const description = rule.querySelector('description')?.textContent?.trim() || ''
       if (ruleName) {
         armyAbilities.push({
           id: `army-${ruleName}`,
@@ -486,7 +496,12 @@ export async function parseRosFile(file: File, debug: boolean = false): Promise<
     if (type === 'upgrade') return
 
     const unitId = selection.getAttribute('id') || `${rosterId}-${name}`
-    const unitPoints = parseInt(selection.querySelector('costs > cost[name="pts"]')?.getAttribute('value') || '0')
+    // A unit's cost is spread across its own costs plus nested selections
+    // (enhancements, paid wargear), so sum every pts cost in the subtree
+    let unitPoints = 0
+    selection.querySelectorAll('costs > cost[name="pts"]').forEach((cost) => {
+      unitPoints += Number(cost.getAttribute('value') || '0')
+    })
 
     const abilities = extractAbilities(selection, unitId, name)
     const keywords = extractKeywords(selection, unitId, name)
@@ -523,19 +538,24 @@ export async function parseRosFile(file: File, debug: boolean = false): Promise<
 
   // Debug: dump roster to JSON file
   if (debug) {
-    const json = JSON.stringify(roster, null, 2)
-    const blob = new Blob([json], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `roster-debug-${rosterId}.json`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    downloadRosterDebug(roster)
   }
 
   return roster
+}
+
+// Trigger a browser download of the parsed roster. Shared with parseRosJson.ts
+export function downloadRosterDebug(roster: Roster) {
+  const json = JSON.stringify(roster, null, 2)
+  const blob = new Blob([json], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `roster-debug-${roster.id}.json`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
 }
 
 export async function fetchFromYellowscribe(id: string, debug: boolean = false): Promise<Roster> {
