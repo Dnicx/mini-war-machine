@@ -430,16 +430,13 @@ function extractArmyAbilities(force: Element): Ability[] {
     }
   })
 
-  // get detachment selection 
-  const detachmentSelection = force.querySelector('selections > selection[name="Detachment"]')
-  const detachmentRulesSelection = detachmentSelection?.querySelector(
-    'selections > selection[group="Detachment"], selections > selection[group="Detachments"]'
-  )
-
-  // get rules
-  const detachmentRules = detachmentRulesSelection?.querySelector( 'rules' )
-  if (detachmentRules) {
-    const rules = detachmentRules.querySelectorAll('rule')
+  // get rules from every detachment (11th edition allows more than one)
+  const detachmentRulesSelections = findDetachmentSelections(force)
+  if (detachmentRulesSelections.length === 0) {
+    console.error( 'Can\'t find detachment rules' )
+  }
+  detachmentRulesSelections.forEach((detachmentRulesSelection) => {
+    const rules = detachmentRulesSelection.querySelectorAll(':scope > rules > rule')
     rules.forEach((rule) => {
       const ruleName = rule.getAttribute('name')
       const description = rule.querySelector('description')?.textContent?.trim() || ''
@@ -451,11 +448,21 @@ function extractArmyAbilities(force: Element): Ability[] {
         })
       }
     })
-    
-  } else {
-    console.error( 'Can\'t find detachment rules' )
-  }
+  })
   return armyAbilities
+}
+
+// Find every chosen detachment inside "Detachment" configuration selections
+function findDetachmentSelections(force: Element): Element[] {
+  const result: Element[] = []
+  force.querySelectorAll(':scope > selections > selection[name="Detachment"]')
+    .forEach((selection) => {
+      selection.querySelectorAll(
+        ':scope > selections > selection[group="Detachment"], ' +
+        ':scope > selections > selection[group="Detachments"]'
+      ).forEach((det) => result.push(det))
+    })
+  return result
 }
 
 export async function parseRosFile(file: File, debug: boolean = false): Promise<Roster> {
@@ -476,10 +483,12 @@ export async function parseRosFile(file: File, debug: boolean = false): Promise<
   const force = doc.querySelector('forces > force')
   const faction = force?.getAttribute('catalogueName') || 'Unknown Faction'
 
-  // Get detatchment from force selections
-  const detachment = force?.querySelector('selections > selection[name="Detachment"]')
-  const detachmentRuleSelection = detachment?.querySelector('selections > selection[group="Detachment"]')
-  const detachmentName = detachmentRuleSelection?.getAttribute('name') || 'No Detachment' // we'll use this later when we support detachments stratagems
+  // Get every detachment from force selections (11th edition allows more than one)
+  const detachmentNames = force
+    ? findDetachmentSelections(force)
+        .map(det => det.getAttribute('name'))
+        .filter((name): name is string => !!name)
+    : []
 
   // Extract units
   const units: Unit[] = []
@@ -530,7 +539,7 @@ export async function parseRosFile(file: File, debug: boolean = false): Promise<
     id: rosterId,
     name: rosterName,
     faction,
-    detachment: detachmentName,
+    detachments: detachmentNames,
     points,
     units: mergedUnits,
     armyAbilities
