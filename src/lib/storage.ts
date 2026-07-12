@@ -10,7 +10,16 @@ const ACTIVE_ROSTER_KEY = 'wh40k_active_roster_id'
 function loadAllRosters(): Roster[] {
   const data = localStorage.getItem(ROSTERS_KEY)
   if (!data) return []
-  try { return JSON.parse(data) as Roster[] } catch { return [] }
+  try {
+    const rosters = JSON.parse(data) as Roster[]
+    // Migrate rosters saved before multi-detachment support,
+    // which stored a single `detachment` string
+    return rosters.map(r => {
+      if (r.detachments) return r
+      const legacy = (r as Roster & { detachment?: string }).detachment
+      return { ...r, detachments: legacy ? [legacy] : [] }
+    })
+  } catch { return [] }
 }
 
 function saveAllRosters(rosters: Roster[]): void {
@@ -22,7 +31,7 @@ export function loadRostersIndex(): RosterMeta[] {
     id: r.id,
     name: r.name,
     faction: r.faction,
-    detachment: r.detachment,
+    detachments: r.detachments,
     points: r.points,
     lastUsed: (r as Roster & { lastUsed?: number }).lastUsed ?? 0
   }))

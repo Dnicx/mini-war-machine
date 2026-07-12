@@ -8,7 +8,6 @@ import { getStratagemFolderName } from '../lib/factionMapping'
 import { detectDetachment } from '../lib/detection'
 import { PlannerHeader } from './PlannerHeader'
 import { CustomStratagemForm } from './CustomStratagemForm'
-import { DetachmentSelector } from './DetachmentSelector'
 import { StratagemSection } from './StratagemSection'
 import { ArmyAbilitiesSection } from './ArmyAbilitiesSection'
 import { UnitAbilitiesSection } from './UnitAbilitiesSection'
@@ -34,7 +33,6 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
   const [customStratagems, setCustomStratagems] = useState<Ability[]>([])
   const [coreStratagems, setCoreStratagems] = useState<Stratagem[]>([])
   const [detachmentStratagems, setDetachmentStratagems] = useState<Stratagem[]>([])
-  const [selectedDetachment, setSelectedDetachment] = useState<string>('')
   const [currentEmptyIndex, setCurrentEmptyIndex] = useState(0)
   const abilityRefs = useRef<Record<string, HTMLDivElement>>({})
   const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
@@ -48,6 +46,13 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
 
   const factionFolder = useMemo(() => getStratagemFolderName(roster.faction), [roster.faction])
   const availableDetachments = useMemo(() => factionFolder ? getAvailableDetachments(factionFolder) : [], [factionFolder])
+  // Registry folder names for each detachment in the roster (unmatched ones dropped)
+  const matchedDetachments = useMemo(() => {
+    const matched = roster.detachments
+      .map(det => detectDetachment(det, availableDetachments))
+      .filter((det): det is string => !!det)
+    return [...new Set(matched)]
+  }, [roster.detachments, availableDetachments])
 
   const handleImagesChange = (images: Record<string, string>) => {
     setUnitImages(images)
@@ -88,14 +93,9 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
     const withHeuristics = applyHeuristicsToAll(allAbilitiesList)
     const coreStrats = getCoreStratagems()
 
-    const detectedDetachment = detectDetachment(roster.detachment, availableDetachments)
-    const initialDetachment = savedPlan?.selectedDetachment || detectedDetachment || ''
-    setSelectedDetachment(initialDetachment)
-
-    let detachmentStrats: Stratagem[] = []
-    if (initialDetachment && factionFolder) {
-      detachmentStrats = getDetachmentStratagems(factionFolder, initialDetachment)
-    }
+    const detachmentStrats: Stratagem[] = factionFolder
+      ? matchedDetachments.flatMap(det => getDetachmentStratagems(factionFolder, det))
+      : []
 
     if (savedPlan && savedPlan.rosterId === roster.id) {
       setAttachments(savedPlan.attachments ?? {})
@@ -161,7 +161,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
         timing: s.autoDetectedTiming
       })))
     }
-  }, [roster, factionFolder, availableDetachments])
+  }, [roster, factionFolder, matchedDetachments])
 
   const save = (
     overrides: {
@@ -169,7 +169,6 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
       custom?: Ability[]
       core?: Stratagem[]
       detachment?: Stratagem[]
-      det?: string
       att?: Record<string, string>
     } = {},
     debug = false
@@ -178,7 +177,6 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
     const custom = overrides.custom ?? customStratagems
     const core = overrides.core ?? coreStratagems
     const detachment = overrides.detachment ?? detachmentStratagems
-    const det = overrides.det ?? selectedDetachment
     const att = overrides.att ?? attachments
     savePlan({
       rosterId: roster.id,
@@ -190,7 +188,6 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
         notes: a.notes || ''
       })),
       customStratagems: custom,
-      selectedDetachment: det,
       corePhasePlans: core.map(s => ({
         abilityId: s.id,
         phases: s.phases || [],
@@ -325,15 +322,6 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
     else { setDetachmentStratagems(updated); save({ detachment: updated }) }
   }
 
-  const handleDetachmentChange = (detachment: string) => {
-    const newStrats = detachment && factionFolder
-      ? getDetachmentStratagems(factionFolder, detachment)
-      : []
-    setSelectedDetachment(detachment)
-    setDetachmentStratagems(newStrats)
-    save({ det: detachment, detachment: newStrats })
-  }
-
   return (
     <div className="min-h-screen">
       <div className="max-w-4xl mx-auto p-4 pb-16">
@@ -364,11 +352,25 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
           />
         </div>
 
-        <DetachmentSelector
-          availableDetachments={availableDetachments}
-          selectedDetachment={selectedDetachment}
-          onDetachmentChange={handleDetachmentChange}
-        />
+        {/* Detachments come straight from the imported roster (11th edition
+            armies can contain several), so this is display-only */}
+        {roster.detachments.length > 0 && (
+          <div className="mb-6 bg-surface p-4 rounded-lg border-l-4 border-surface2">
+            <h2 className="text-lg font-semibold text-text mb-3">
+              {roster.detachments.length > 1 ? 'Detachments' : 'Detachment'}
+            </h2>
+            <ul className="space-y-1">
+              {roster.detachments.map(det => (
+                <li key={det} className="flex items-center gap-2 text-text">
+                  {det}
+                  {!detectDetachment(det, availableDetachments) && (
+                    <span className="text-xs text-red-400">(no stratagem data found)</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Error message for no matching detachment */}
         {availableDetachments.length === 0 && factionFolder && (
@@ -400,7 +402,6 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
         <StratagemSection
           coreStratagems={coreStratagems}
           detachmentStratagems={detachmentStratagems}
-          selectedDetachment={selectedDetachment}
           onToggleEnable={handleStratagemEnableToggle}
           onPhaseToggle={handleStratagemPhaseToggle}
           onTimingChange={handleStratagemTimingChange}

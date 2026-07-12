@@ -85,7 +85,8 @@ export interface Roster {
   id: string
   name: string
   faction: string
-  detachment: string
+  // 11th edition armies can contain more than one detachment
+  detachments: string[]
   points: number
   units: Unit[]
   armyAbilities: Ability[]
@@ -95,7 +96,7 @@ export interface RosterMeta {
   id: string
   name: string
   faction: string
-  detachment: string
+  detachments: string[]
   points: number
   lastUsed: number
 }
@@ -113,6 +114,7 @@ export interface Plan {
   rosterId: string
   phasePlans: PhasePlan[]
   customStratagems: Ability[]
+  // Legacy field: detachments now come from the roster itself
   selectedDetachment?: string
   corePhasePlans?: (PhasePlan & { enabled?: boolean })[]
   detachmentPhasePlans?: PhasePlan[]

@@ -85,7 +85,8 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
               />
             </div>
             <p className="text-text2 text-xs">
-              {pendingRoster.faction} · {pendingRoster.detachment} · {pendingRoster.points} pts
+              {pendingRoster.faction} · {pendingRoster.detachments.join(', ') || 'No Detachment'} ·{' '}
+              {pendingRoster.points} pts
             </p>
             <div className="flex gap-3">
               <button
@@ -132,7 +133,8 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
                   <div className="flex-1 min-w-0">
                     <p className="text-text font-medium truncate">{meta.name}</p>
                     <p className="text-text2 text-xs truncate">
-                      {meta.faction} · {meta.detachment} · {meta.points} pts
+                      {meta.faction} · {meta.detachments.join(', ') || 'No Detachment'} ·{' '}
+                      {meta.points} pts
                     </p>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">

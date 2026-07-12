@@ -6,7 +6,6 @@ import type { Stratagem, Phase, Timing, TurnOwner } from '../types/roster'
 interface StratagemSectionProps {
   coreStratagems: Stratagem[]
   detachmentStratagems: Stratagem[]
-  selectedDetachment: string
   onToggleEnable: (id: string, enabled: boolean) => void
   onPhaseToggle: (id: string, phase: Phase, isCore: boolean) => void
   onTimingChange: (id: string, timing: Timing, isCore: boolean) => void
@@ -19,7 +18,6 @@ interface StratagemSectionProps {
 export function StratagemSection({
   coreStratagems,
   detachmentStratagems,
-  selectedDetachment,
   onToggleEnable,
   onPhaseToggle,
   onTimingChange,
@@ -61,7 +59,7 @@ export function StratagemSection({
       </div>
 
       {/* Detachment Stratagems Section */}
-      {selectedDetachment && detachmentStratagems.length > 0 && (
+      {detachmentStratagems.length > 0 && (
         <div ref={detachmentRef} className="mb-6">
           <button
             onClick={() => setIsDetachmentCollapsed(prev => !prev)}

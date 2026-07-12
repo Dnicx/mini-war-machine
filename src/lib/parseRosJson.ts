@@ -303,12 +303,14 @@ function extractModels(unitSelection: JsonSelection, unitId: string, unitName: s
   return models
 }
 
-// Find the selected detachment inside the "Detachment" configuration selection
-function findDetachmentSelection(force: JsonForce): JsonSelection | undefined {
-  const detachment = (force.selections ?? []).find(s => s.name === 'Detachment')
-  return (detachment?.selections ?? []).find(
-    s => s.group === 'Detachment' || s.group === 'Detachments'
-  )
+// Find every chosen detachment inside "Detachment" configuration selections
+// (11th edition allows more than one)
+function findDetachmentSelections(force: JsonForce): JsonSelection[] {
+  return (force.selections ?? [])
+    .filter(s => s.name === 'Detachment')
+    .flatMap(detachment => (detachment.selections ?? []).filter(
+      s => s.group === 'Detachment' || s.group === 'Detachments'
+    ))
 }
 
 function extractArmyAbilities(force: JsonForce): Ability[] {
@@ -323,9 +325,12 @@ function extractArmyAbilities(force: JsonForce): Ability[] {
     }
   }
 
-  const detachmentRules = findDetachmentSelection(force)?.rules
-  if (detachmentRules) {
-    for (const rule of detachmentRules) {
+  const detachmentSelections = findDetachmentSelections(force)
+  if (detachmentSelections.length === 0) {
+    console.error('Can\'t find detachment rules')
+  }
+  for (const detachment of detachmentSelections) {
+    for (const rule of detachment.rules ?? []) {
       if (rule.name) {
         armyAbilities.push({
           id: `army-${rule.name}`,
@@ -334,8 +339,6 @@ function extractArmyAbilities(force: JsonForce): Ability[] {
         })
       }
     }
-  } else {
-    console.error('Can\'t find detachment rules')
   }
   return armyAbilities
 }
@@ -364,7 +367,9 @@ export async function parseRosJsonFile(file: File, debug: boolean = false): Prom
     throw new Error('Invalid roster .json file: no force found')
   }
   const faction = force.catalogueName || 'Unknown Faction'
-  const detachmentName = findDetachmentSelection(force)?.name || 'No Detachment'
+  const detachmentNames = findDetachmentSelections(force)
+    .map(s => s.name)
+    .filter((name): name is string => !!name)
 
   const units: Unit[] = []
   for (const selection of force.selections ?? []) {
@@ -401,7 +406,7 @@ export async function parseRosJsonFile(file: File, debug: boolean = false): Prom
     id: rosterId,
     name: rosterName,
     faction,
-    detachment: detachmentName,
+    detachments: detachmentNames,
     points,
     units: mergeUnits(units, rosterId),
     armyAbilities: extractArmyAbilities(force)

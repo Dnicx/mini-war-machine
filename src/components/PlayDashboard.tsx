@@ -4,8 +4,11 @@ import { ChevronLeft, ChevronRight, Swords, ChevronDown, ChevronUp, Users, Scrol
 import type { Roster, Phase, Timing, Ability, GameState, Stratagem, TurnOwner } from '../types/roster'
 import { loadPlan, saveGameState, loadGameState, loadUnitImages, saveUnitImages } from '../lib/storage'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
-import { getCoreStratagems, getDetachmentStratagems } from '../lib/stratagemRegistry'
+import {
+  getCoreStratagems, getAvailableDetachments, getDetachmentStratagems
+} from '../lib/stratagemRegistry'
 import { getStratagemFolderName } from '../lib/factionMapping'
+import { detectDetachment } from '../lib/detection'
 import { PlayAbilityCard } from './PlayAbilityCard'
 import { UnitView } from './UnitView'
 import { StratagemsView } from './StratagemsView'
@@ -112,25 +115,31 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
       })
       setCoreStratagems(coreOverrides)
 
-      // Load detachment stratagems if selected
-      if (plan.selectedDetachment) {
-        const factionFolder = getStratagemFolderName(roster.faction)
-        if (factionFolder) {
-          const detachmentStrats = getDetachmentStratagems(factionFolder, plan.selectedDetachment)
-          const detachmentOverrides = detachmentStrats.map(strat => {
-            const saved = plan.detachmentPhasePlans?.find(p => p.abilityId === strat.id)
-            if (saved) {
-              return {
-                ...strat,
-                phases: saved.phases,
-                timing: saved.timing,
-                turnOwner: saved.turnOwner
-              }
+      // Load stratagems for every detachment in the roster
+      const factionFolder = getStratagemFolderName(roster.faction)
+      if (factionFolder) {
+        const available = getAvailableDetachments(factionFolder)
+        const matched = [...new Set(
+          roster.detachments
+            .map(det => detectDetachment(det, available))
+            .filter((det): det is string => !!det)
+        )]
+        const detachmentStrats = matched.flatMap(det =>
+          getDetachmentStratagems(factionFolder, det)
+        )
+        const detachmentOverrides = detachmentStrats.map(strat => {
+          const saved = plan.detachmentPhasePlans?.find(p => p.abilityId === strat.id)
+          if (saved) {
+            return {
+              ...strat,
+              phases: saved.phases,
+              timing: saved.timing,
+              turnOwner: saved.turnOwner
             }
-            return strat
-          })
-          setDetachmentStratagems(detachmentOverrides)
-        }
+          }
+          return strat
+        })
+        setDetachmentStratagems(detachmentOverrides)
       }
     }
   }, [roster])
