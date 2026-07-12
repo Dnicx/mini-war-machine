@@ -21,7 +21,7 @@ describe('parseRosJsonFile with an 11th edition style .json export', () => {
     expect(roster.name).toBe('Synthetic Test List')
     expect(roster.points).toBe(265)
     expect(roster.faction).toBe('Test Faction')
-    expect(roster.detachment).toBe('Test Detachment')
+    expect(roster.detachments).toEqual(['Test Detachment'])
     expect(roster.units).toHaveLength(2)
   })
 
@@ -60,6 +60,43 @@ describe('parseRosJsonFile with an 11th edition style .json export', () => {
     await expect(parseRosJsonFile(notJson)).rejects.toThrow('not valid JSON')
     const noRoster = new File(['{"foo": 1}'], 'x.json', { type: 'application/json' })
     await expect(parseRosJsonFile(noRoster)).rejects.toThrow('no roster object')
+  })
+})
+
+describe('parseRosJsonFile with multiple detachments (11th edition)', () => {
+  it('collects every detachment and its rules', async () => {
+    const json = JSON.stringify({
+      roster: {
+        name: 'Multi Detachment List',
+        costs: [{ name: 'pts', value: 0 }],
+        forces: [{
+          catalogueName: 'Test Faction',
+          rules: [{ id: 'r1', name: 'Army Rule', description: 'Army rule text' }],
+          selections: [
+            {
+              id: 'd1', name: 'Detachment', type: 'upgrade', from: 'entry',
+              selections: [{
+                id: 'd2', name: 'Detachment One', type: 'upgrade', from: 'group',
+                group: 'Detachment',
+                rules: [{ id: 'r2', name: 'Rule One', description: 'Rule one text' }]
+              }]
+            },
+            {
+              id: 'd3', name: 'Detachment', type: 'upgrade', from: 'entry',
+              selections: [{
+                id: 'd4', name: 'Detachment Two', type: 'upgrade', from: 'group',
+                group: 'Detachments',
+                rules: [{ id: 'r3', name: 'Rule Two', description: 'Rule two text' }]
+              }]
+            }
+          ]
+        }]
+      }
+    })
+    const roster = await parseRosJsonFile(new File([json], 'multi.json', { type: 'application/json' }))
+    expect(roster.detachments).toEqual(['Detachment One', 'Detachment Two'])
+    expect(roster.armyAbilities.map(a => a.name))
+      .toEqual(['Army Rule', 'Rule One', 'Rule Two'])
   })
 })
 

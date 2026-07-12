@@ -19,7 +19,7 @@ describe('parseRosFile with an 11th edition style .ros file', () => {
     expect(roster.name).toBe('Synthetic Test List')
     expect(roster.points).toBe(265)
     expect(roster.faction).toBe('Test Faction')
-    expect(roster.detachment).toBe('Test Detachment')
+    expect(roster.detachments).toEqual(['Test Detachment'])
     expect(roster.units).toHaveLength(2)
   })
 
@@ -129,11 +129,43 @@ describe('parseRosFile with 10th edition style data', () => {
   </force></forces>
 </roster>`
     const roster = await parseRosFile(new File([xml], 'old.ros', { type: 'text/xml' }))
-    expect(roster.detachment).toBe('Test Detachment')
+    expect(roster.detachments).toEqual(['Test Detachment'])
     const model = roster.units[0].models[0]
     expect(model.save).toBe('2+')
     expect(model.invulnerableSave).toBe('5+')
     expect(roster.units[0].points).toBe(100)
     expect(roster.armyAbilities.map(a => a.name)).toEqual(['Army Rule', 'Detachment Rule'])
+  })
+})
+
+describe('parseRosFile with multiple detachments (11th edition)', () => {
+  it('collects every detachment and its rules', async () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<roster name="Multi Detachment List" xmlns="http://www.battlescribe.net/schema/rosterSchema">
+  <costs><cost name="pts" typeId="pts" value="0"/></costs>
+  <forces><force id="f1" name="Army Roster" catalogueName="Test Faction">
+    <rules><rule id="r1" name="Army Rule"><description>Army rule text</description></rule></rules>
+    <selections>
+      <selection id="d1" name="Detachment" type="upgrade" from="entry">
+        <selections>
+          <selection id="d2" name="Detachment One" type="upgrade" from="group" group="Detachment">
+            <rules><rule id="r2" name="Rule One"><description>Rule one text</description></rule></rules>
+          </selection>
+        </selections>
+      </selection>
+      <selection id="d3" name="Detachment" type="upgrade" from="entry">
+        <selections>
+          <selection id="d4" name="Detachment Two" type="upgrade" from="group" group="Detachments">
+            <rules><rule id="r3" name="Rule Two"><description>Rule two text</description></rule></rules>
+          </selection>
+        </selections>
+      </selection>
+    </selections>
+  </force></forces>
+</roster>`
+    const roster = await parseRosFile(new File([xml], 'multi.ros', { type: 'text/xml' }))
+    expect(roster.detachments).toEqual(['Detachment One', 'Detachment Two'])
+    expect(roster.armyAbilities.map(a => a.name))
+      .toEqual(['Army Rule', 'Rule One', 'Rule Two'])
   })
 })
