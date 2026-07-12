@@ -42,7 +42,7 @@ export function PlayAbilityCard({ ability }: PlayAbilityCardProps) {
                 {stratagem.restrictions && <p className="mb-1"><span className="font-semibold text-purple-400">RESTRICTIONS: </span>{stratagem.restrictions}</p>}
               </div>
             ) : (
-              <SafeMarkdownRenderer content={ability.description} className="text-text2 text-sm mt-1" />
+              <SafeMarkdownRenderer content={ability.description} className="text-text2 text-sm mt-1 whitespace-pre-wrap" />
             )}
             {ability.notes && (
               <p className="text-accent text-xs mt-1 italic">Note: {ability.notes}</p>

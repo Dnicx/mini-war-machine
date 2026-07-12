@@ -80,7 +80,7 @@ export function StratagemCard({ stratagem, type, onToggleEnable, onPhaseToggle, 
 
       {/* Type line */}
       <p className="text-text2 text-xs mb-2">
-        {stratagem.type} – {stratagem.subtype}
+        {stratagem.type}{stratagem.subtype ? ` – ${stratagem.subtype}` : ''}
       </p>
 
       {/* Dotted divider */}

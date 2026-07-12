@@ -4,112 +4,92 @@
     <name>COMMAND RE-ROLL</name>
     <cpCost>1CP</cpCost>
     <type>CORE</type>
-    <subtype>BATTLE TACTIC STRATAGEM</subtype>
     <lore>A great commander can bend even the vagaries of fate and fortune to their will, the better to ensure victory.</lore>
-    <when>In any phase, just after you have made a Hit roll, a Wound roll, a Damage roll, a saving throw, an Advance roll, a Charge roll, a Desperate Escape test, a Hazardous test, or just after you have rolled the dice to determine the number of attacks made with a weapon, for an attack, model or unit from your army.</when>
-    <effect>You re-roll that roll, test or saving throw.</effect>
-  </stratagem>
-  <stratagem>
-    <name>COUNTER-OFFENSIVE</name>
-    <cpCost>2CP</cpCost>
-    <type>CORE</type>
-    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
-    <lore>In close-quarters combat, the slightest hesitation can leave an opening for a swift foe to exploit.</lore>
-    <when>Fight phase, just after an enemy unit has fought.</when>
-    <target>One unit from your army that is within Engagement Range of one or more enemy units and that has not already been selected to fight this phase.</target>
-    <effect>Your unit fights next.</effect>
+    <when>Any phase, just after you make one of the following rolls for a friendly unit or model: Advance roll; Charge roll; Damage roll; Hazard roll; Hit roll; Save roll; Wound roll; a roll to determine the number of attacks generated with a weapon.</when>
+    <target>That unit or model.</target>
+    <effect>You re-roll that roll. If you are rolling more than one dice together, select one of those dice to re-roll (excluding charge rolls, which you must re-roll in full).</effect>
   </stratagem>
   <stratagem>
     <name>EPIC CHALLENGE</name>
     <cpCost>1CP</cpCost>
     <type>CORE</type>
-    <subtype>EPIC DEED STRATAGEM</subtype>
-    <lore>The legends of the 41st Millennium are replete with deadly duels between mighty champions.</lore>
-    <when>Fight phase, when a Character unit from your army that is within Engagement Range of one or more Attached units is selected to fight.</when>
-    <target>One Character model in your unit.</target>
-    <effect>Until the end of the phase, all melee attacks made by that model have the [PRECISION] ability.</effect>
+    <lore>The legends of the 41st millennium are replete with deadly duels between mighty champions.</lore>
+    <when>Fight phase, just after a friendly Character unit is selected to fight.</when>
+    <target>That Character unit.</target>
+    <effect>Select one Character model in your unit. Until the end of the phase, that model's melee weapons have the [PRECISION] ability.</effect>
   </stratagem>
   <stratagem>
     <name>INSANE BRAVERY</name>
     <cpCost>1CP</cpCost>
     <type>CORE</type>
-    <subtype>EPIC DEED STRATAGEM</subtype>
     <lore>Indifferent to their own survival, these warriors hold their ground against seemingly impossible odds.</lore>
-    <when>Battle-shock step of your Command phase, just after you have failed a Battle-shock test taken for a unit from your army.</when>
-    <target>The unit from your army that Battle-shock test was just taken for (even though your Battle-shocked units cannot normally be affected by your Stratagems).</target>
-    <effect>Your unit is treated as having passed that test instead, and is not Battle-shocked as a result.</effect>
+    <when>Battle-shock step of your Command phase, just before you make a battle-shock roll for a friendly unit.</when>
+    <target>That unit.</target>
+    <effect>That battle-shock roll is automatically successful.</effect>
+    <restrictions>You cannot use this stratagem more than once per battle.</restrictions>
   </stratagem>
   <stratagem>
-    <name>GRENADE</name>
+    <name>EXPLOSIVES</name>
     <cpCost>1CP</cpCost>
     <type>CORE</type>
-    <subtype>WARGEAR STRATAGEM</subtype>
-    <lore>Priming their hand-held projectiles, these warriors draw back and hurl death into the enemy's midst.</lore>
+    <lore>Priming grenades or other explosives, these warriors draw back and hurl death into the enemy's midst.</lore>
     <when>Your Shooting phase.</when>
-    <target>One Grenades unit from your army that is not within Engagement Range of any enemy units and has not been selected to shoot this phase.</target>
-    <effect>Select one enemy unit that is not within Engagement Range of any units from your army and is within 8" of and visible to your Grenades unit. Roll six D6: for each 4+, that enemy unit suffers 1 mortal wound.</effect>
+    <target>One friendly unengaged Explosives/Grenades unit that is eligible to shoot and did not make an advance move this turn.</target>
+    <effect>Resolve the following sequence: 1. Select one Explosives/Grenades model in your unit. 2. Select one unengaged enemy unit within 8" of and visible to that model. 3. Roll six D6: for each 4+, that enemy unit suffers 1 mortal wound (06.02).</effect>
   </stratagem>
   <stratagem>
-    <name>FIRE OVERWATCH</name>
+    <name>CRUSHING IMPACT</name>
     <cpCost>1CP</cpCost>
     <type>CORE</type>
-    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
-    <lore>A hail of wildfire can drive back advancing foes.</lore>
-    <when>Your opponent's Movement or Charge phase, just after an enemy unit is set up or when an enemy unit starts or ends a Normal, Advance, Fall Back or Charge move.</when>
-    <target>One unit from your army that is within 24" of that enemy unit and that would be eligible to shoot if it were your Shooting phase.</target>
-    <effect>Your unit can shoot that enemy unit as if it were your Shooting phase.</effect>
-    <restrictions>Until the end of the phase, each time a model in your unit makes a ranged attack, an unmodified Hit roll of 6 is required to score a hit, irrespective of the attacking weapon's Ballistic Skill or any modifiers. You can only use this Stratagem once per turn.</restrictions>
-  </stratagem>
-  <stratagem>
-    <name>TANK SHOCK</name>
-    <cpCost>1CP</cpCost>
-    <type>CORE</type>
-    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
-    <lore>Ramming the foe with a speeding vehicle may be an unsubtle tactic, but it is a murderously effective one.</lore>
-    <when>Your Charge phase.</when>
-    <target>One Vehicle unit from your army.</target>
-    <effect>Until the end of the phase, after your unit ends a Charge move, select one enemy unit within Engagement Range of it, then select one melee weapon your unit is equipped with. Roll a number of D6 equal to that weapon's Strength characteristic. If that Strength characteristic is greater than that enemy unit's Toughness characteristic, roll two additional D6. For each 5+, that enemy unit suffers 1 mortal wound (to a maximum of 6 mortal wounds).</effect>
+    <lore>In extremis, armoured vehicles and rampaging monsters can use their sheer size as a weapon, ramming and crushing enemies beneath their colossal bulk, though doing so risks sustaining damage in return.</lore>
+    <when>Your Charge phase, just after a friendly Monster/Vehicle unit ends a charge move.</when>
+    <target>That Monster/Vehicle unit.</target>
+    <effect>Resolve the following sequence: 1. Select one enemy unit engaged with your unit. 2. Select one model in your unit engaged with that enemy unit. 3. Roll a number of D6 equal to the T characteristic of that model: for each 1, your unit suffers 1 mortal wound; for each 5+, that enemy unit suffers 1 mortal wound (to a maximum of 6 mortal wounds per unit).</effect>
   </stratagem>
   <stratagem>
     <name>RAPID INGRESS</name>
     <cpCost>1CP</cpCost>
     <type>CORE</type>
-    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
     <lore>Be it cunning strategy, potent technology or supernatural ritual, there are many means by which a commander may hasten their warriors' onset.</lore>
     <when>End of your opponent's Movement phase.</when>
-    <target>One unit from your army that is in Reserves.</target>
-    <effect>Your unit can arrive on the battlefield as if it were the Reinforcements step of your Movement phase.</effect>
-    <restrictions>You cannot use this Stratagem to enable a unit to arrive on the battlefield during a battle round it would not normally be able to do so in.</restrictions>
+    <target>One friendly unit that is in strategic reserves (excluding Aircraft).</target>
+    <effect>Your unit makes an ingress move (20.04).</effect>
+    <restrictions>You cannot use this stratagem during the first battle round.</restrictions>
   </stratagem>
   <stratagem>
-    <name>GO TO GROUND</name>
+    <name>FIRE OVERWATCH</name>
     <cpCost>1CP</cpCost>
     <type>CORE</type>
-    <subtype>BATTLE TACTIC STRATAGEM</subtype>
-    <lore>Seeking salvation from incoming fire, warriors hurl themselves into whatever cover they can find.</lore>
-    <when>Your opponent's Shooting phase, just after an enemy unit has selected its targets.</when>
-    <target>One Infantry unit from your army that was selected as the target of one or more of the attacking unit's attacks.</target>
-    <effect>Until the end of the phase, all models in your unit have a 6+ invulnerable save and have the Benefit of Cover.</effect>
+    <lore>A hail of fire can drive back advancing foes.</lore>
+    <when>End of your opponent's Movement phase.</when>
+    <target>One friendly unengaged unit (excluding Titanic units).</target>
+    <effect>Your unit shoots using snap shooting (see below).</effect>
   </stratagem>
   <stratagem>
     <name>SMOKESCREEN</name>
     <cpCost>1CP</cpCost>
     <type>CORE</type>
-    <subtype>WARGEAR STRATAGEM</subtype>
     <lore>Even the most skilled marksmen struggle to hit targets veiled by billowing screens of smoke.</lore>
-    <when>Your opponent's Shooting phase, just after an enemy unit has selected its targets.</when>
-    <target>One Smoke unit from your army that was selected as the target of one or more of the attacking unit's attacks.</target>
-    <effect>Until the end of the phase, all models in your unit have the Benefit of Cover and the Stealth ability.</effect>
+    <when>Start of your opponent's Shooting phase.</when>
+    <target>One friendly Smoke unit.</target>
+    <effect>Until the end of the phase, each time an attack targets either your Smoke unit, or a unit that is not fully visible to the attacking model because of one or more models in your Smoke unit, the target has the benefit of cover against that attack (13.08).</effect>
   </stratagem>
   <stratagem>
     <name>HEROIC INTERVENTION</name>
+    <cpCost>1CP</cpCost>
+    <type>CORE</type>
+    <lore>Voices raised in furious war cries, your warriors surge forth to meet the enemy's onslaught head-on.</lore>
+    <when>End of your opponent's Charge phase.</when>
+    <target>One friendly unengaged unit within 12" of one or more enemy units. You can only select a Vehicle unit if it is a Character/Walker unit.</target>
+    <effect>Resolve a charge with your unit (11.02). While doing so, before making the charge roll, you must select one of the following modes: Leap to Defend: When selecting charge targets, you can only select enemy units that made a charge move this phase and are within the maximum distance. Into the Fray (+1CP): When making the charge roll, if the result is greater than 6 (after modifiers), change it to 6; and when selecting charge targets, you can select any enemy units that are within 6" of your unit and within the maximum distance.</effect>
+  </stratagem>
+  <stratagem>
+    <name>COUNTEROFFENSIVE</name>
     <cpCost>2CP</cpCost>
     <type>CORE</type>
-    <subtype>STRATEGIC PLOY STRATAGEM</subtype>
-    <lore>Voices raised in furious war cries, your warriors surge forth to meet the enemy's onslaught head-on.</lore>
-    <when>Your opponent's Charge phase, just after an enemy unit ends a Charge move.</when>
-    <target>One unit from your army that is within 6" of that enemy unit and would be eligible to declare a charge against that enemy unit if it were your Charge phase.</target>
-    <effect>Your unit now declares a charge that targets only that enemy unit, and you resolve that charge as if it were your Charge phase.</effect>
-    <restrictions>You can only select a Vehicle unit from your army if it is a Walker. Note that even if this charge is successful, your unit does not receive any Charge bonus this turn.</restrictions>
+    <lore>In close-quarters combat, the slightest hesitation can leave an opening for a swift foe to exploit.</lore>
+    <when>Fight step of your opponent's Fight phase, just after an enemy unit has resolved its attacks.</when>
+    <target>One friendly unit that is eligible to fight.</target>
+    <effect>Until the end of the phase, your unit has the Fights First ability and it must be the next unit you select to fight (12.04).</effect>
   </stratagem>
 </stratagems>
