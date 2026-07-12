@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSwipe } from '../hooks/useSwipe'
-import { ChevronLeft, ChevronRight, Swords, ChevronDown, ChevronUp, Users } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Swords, ChevronDown, ChevronUp, Users, Scroll } from 'lucide-react'
 import type { Roster, Phase, Timing, Ability, GameState, Stratagem, TurnOwner } from '../types/roster'
 import { loadPlan, saveGameState, loadGameState, loadUnitImages, saveUnitImages } from '../lib/storage'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
@@ -8,6 +8,7 @@ import { getCoreStratagems, getDetachmentStratagems } from '../lib/stratagemRegi
 import { getStratagemFolderName } from '../lib/factionMapping'
 import { PlayAbilityCard } from './PlayAbilityCard'
 import { UnitView } from './UnitView'
+import { StratagemsView } from './StratagemsView'
 
 interface PlayDashboardProps {
   roster: Roster
@@ -42,7 +43,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const [coreStratagems, setCoreStratagems] = useState<Stratagem[]>([])
   const [detachmentStratagems, setDetachmentStratagems] = useState<Stratagem[]>([])
   const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
-  const [activeTab, setActiveTab] = useState<'phase' | 'unit'>('phase')
+  const [activeTab, setActiveTab] = useState<'phase' | 'unit' | 'stratagems'>('phase')
   const [unitImages, setUnitImages] = useState<Record<string, string>>(() => loadUnitImages())
   const [attachments, setAttachments] = useState<Record<string, string>>({})
   const [animDir, setAnimDir] = useState<'left' | 'right'>('right')
@@ -460,6 +461,14 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
         </>
       )}
 
+      {/* Stratagems View content */}
+      {activeTab === 'stratagems' && (
+        <StratagemsView
+          coreStratagems={coreStratagems.filter(s => s.enabled !== false)}
+          detachmentStratagems={detachmentStratagems}
+        />
+      )}
+
       {/* Unit View content */}
       {activeTab === 'unit' && (
         <UnitView
@@ -480,6 +489,15 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
         >
           <Swords size={20} />
           Phase View
+        </button>
+        <button
+          onClick={() => setActiveTab('stratagems')}
+          className={`flex-1 flex flex-col items-center py-3 gap-1 text-xs transition-colors ${
+            activeTab === 'stratagems' ? 'text-accent' : 'text-text2'
+          }`}
+        >
+          <Scroll size={20} />
+          Stratagems
         </button>
         <button
           onClick={() => setActiveTab('unit')}
