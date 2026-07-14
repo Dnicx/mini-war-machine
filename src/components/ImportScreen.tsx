@@ -1,9 +1,14 @@
 import { useState, useRef } from 'react'
-import { Upload, Trash2 } from 'lucide-react'
 import type { Roster, RosterMeta } from '../types/roster'
 import { parseRosFile } from '../lib/parseRos'
 import { parseRosJsonFile } from '../lib/parseRosJson'
 import { loadRostersIndex, loadRosterById, deleteRosterFromLibrary } from '../lib/storage'
+import { appIcon } from '../config/icons'
+import { cardStyles } from '../styles/components'
+import { ThemePicker } from './ThemePicker'
+
+const UploadIcon = appIcon('upload')
+const DeleteIcon = appIcon('delete')
 
 interface ImportScreenProps {
   onRosterLoaded: (roster: Roster) => void
@@ -91,13 +96,13 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
             <div className="flex gap-3">
               <button
                 onClick={() => setPendingRoster(null)}
-                className="flex-1 px-4 py-2 bg-surface2 text-text rounded hover:bg-surface2/80"
+                className={`${cardStyles.button.primary} flex-1 justify-center`}
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmImport}
-                className="flex-1 px-4 py-2 bg-accent text-white rounded hover:bg-accent/80"
+                className={`${cardStyles.button.accent} flex-1 justify-center`}
               >
                 Save Roster
               </button>
@@ -109,7 +114,10 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
   }
 
   return (
-    <div className="min-h-screen p-4 flex items-center justify-center">
+    <div className="min-h-screen p-4 flex items-center justify-center relative">
+      <div className="absolute top-4 right-4">
+        <ThemePicker />
+      </div>
       <div className="max-w-lg w-full space-y-6">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-accent mb-2">WH40K Companion</h1>
@@ -159,7 +167,7 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
                         className="p-1 text-text2 hover:text-red-400 rounded"
                         title="Delete roster"
                       >
-                        <Trash2 size={16} />
+                        <DeleteIcon size={16} />
                       </button>
                     )}
                   </div>
@@ -179,7 +187,7 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
             className="hidden"
           />
           <div className="w-full px-4 py-8 bg-surface border-2 border-dashed border-surface2 rounded text-center cursor-pointer hover:border-accent transition-colors">
-            <Upload className="mx-auto mb-2 text-text2" size={32} />
+            <UploadIcon className="mx-auto mb-2 text-text2" size={32} />
             <p className="text-text font-medium text-sm">
               {loading ? 'Importing…' : 'Add New Roster'}
             </p>
