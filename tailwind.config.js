@@ -3,9 +3,6 @@ export default {
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
-    // Button variants live in this config as literal Tailwind classes;
-    // JIT must scan it so those classes get generated.
-    "./src/config/ui.config.json",
   ],
   theme: {
     extend: {

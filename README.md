@@ -78,10 +78,21 @@ Select your physical device from the list when prompted.
 Two config layers, no code changes required:
 
 ### UI config (dev-facing) — `src/config/ui.config.json`
-Controls button variant styles (literal Tailwind class strings), icon choices for key
-actions (lucide icon names), and typography (font family, base size). Components read
-button classes via `cardStyles.button` and icons via `appIcon()` from `src/config/icons.ts`.
-Restart the dev server after editing — Tailwind may not hot-rebuild from this file.
+Controls button styles, icon choices for key actions (lucide icon names), and typography
+(font family, base size). Components read button classes via `cardStyles.button` and icons
+via `appIcon()` from `src/config/icons.ts`.
+
+Buttons are described semantically and compiled to Tailwind in `src/styles/components.ts`:
+
+- `shape` (shared): `square`, `rounded`, or `pill`
+- per variant (`primary`, `secondary`, `accent`): `size` (`sm`/`md`/`lg`), `fill` and
+  `text` (a theme color name — `background`, `surface`, `surface2`, `accent`, `text`,
+  `text2` — or `white`)
+- `icon` variant: `color` and `hoverColor` (same color names)
+
+Filled buttons dim to 80% fill on hover automatically. Unknown values fall back to
+defaults. To allow a new option (e.g. a new size), add its literal Tailwind classes to
+the lookup tables in `src/styles/components.ts`.
 
 ### Theme presets — `src/themes/*.json`
 Color palettes selectable in-app via the settings (gear) icon on the import screen.
