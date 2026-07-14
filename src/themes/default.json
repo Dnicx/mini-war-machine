@@ -1,0 +1,12 @@
+{
+  "id": "default",
+  "name": "Midnight Green",
+  "colors": {
+    "background": "#010007",
+    "surface": "#16213e",
+    "surface2": "#0f3460",
+    "accent": "#5ead31",
+    "text": "#eaeaea",
+    "text2": "#dbc924"
+  }
+}

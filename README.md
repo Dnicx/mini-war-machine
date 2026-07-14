@@ -72,3 +72,20 @@ npx cap run android --live-reload --port 5173
 Select your physical device from the list when prompted.
 
 > **Tip:** If you only changed JS/CSS, all three steps are needed. If you only changed native Android config, just `npx cap run android` is enough.
+
+## Theme & UI Customization
+
+Two config layers, no code changes required:
+
+### UI config (dev-facing) — `src/config/ui.config.json`
+Controls button variant styles (literal Tailwind class strings), icon choices for key
+actions (lucide icon names), and typography (font family, base size). Components read
+button classes via `cardStyles.button` and icons via `appIcon()` from `src/config/icons.ts`.
+Restart the dev server after editing — Tailwind may not hot-rebuild from this file.
+
+### Theme presets — `src/themes/*.json`
+Color palettes selectable in-app via the settings (gear) icon on the import screen.
+Each preset is a JSON file with an `id`, a display `name`, and 6 hex `colors`
+(`background`, `surface`, `surface2`, `accent`, `text`, `text2`). Drop a new .json file
+into `src/themes/` to add a preset; edit an existing file to tweak one. The selected
+theme is stored in localStorage and applied as CSS variables at startup.

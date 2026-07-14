@@ -1,5 +1,12 @@
 import { useState } from 'react'
-import { Play, ChevronLeft, Pencil, Check, X } from 'lucide-react'
+import { appIcon } from '../config/icons'
+import { cardStyles } from '../styles/components'
+
+const BackIcon = appIcon('back')
+const PlayIcon = appIcon('play')
+const EditIcon = appIcon('edit')
+const ConfirmIcon = appIcon('confirm')
+const CancelIcon = appIcon('cancel')
 
 interface PlannerHeaderProps {
   onBackToImport: () => void
@@ -33,9 +40,9 @@ export function PlannerHeader({ onBackToImport, onResetAll, onPlayMode, rosterNa
       <div className="flex items-center gap-3">
         <button
           onClick={onBackToImport}
-          className="text-text2 hover:text-accent flex items-center gap-1"
+          className={cardStyles.button.icon}
         >
-          <ChevronLeft size={18} />
+          <BackIcon size={18} />
           Back
         </button>
         <div className="flex items-center gap-2">
@@ -52,10 +59,10 @@ export function PlannerHeader({ onBackToImport, onResetAll, onPlayMode, rosterNa
                 autoFocus
               />
               <button onClick={commitEdit} className="text-green-400 hover:text-green-300">
-                <Check size={16} />
+                <ConfirmIcon size={16} />
               </button>
               <button onClick={cancelEdit} className="text-text2 hover:text-text">
-                <X size={16} />
+                <CancelIcon size={16} />
               </button>
             </>
           ) : (
@@ -66,7 +73,7 @@ export function PlannerHeader({ onBackToImport, onResetAll, onPlayMode, rosterNa
                 className="text-text2 hover:text-accent"
                 title="Rename roster"
               >
-                <Pencil size={14} />
+                <EditIcon size={14} />
               </button>
             </>
           )}
@@ -75,15 +82,15 @@ export function PlannerHeader({ onBackToImport, onResetAll, onPlayMode, rosterNa
       <div className="flex flex-wrap gap-2">
         <button
           onClick={onResetAll}
-          className="px-4 py-2 bg-surface2 text-text rounded hover:bg-surface2/80 flex items-center gap-2"
+          className={cardStyles.button.primary}
         >
           Reset All
         </button>
         <button
           onClick={onPlayMode}
-          className="px-4 py-2 bg-accent text-white rounded hover:bg-accent/80 flex items-center gap-2"
+          className={cardStyles.button.accent}
         >
-          <Play size={18} />
+          <PlayIcon size={18} />
           Play Mode
         </button>
       </div>

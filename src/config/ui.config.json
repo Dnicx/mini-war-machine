@@ -1,0 +1,23 @@
+{
+  "typography": {
+    "fontFamily": "system-ui, Avenir, Helvetica, Arial, sans-serif",
+    "baseFontSizePx": 16
+  },
+  "buttons": {
+    "primary": "px-4 py-2 bg-surface2 text-text rounded hover:bg-surface2/80 flex items-center gap-2",
+    "secondary": "px-3 py-1 bg-surface2 text-text rounded hover:bg-surface2/80 text-sm",
+    "accent": "px-4 py-2 bg-accent text-white rounded hover:bg-accent/80 flex items-center gap-2",
+    "icon": "text-text2 hover:text-accent flex items-center gap-1"
+  },
+  "icons": {
+    "upload": "Upload",
+    "delete": "Trash2",
+    "settings": "Settings",
+    "play": "Play",
+    "back": "ChevronLeft",
+    "edit": "Pencil",
+    "confirm": "Check",
+    "cancel": "X",
+    "add": "Plus"
+  }
+}

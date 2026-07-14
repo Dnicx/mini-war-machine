@@ -168,3 +168,15 @@ export function loadUnitImages(): Record<string, string> {
   if (!data) return {}
   try { return JSON.parse(data) as Record<string, string> } catch { return {} }
 }
+
+// --- Theme ---
+
+const THEME_KEY = 'wh40k_theme'
+
+export function loadThemeId(): string | null {
+  return localStorage.getItem(THEME_KEY)
+}
+
+export function saveThemeId(id: string): void {
+  localStorage.setItem(THEME_KEY, id)
+}

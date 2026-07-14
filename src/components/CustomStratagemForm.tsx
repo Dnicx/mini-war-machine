@@ -1,5 +1,8 @@
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { appIcon } from '../config/icons'
+import { cardStyles } from '../styles/components'
+
+const AddIcon = appIcon('add')
 
 interface CustomStratagemFormProps {
   onAddStratagem: (name: string, description: string) => void
@@ -37,9 +40,9 @@ export function CustomStratagemForm({ onAddStratagem }: CustomStratagemFormProps
         />
         <button
           onClick={handleSubmit}
-          className="px-4 py-2 bg-surface2 text-text rounded hover:bg-surface2/80 flex items-center gap-2"
+          className={cardStyles.button.primary}
         >
-          <Plus size={18} />
+          <AddIcon size={18} />
           Add Stratagem
         </button>
       </div>

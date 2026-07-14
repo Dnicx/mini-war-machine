@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSwipe } from '../hooks/useSwipe'
 import { ChevronLeft, ChevronRight, Swords, ChevronDown, ChevronUp, Users, Scroll } from 'lucide-react'
+import { appIcon } from '../config/icons'
+import { cardStyles } from '../styles/components'
 import type { Roster, Phase, Timing, Ability, GameState, Stratagem, TurnOwner } from '../types/roster'
 import { loadPlan, saveGameState, loadGameState, loadUnitImages, saveUnitImages } from '../lib/storage'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
@@ -12,6 +14,8 @@ import { detectDetachment } from '../lib/detection'
 import { PlayAbilityCard } from './PlayAbilityCard'
 import { UnitView } from './UnitView'
 import { StratagemsView } from './StratagemsView'
+
+const BackIcon = appIcon('back')
 
 interface PlayDashboardProps {
   roster: Roster
@@ -302,9 +306,9 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={onBackToPlanner}
-          className="text-text2 hover:text-accent flex items-center gap-1"
+          className={cardStyles.button.icon}
         >
-          <ChevronLeft size={18} />
+          <BackIcon size={18} />
           Back to Planner
         </button>
         <h1 className="text-xl font-bold text-accent">Play Mode</h1>
