@@ -24,7 +24,7 @@ const PHASE_PATTERNS: Record<Phase, RegExp[]> = {
   
   Movement: [/any phase/i, 
     /movement/i, 
-    /move/i, 
+    // /move/i, 
     /advance/i, 
     /movement phase/i, 
     /during the movement phase/i, 
@@ -36,20 +36,22 @@ const PHASE_PATTERNS: Record<Phase, RegExp[]> = {
     /shoot/i, 
     /an attack/i, 
     /fire/i, 
-    /shooting phase/i, 
-    /during the shooting phase/i, 
-    /in shooting phase/i, 
-    /enemy shooting/i, 
-    /opponent shooting/i, 
-    / ranged attack/i, 
+    // /shooting phase/i, 
+    // /during the shooting phase/i, 
+    // /in shooting phase/i, 
+    // /enemy shooting/i, 
+    // /opponent shooting/i, 
+    /ranged attack/i, 
     /attacks characteristics/i, 
-    /ranged weapons/i,
-    /Feel No Pain/i
+    /(?<!melee) weapons/i, // "weapons" not preceded by "melee"
+    /Feel No Pain/i,
+    /destroyed/i,
+    /grenades/i,
+    /Lone Operative/i,
   ],
   
   Charge: [/any phase/i, 
     /charge/i, 
-    /end of movement/i, 
     /charge phase/i, 
     /during the charge phase/i
   ],
@@ -64,8 +66,9 @@ const PHASE_PATTERNS: Record<Phase, RegExp[]> = {
     /melee phase/i, 
     /an attack/i, 
     /attacks characteristics/i, 
-    /melee weapons/i,
-    /Feel No Pain/i
+    /(?<!ranged) weapons/i,  // "weapons" not preceded by "ranged"
+    /Feel No Pain/i,
+    /destroyed/i,
   ]
 }
 
@@ -138,7 +141,7 @@ export function detectOncePerRound(description: string): boolean {
 // trigger so timing is not skewed by keywords in effect/restrictions text.
 // Defaults to the full description for regular abilities.
 export function applyHeuristics(ability: Ability, timingSource?: string): Ability {
-  const phases = detectPhases(ability.description)
+  const phases = detectPhases(timingSource ?? ability.description)
   const timing = detectTiming(timingSource ?? ability.description)
   const autoDetectedTurnOwner = detectTurnOwner(ability.description, ability.name)
   const oncePerBattle = detectOncePerBattle(ability.description)

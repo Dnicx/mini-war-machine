@@ -114,28 +114,28 @@ export function StratagemCard({ stratagem, type, onToggleEnable, onPhaseToggle, 
       {/* WHEN */}
       <div className="mb-2">
         <span className={`font-semibold ${labelColor} uppercase text-sm`}>WHEN: </span>
-        <span className="text-text2 text-sm">{stratagem.when}</span>
+        <span className="text-text2 text-sm whitespace-pre-line">{stratagem.when}</span>
       </div>
 
       {/* TARGET */}
       {stratagem.target && (
         <div className="mb-2">
           <span className={`font-semibold ${labelColor} uppercase text-sm`}>TARGET: </span>
-          <span className="text-text2 text-sm">{stratagem.target}</span>
+          <span className="text-text2 text-sm whitespace-pre-line">{stratagem.target}</span>
         </div>
       )}
 
       {/* EFFECT */}
       <div className="mb-2">
         <span className={`font-semibold ${labelColor} uppercase text-sm`}>EFFECT: </span>
-        <span className="text-text2 text-sm">{stratagem.effect}</span>
+        <span className="text-text2 text-sm whitespace-pre-line">{stratagem.effect}</span>
       </div>
 
       {/* RESTRICTIONS */}
       {stratagem.restrictions && (
         <div className="mb-2">
           <span className={`font-semibold ${labelColor} uppercase text-sm`}>RESTRICTIONS: </span>
-          <span className="text-text2 text-sm">{stratagem.restrictions}</span>
+          <span className="text-text2 text-sm whitespace-pre-line">{stratagem.restrictions}</span>
         </div>
       )}
 

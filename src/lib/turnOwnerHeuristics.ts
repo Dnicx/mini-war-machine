@@ -48,5 +48,5 @@ export function detectTurnOwner(when: string, name: string): TurnOwner {
   }
 
   // Default to yours if no pattern matches
-  return 'yours'
+  return 'either'
 }

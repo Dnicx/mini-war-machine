@@ -159,23 +159,23 @@ function StratagemGridCard({ stratagem }: StratagemGridCardProps) {
           {!isCollapsed && (
             <p>
               <span className="font-bold text-text uppercase text-xs">When: </span>
-              <span className="text-text2">{stratagem.when}</span>
+              <span className="text-text2 whitespace-pre-line">{stratagem.when}</span>
             </p>
           )}
           {!isCollapsed && stratagem.target && (
             <p>
               <span className="font-bold text-text uppercase text-xs">Target: </span>
-              <span className="text-text2">{stratagem.target}</span>
+              <span className="text-text2 whitespace-pre-line">{stratagem.target}</span>
             </p>
           )}
           <p>
             <span className="font-bold text-text uppercase text-xs">Effect: </span>
-            <span className="text-text2">{stratagem.effect}</span>
+            <span className="text-text2 whitespace-pre-line">{stratagem.effect}</span>
           </p>
           {!isCollapsed && stratagem.restrictions && (
             <p>
               <span className="font-bold text-text uppercase text-xs">Restrictions: </span>
-              <span className="text-text2">{stratagem.restrictions}</span>
+              <span className="text-text2 whitespace-pre-line">{stratagem.restrictions}</span>
             </p>
           )}
         </div>

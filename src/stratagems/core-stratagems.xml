@@ -5,7 +5,17 @@
     <cpCost>1CP</cpCost>
     <type>CORE</type>
     <lore>A great commander can bend even the vagaries of fate and fortune to their will, the better to ensure victory.</lore>
-    <when>Any phase, just after you make one of the following rolls for a friendly unit or model: Advance roll; Charge roll; Damage roll; Hazard roll; Hit roll; Save roll; Wound roll; a roll to determine the number of attacks generated with a weapon.</when>
+    <when>WHEN: Any phase, just after you make one of the 
+      following rolls for a friendly unit or model:
+      ▪ Advance roll
+      ▪ Charge roll
+      ▪ Damage roll
+      ▪ Hazard roll
+      ▪ Hit roll
+      ▪ Save roll 
+      ▪ Wound roll
+      ▪ A roll to determine the number of attacks 
+      generated with a weapon. </when>
     <target>That unit or model.</target>
     <effect>You re-roll that roll. If you are rolling more than one dice together, select one of those dice to re-roll (excluding charge rolls, which you must re-roll in full).</effect>
   </stratagem>
@@ -35,7 +45,10 @@
     <lore>Priming grenades or other explosives, these warriors draw back and hurl death into the enemy's midst.</lore>
     <when>Your Shooting phase.</when>
     <target>One friendly unengaged Explosives/Grenades unit that is eligible to shoot and did not make an advance move this turn.</target>
-    <effect>Resolve the following sequence: 1. Select one Explosives/Grenades model in your unit. 2. Select one unengaged enemy unit within 8" of and visible to that model. 3. Roll six D6: for each 4+, that enemy unit suffers 1 mortal wound (06.02).</effect>
+    <effect>Resolve the following sequence: 
+       1. Select one Explosives/Grenades model in your unit. 
+       2. Select one unengaged enemy unit within 8" of and visible to that model.
+       3. Roll six D6: for each 4+, that enemy unit suffers 1 mortal wound (06.02).</effect>
   </stratagem>
   <stratagem>
     <name>CRUSHING IMPACT</name>
@@ -44,7 +57,10 @@
     <lore>In extremis, armoured vehicles and rampaging monsters can use their sheer size as a weapon, ramming and crushing enemies beneath their colossal bulk, though doing so risks sustaining damage in return.</lore>
     <when>Your Charge phase, just after a friendly Monster/Vehicle unit ends a charge move.</when>
     <target>That Monster/Vehicle unit.</target>
-    <effect>Resolve the following sequence: 1. Select one enemy unit engaged with your unit. 2. Select one model in your unit engaged with that enemy unit. 3. Roll a number of D6 equal to the T characteristic of that model: for each 1, your unit suffers 1 mortal wound; for each 5+, that enemy unit suffers 1 mortal wound (to a maximum of 6 mortal wounds per unit).</effect>
+    <effect>Resolve the following sequence: 
+       1. Select one enemy unit engaged with your unit. 
+       2. Select one model in your unit engaged with that enemy unit. 
+       3. Roll a number of D6 equal to the T characteristic of that model: for each 1, your unit suffers 1 mortal wound; for each 5+, that enemy unit suffers 1 mortal wound (to a maximum of 6 mortal wounds per unit).</effect>
   </stratagem>
   <stratagem>
     <name>RAPID INGRESS</name>
@@ -81,7 +97,13 @@
     <lore>Voices raised in furious war cries, your warriors surge forth to meet the enemy's onslaught head-on.</lore>
     <when>End of your opponent's Charge phase.</when>
     <target>One friendly unengaged unit within 12" of one or more enemy units. You can only select a Vehicle unit if it is a Character/Walker unit.</target>
-    <effect>Resolve a charge with your unit (11.02). While doing so, before making the charge roll, you must select one of the following modes: Leap to Defend: When selecting charge targets, you can only select enemy units that made a charge move this phase and are within the maximum distance. Into the Fray (+1CP): When making the charge roll, if the result is greater than 6 (after modifiers), change it to 6; and when selecting charge targets, you can select any enemy units that are within 6" of your unit and within the maximum distance.</effect>
+    <effect>Resolve a charge with your unit (11.02). While doing so, before making the charge roll, you must select one of the following modes: 
+      ---
+       Leap to Defend: When selecting charge targets, you can only select enemy units that made a charge move this phase and are within the maximum distance. 
+      ---
+       Into the Fray (+1CP): 
+           ▪ When making the charge roll, if the result is greater than 6 (after modifiers), change it to 6.
+           ▪ When selecting charge targets, you can select any enemy units that are within 6" of your unit and within the maximum distance.</effect>
   </stratagem>
   <stratagem>
     <name>COUNTEROFFENSIVE</name>
