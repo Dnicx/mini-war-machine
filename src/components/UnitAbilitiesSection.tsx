@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { ChevronDown, ChevronUp, Camera } from 'lucide-react'
 import type { Ability, Phase, Timing, TurnOwner } from '../types/roster'
+import { effectiveTurnOwner } from '../lib/turnOwnerHeuristics'
 import { SafeMarkdownRenderer } from './SafeMarkdownRenderer'
 
 // Normalize a unit/datasheet name for comparison: uppercase, collapse whitespace.
@@ -306,7 +307,7 @@ function UnitAbilityCard({
                       <div>
                         <label className="text-xs text-text2 block mb-1">Turn</label>
                         <select
-                          value={ability.turnOwner || ability.autoDetectedTurnOwner || 'yours'}
+                          value={effectiveTurnOwner(ability)}
                           onChange={(e) => onTurnOwnerChange(ability.id, e.target.value as TurnOwner)}
                           className="w-full px-2 py-1 bg-surface2 border border-surface2 rounded text-text text-sm focus:outline-none focus:border-accent"
                         >

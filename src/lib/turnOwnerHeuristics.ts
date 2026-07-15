@@ -47,6 +47,16 @@ export function detectTurnOwner(when: string, name: string): TurnOwner {
     return 'either'
   }
 
-  // Default to yours if no pattern matches
+  // Default when no pattern matches
   return 'either'
+}
+
+// Single source of truth for resolving an ability's/stratagem's turn owner:
+// user override first, then the auto-detected value. The final 'yours' only
+// applies when neither is set (e.g. custom stratagems, which never go
+// through the heuristics).
+export function effectiveTurnOwner(
+  item: { turnOwner?: TurnOwner; autoDetectedTurnOwner?: TurnOwner }
+): TurnOwner {
+  return item.turnOwner || item.autoDetectedTurnOwner || 'yours'
 }

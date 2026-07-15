@@ -3,6 +3,7 @@ import {
   Flag, RotateCcw, Crown, Move, Crosshair, Zap, Swords, ChevronDown, ChevronUp
 } from 'lucide-react'
 import type { Stratagem, Phase, TurnOwner } from '../types/roster'
+import { effectiveTurnOwner } from '../lib/turnOwnerHeuristics'
 
 const PHASES: Phase[] = [
   'Start of Game', 'Start of Battle Round', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight'
@@ -35,10 +36,6 @@ function turnOwnerColor(turnOwner: TurnOwner): string {
   }
 }
 
-function turnOwnerOf(stratagem: Stratagem): TurnOwner {
-  return stratagem.turnOwner || stratagem.autoDetectedTurnOwner || 'yours'
-}
-
 function phasesOf(stratagem: Stratagem): Phase[] {
   return stratagem.phases || stratagem.autoDetectedPhases || []
 }
@@ -58,7 +55,7 @@ export function StratagemsView({ coreStratagems, detachmentStratagems }: Stratag
       )}
       {TURN_GROUPS.map(group => {
         const inTurn = all.filter(s => {
-          const owner = turnOwnerOf(s)
+          const owner = effectiveTurnOwner(s)
           return owner === group.owner || owner === 'either'
         })
         if (inTurn.length === 0) return null
@@ -135,7 +132,7 @@ interface StratagemGridCardProps {
 function StratagemGridCard({ stratagem }: StratagemGridCardProps) {
   const [isCollapsed, setIsCollapsed] = useState(true)
   const phases = phasesOf(stratagem)
-  const bandColor = turnOwnerColor(turnOwnerOf(stratagem))
+  const bandColor = turnOwnerColor(effectiveTurnOwner(stratagem))
 
   return (
     <div

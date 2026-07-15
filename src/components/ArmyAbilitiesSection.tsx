@@ -1,4 +1,5 @@
 import type { Ability, Phase, Timing, TurnOwner } from '../types/roster'
+import { effectiveTurnOwner } from '../lib/turnOwnerHeuristics'
 import { SafeMarkdownRenderer } from './SafeMarkdownRenderer'
 
 interface ArmyAbilitiesSectionProps {
@@ -58,7 +59,7 @@ function AbilityCard({ ability, onPhaseToggle, onTimingChange, onTurnOwnerChange
   const currentTiming = ability.timing || ''
   const autoPhases = ability.autoDetectedPhases || []
   const hasUserOverride = JSON.stringify(ability.phases) !== JSON.stringify(ability.autoDetectedPhases) || ability.timing !== ability.autoDetectedTiming || ability.turnOwner !== ability.autoDetectedTurnOwner
-  const currentTurnOwner = ability.turnOwner || ability.autoDetectedTurnOwner || 'yours'
+  const currentTurnOwner = effectiveTurnOwner(ability)
   const hasEmptyPhases = !currentPhases || currentPhases.length === 0
 
   return (
