@@ -221,6 +221,10 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
       // If no phases are set, show in all phases (fallback)
       const phaseMatch = abilityPhases.length === 0 || abilityPhases.includes(phase)
 
+      // In the Fight phase both players alternate melee attacks, so show
+      // abilities/stratagems regardless of whose turn it currently is.
+      if (phase === 'Fight') return phaseMatch
+
       // For stratagems, check turn owner
       if ('turnOwner' in ability) {
         const stratagemTurnOwner = (ability as Stratagem).turnOwner || (ability as Stratagem).autoDetectedTurnOwner || 'yours'
@@ -568,7 +572,10 @@ function PhaseContent({ phase, turnOwner, activeAbilities, abilitiesByTiming, co
     <>
       {phase !== 'Start of Game' && phase !== 'Start of Battle Round' ? (
         <div className="space-y-4">
-          {TIMINGS.map((timing, idx) => (
+          {TIMINGS.map((timing, idx) => {
+            // Hide timing sections that have no abilities in this phase
+            if (Object.keys(abilitiesByTiming[timing]).length === 0) return null
+            return (
             <div key={timing} ref={el => { timingRefs.current[idx] = el }} className="bg-surface p-4 rounded-lg">
               <button
                 onClick={() => setCollapsedTimings(prev => {
@@ -583,23 +590,20 @@ function PhaseContent({ phase, turnOwner, activeAbilities, abilitiesByTiming, co
               </button>
               {!collapsedTimings.has(timing) && (
                 <div className="space-y-4">
-                  {Object.keys(abilitiesByTiming[timing]).length === 0 ? (
-                    <p className="text-text2 text-center py-4 text-sm">No abilities for this timing</p>
-                  ) : (
-                    Object.entries(abilitiesByTiming[timing]).map(([unitName, abilities]) => (
-                      <CollapsibleUnitSection
-                        key={unitName}
-                        unitName={unitName}
-                        abilities={abilities}
-                        isCollapsed={collapsedUnits.has(unitName)}
-                        onToggle={() => onToggleUnit(unitName)}
-                      />
-                    ))
-                  )}
+                  {Object.entries(abilitiesByTiming[timing]).map(([unitName, abilities]) => (
+                    <CollapsibleUnitSection
+                      key={unitName}
+                      unitName={unitName}
+                      abilities={abilities}
+                      isCollapsed={collapsedUnits.has(unitName)}
+                      onToggle={() => onToggleUnit(unitName)}
+                    />
+                  ))}
                 </div>
               )}
             </div>
-          ))}
+            )
+          })}
         </div>
       ) : (
         <div className="bg-surface p-4 rounded-lg">
