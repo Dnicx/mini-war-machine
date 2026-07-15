@@ -88,6 +88,9 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
             ...ability,
             phases: planEntry.phases,
             timing: planEntry.timing,
+            // Without this, the turn owner picked in the Planner is ignored and
+            // the filter falls back to the auto-detected default ('either').
+            turnOwner: planEntry.turnOwner,
             notes: planEntry.notes
           }
         }
@@ -221,8 +224,10 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
       // If no phases are set, show in all phases (fallback)
       const phaseMatch = abilityPhases.length === 0 || abilityPhases.includes(phase)
 
-      // For stratagems, check turn owner
-      if ('turnOwner' in ability) {
+      // For stratagems, check turn owner. Discriminate on 'cpCost' (required on
+      // Stratagem, absent on Ability) — unit abilities can also carry a
+      // turnOwner key now that plan overrides restore it.
+      if ('cpCost' in ability) {
         const stratagemTurnOwner = (ability as Stratagem).turnOwner || (ability as Stratagem).autoDetectedTurnOwner || 'yours'
 
         // Show if turn owner matches current turn
@@ -261,7 +266,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
       // Legacy saved data used 'attacking' before it was renamed to 'attacking/saving'.
       if ((timing as string) === 'attacking') timing = 'attacking/saving'
       // For stratagems, use "Stratagems" as the source unit
-      const sourceUnit = 'turnOwner' in ability ? 'Stratagems' : (ability.sourceUnit || 'Army Abilities')
+      const sourceUnit = 'cpCost' in ability ? 'Stratagems' : (ability.sourceUnit || 'Army Abilities')
 
       // Guard against unknown timing values (e.g. stale persisted data) so an
       // unrecognized key falls through to the "show in all sections" branch.
