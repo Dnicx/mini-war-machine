@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Stratagem, Phase, Timing, TurnOwner } from '../types/roster'
+import { effectiveTurnOwner } from '../lib/turnOwnerHeuristics'
 
 const PHASES: Phase[] = ['Start of Game', 'Start of Battle Round', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight']
 const TIMINGS: Timing[] = ['start', 'beforeTarget', 'attacking/saving', 'afterTargeted', 'end']
@@ -19,7 +20,7 @@ export function StratagemCard({ stratagem, type, onToggleEnable, onPhaseToggle, 
   
   const currentPhases = stratagem.phases || []
   const currentTiming = stratagem.timing || ''
-  const currentTurnOwner = stratagem.turnOwner || stratagem.autoDetectedTurnOwner || 'yours'
+  const currentTurnOwner = effectiveTurnOwner(stratagem)
   const autoPhases = stratagem.autoDetectedPhases || []
   const autoTiming = stratagem.autoDetectedTiming
   const hasUserOverride =
