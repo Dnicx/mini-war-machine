@@ -6,6 +6,7 @@ import { cardStyles } from '../styles/components'
 import type { Roster, Phase, Timing, Ability, GameState, Stratagem, TurnOwner } from '../types/roster'
 import { loadPlan, saveGameState, loadGameState, loadUnitImages, saveUnitImages } from '../lib/storage'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
+import { effectiveTurnOwner } from '../lib/turnOwnerHeuristics'
 import {
   getCoreStratagems, getAvailableDetachments, getDetachmentStratagems
 } from '../lib/stratagemRegistry'
@@ -88,6 +89,9 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
             ...ability,
             phases: planEntry.phases,
             timing: planEntry.timing,
+            // Without this, the turn owner picked in the Planner is ignored and
+            // the filter falls back to the auto-detected default ('either').
+            turnOwner: planEntry.turnOwner,
             notes: planEntry.notes
           }
         }
@@ -221,28 +225,9 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
       // If no phases are set, show in all phases (fallback)
       const phaseMatch = abilityPhases.length === 0 || abilityPhases.includes(phase)
 
-      // For stratagems, check turn owner
-      if ('turnOwner' in ability) {
-        const stratagemTurnOwner = (ability as Stratagem).turnOwner || (ability as Stratagem).autoDetectedTurnOwner || 'yours'
-
-        // Show if turn owner matches current turn
-        if (stratagemTurnOwner === 'either') {
-          return phaseMatch
-        }
-        if (stratagemTurnOwner === 'yours' && turnOwner === 'yours') {
-          return phaseMatch
-        }
-        if (stratagemTurnOwner === 'opponent' && turnOwner === 'opponent') {
-          return phaseMatch
-        }
-        return false
-      }
-
-      const abilityTurnOwner = ability.turnOwner || ability.autoDetectedTurnOwner || 'yours'
-      if (abilityTurnOwner === 'either') return phaseMatch
-      if (abilityTurnOwner === 'yours' && turnOwner === 'yours') return phaseMatch
-      if (abilityTurnOwner === 'opponent' && turnOwner === 'opponent') return phaseMatch
-      return false
+      // Abilities and stratagems resolve turn owner the same way
+      const owner = effectiveTurnOwner(ability)
+      return phaseMatch && (owner === 'either' || owner === turnOwner)
     })
   }
 
@@ -260,8 +245,10 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
       let timing = ability.timing || ability.autoDetectedTiming
       // Legacy saved data used 'attacking' before it was renamed to 'attacking/saving'.
       if ((timing as string) === 'attacking') timing = 'attacking/saving'
-      // For stratagems, use "Stratagems" as the source unit
-      const sourceUnit = 'turnOwner' in ability ? 'Stratagems' : (ability.sourceUnit || 'Army Abilities')
+      // For stratagems, use "Stratagems" as the source unit. Discriminate on
+      // 'cpCost' (required on Stratagem, absent on Ability) — unit abilities
+      // can also carry a turnOwner key now that plan overrides restore it.
+      const sourceUnit = 'cpCost' in ability ? 'Stratagems' : (ability.sourceUnit || 'Army Abilities')
 
       // Guard against unknown timing values (e.g. stale persisted data) so an
       // unrecognized key falls through to the "show in all sections" branch.
