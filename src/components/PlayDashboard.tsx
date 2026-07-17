@@ -455,7 +455,9 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
               the finger (written by useCarouselDrag); the incoming pane sits
               offset by ±100% so it slides in as the track moves. */}
           <div style={{ overflow: 'hidden' }}>
-            <div ref={trackRef} style={{ position: 'relative' }}>
+            {/* select-none: long-pressing selectable ability text makes
+                Android hijack the touch (touchcancel), killing the swipe. */}
+            <div ref={trackRef} className="select-none" style={{ position: 'relative' }}>
               {incomingPhase && (() => {
                 const incomingAbilities = getActiveAbilities(incomingPhase.phase, gameState.turnOwner)
                 const incomingByTiming = getAbilitiesByTiming(incomingPhase.phase, gameState.turnOwner)

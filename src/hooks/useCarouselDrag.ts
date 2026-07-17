@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { flushSync } from 'react-dom'
 
 // 'right' = the incoming pane slides in from the right (finger moves left).
 export type CarouselSide = 'left' | 'right'
@@ -70,11 +71,13 @@ export function useCarouselDrag(
       `transform ${SETTLE_DURATION_MS}ms ease-out`
     )
     window.setTimeout(() => {
-      // The transform reset and the parent's phase update from onSettle
-      // land in the same paint, so the new pane appears at rest, no flash.
+      // flushSync forces the parent's phase update into the DOM before the
+      // transform reset below, so both land in one paint. Without it React
+      // renders in a later task and the browser paints the old pane back at
+      // rest for one frame — visible as a text flicker after the swipe.
+      flushSync(() => callbacksRef.current.onSettle(committed))
       setTransform('')
       animating.current = false
-      callbacksRef.current.onSettle(committed)
     }, SETTLE_DURATION_MS + 20)
   }
 
@@ -86,7 +89,10 @@ export function useCarouselDrag(
     requestAnimationFrame(() => requestAnimationFrame(() => settle(true, side)))
   }
 
-  const endDrag = (snapBack: boolean) => {
+  // fromCancel: the browser aborted the touch (e.g. Android hijacking the
+  // gesture for long-press text selection). Velocity is unreliable there,
+  // so decide by distance alone rather than throwing the swipe away.
+  const endDrag = (fromCancel: boolean) => {
     if (frame.current !== null) {
       cancelAnimationFrame(frame.current)
       frame.current = null
@@ -99,16 +105,17 @@ export function useCarouselDrag(
     const width = trackRef.current?.clientWidth ?? 0
     const distance = Math.abs(state.deltaX)
     const flick =
+      !fromCancel &&
       distance > FLICK_MIN_DISTANCE &&
       Math.abs(state.velocity) > FLICK_VELOCITY &&
       Math.sign(state.velocity) === Math.sign(state.deltaX)
     // A fast flick back toward the start cancels even past the distance
     // threshold — matches the user's visible intent to abort.
     const opposingFlick =
+      !fromCancel &&
       Math.abs(state.velocity) > FLICK_VELOCITY &&
       Math.sign(state.velocity) !== Math.sign(state.deltaX)
     const committed =
-      !snapBack &&
       width > 0 &&
       !opposingFlick &&
       (distance > width * COMMIT_DISTANCE_RATIO || flick)
