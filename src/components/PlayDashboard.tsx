@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { useSwipe } from '../hooks/useSwipe'
+import { useCarouselDrag } from '../hooks/useCarouselDrag'
+import type { CarouselSide } from '../hooks/useCarouselDrag'
 import { ChevronLeft, ChevronRight, Swords, ChevronDown, ChevronUp, Users, Scroll } from 'lucide-react'
 import { appIcon } from '../config/icons'
 import { cardStyles } from '../styles/components'
@@ -58,9 +59,11 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const [activeTab, setActiveTab] = useState<'phase' | 'unit' | 'stratagems'>('phase')
   const [unitImages, setUnitImages] = useState<Record<string, string>>(() => loadUnitImages())
   const [attachments, setAttachments] = useState<Record<string, string>>({})
-  const [animDir, setAnimDir] = useState<'left' | 'right'>('right')
-  const [exitingPhase, setExitingPhase] = useState<Phase | null>(null)
+  // The pane sliding in during a drag or programmatic slide. Rendered
+  // offset by ±100% inside the track; null when the carousel is at rest.
+  const [incomingPhase, setIncomingPhase] = useState<{ phase: Phase; side: CarouselSide } | null>(null)
   const [activeTiming, setActiveTiming] = useState<Timing>('start')
+  const trackRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     // Load saved game state
@@ -180,29 +183,35 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     })
   }
 
-  const nextPhase = () => {
-    if (exitingPhase) return
+  const adjacentPhase = (side: CarouselSide) => {
     const currentIndex = PHASES.indexOf(gameState.currentPhase)
-    const nextIndex = (currentIndex + 1) % PHASES.length
-    setAnimDir('right')
-    setExitingPhase(gameState.currentPhase)
-    setActiveTiming('start')
-    updateGameState({ currentPhase: PHASES[nextIndex] })
-    setTimeout(() => setExitingPhase(null), 300)
+    const offset = side === 'right' ? 1 : -1
+    return PHASES[(currentIndex + offset + PHASES.length) % PHASES.length]
   }
 
-  const prevPhase = () => {
-    if (exitingPhase) return
-    const currentIndex = PHASES.indexOf(gameState.currentPhase)
-    const prevIndex = (currentIndex - 1 + PHASES.length) % PHASES.length
-    setAnimDir('left')
-    setExitingPhase(gameState.currentPhase)
-    setActiveTiming('start')
-    updateGameState({ currentPhase: PHASES[prevIndex] })
-    setTimeout(() => setExitingPhase(null), 300)
+  const { handlers: swipeHandlers, slide } = useCarouselDrag(trackRef, {
+    onDragSide: (side) => {
+      setIncomingPhase({ phase: adjacentPhase(side), side })
+    },
+    onSettle: (committed) => {
+      if (committed && incomingPhase) {
+        setActiveTiming('start')
+        updateGameState({ currentPhase: incomingPhase.phase })
+      }
+      setIncomingPhase(null)
+    }
+  })
+
+  // Programmatic navigation (chevrons and phase pills) reuses the same
+  // track animation as finger drags so all phase changes feel identical.
+  const goToPhase = (phase: Phase, side: CarouselSide) => {
+    if (incomingPhase || phase === gameState.currentPhase) return
+    setIncomingPhase({ phase, side })
+    slide(side)
   }
 
-  const swipeHandlers = useSwipe(nextPhase, prevPhase)
+  const nextPhase = () => goToPhase(adjacentPhase('right'), 'right')
+  const prevPhase = () => goToPhase(adjacentPhase('left'), 'left')
 
   const nextTurn = () => {
     if (gameState.turnOwner === 'yours') {
@@ -359,13 +368,10 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
                     <button
                       key={phase}
                       onClick={() => {
-                        if (exitingPhase) return
-                        const dir = PHASES.indexOf(phase) > PHASES.indexOf(gameState.currentPhase) ? 'right' : 'left'
-                        setAnimDir(dir)
-                        setExitingPhase(gameState.currentPhase)
-                        setActiveTiming('start')
-                        updateGameState({ currentPhase: phase })
-                        setTimeout(() => setExitingPhase(null), 300)
+                        const side: CarouselSide =
+                          PHASES.indexOf(phase) > PHASES.indexOf(gameState.currentPhase)
+                            ? 'right' : 'left'
+                        goToPhase(phase, side)
                       }}
                       className={`px-3 py-1 rounded text-sm whitespace-nowrap ${
                         gameState.currentPhase === phase
@@ -445,31 +451,35 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
             )}
           </div>
 
-          {/* Animated phase content area */}
-          <div style={{ position: 'relative', overflow: 'hidden' }}>
-            {exitingPhase && (() => {
-              const exitActive = getActiveAbilities(exitingPhase, gameState.turnOwner)
-              const exitByTiming = getAbilitiesByTiming(exitingPhase, gameState.turnOwner)
-              return (
-                <div
-                  key={`exit-${exitingPhase}`}
-                  style={{ position: 'absolute', top: 0, left: 0, right: 0 }}
-                  className={animDir === 'right' ? 'slide-out-left' : 'slide-out-right'}
-                >
-                  <PhaseContent
-                    phase={exitingPhase}
-                    turnOwner={gameState.turnOwner}
-                    activeAbilities={exitActive}
-                    abilitiesByTiming={exitByTiming}
-                    collapsedUnits={collapsedUnits}
-                    onToggleUnit={toggleUnit}
-                    collapsedTimings={collapsedTimings}
-                    onToggleTiming={toggleTiming}
-                  />
-                </div>
-              )
-            })()}
-            <div key={gameState.currentPhase} className={animDir === 'right' ? 'slide-from-right' : 'slide-from-left'}>
+          {/* Draggable phase content area. The track's translateX follows
+              the finger (written by useCarouselDrag); the incoming pane sits
+              offset by ±100% so it slides in as the track moves. */}
+          <div style={{ overflow: 'hidden' }}>
+            <div ref={trackRef} style={{ position: 'relative' }}>
+              {incomingPhase && (() => {
+                const incomingAbilities = getActiveAbilities(incomingPhase.phase, gameState.turnOwner)
+                const incomingByTiming = getAbilitiesByTiming(incomingPhase.phase, gameState.turnOwner)
+                return (
+                  <div
+                    style={{
+                      position: 'absolute', top: 0, left: 0, right: 0,
+                      transform: incomingPhase.side === 'right'
+                        ? 'translateX(100%)' : 'translateX(-100%)'
+                    }}
+                  >
+                    <PhaseContent
+                      phase={incomingPhase.phase}
+                      turnOwner={gameState.turnOwner}
+                      activeAbilities={incomingAbilities}
+                      abilitiesByTiming={incomingByTiming}
+                      collapsedUnits={collapsedUnits}
+                      onToggleUnit={toggleUnit}
+                      collapsedTimings={collapsedTimings}
+                      onToggleTiming={toggleTiming}
+                    />
+                  </div>
+                )
+              })()}
               <PhaseContent
                 phase={gameState.currentPhase}
                 turnOwner={gameState.turnOwner}
