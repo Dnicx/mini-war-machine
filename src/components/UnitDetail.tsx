@@ -275,6 +275,8 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
 
   return (
     <div
+      // Fill the viewport so swipes on empty space below short content still register
+      className="min-h-screen"
       style={{ touchAction: 'pan-y' }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
