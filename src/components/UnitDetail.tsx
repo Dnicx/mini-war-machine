@@ -191,7 +191,20 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
   const [activeContent, setActiveContent] = useState<'models' | 'weapons' | 'abilities'>('models')
   const [collapsedModels, setCollapsedModels] = useState<Set<string>>(new Set())
   const imageInputRef = useRef<HTMLInputElement>(null)
-  const swipeHandlers = useSwipe(() => {}, onBack)
+
+  const contentTabs = ['models', 'weapons', 'abilities'] as const
+  const swipeHandlers = useSwipe(
+    () => {
+      const index = contentTabs.indexOf(activeContent)
+      if (index < contentTabs.length - 1) setActiveContent(contentTabs[index + 1])
+    },
+    () => {
+      const index = contentTabs.indexOf(activeContent)
+      // Swiping right past the first tab keeps the existing back-to-list gesture
+      if (index > 0) setActiveContent(contentTabs[index - 1])
+      else onBack()
+    }
+  )
 
   const toggleModel = (id: string) => {
     setCollapsedModels(prev => {
