@@ -51,6 +51,10 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const [coreStratagems, setCoreStratagems] = useState<Stratagem[]>([])
   const [detachmentStratagems, setDetachmentStratagems] = useState<Stratagem[]>([])
   const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
+  // Lifted out of PhaseContent: during the slide animation two PhaseContent
+  // copies mount (exiting + entering), so local state there would reset and
+  // collapsed timing sections would visibly re-expand mid-animation.
+  const [collapsedTimings, setCollapsedTimings] = useState<Set<Timing>>(new Set())
   const [activeTab, setActiveTab] = useState<'phase' | 'unit' | 'stratagems'>('phase')
   const [unitImages, setUnitImages] = useState<Record<string, string>>(() => loadUnitImages())
   const [attachments, setAttachments] = useState<Record<string, string>>({})
@@ -163,6 +167,15 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
       const next = new Set(prev)
       if (next.has(unitName)) next.delete(unitName)
       else next.add(unitName)
+      return next
+    })
+  }
+
+  const toggleTiming = (timing: Timing) => {
+    setCollapsedTimings(prev => {
+      const next = new Set(prev)
+      if (next.has(timing)) next.delete(timing)
+      else next.add(timing)
       return next
     })
   }
@@ -450,6 +463,8 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
                     abilitiesByTiming={exitByTiming}
                     collapsedUnits={collapsedUnits}
                     onToggleUnit={toggleUnit}
+                    collapsedTimings={collapsedTimings}
+                    onToggleTiming={toggleTiming}
                   />
                 </div>
               )
@@ -462,6 +477,8 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
                 abilitiesByTiming={abilitiesByTiming}
                 collapsedUnits={collapsedUnits}
                 onToggleUnit={toggleUnit}
+                collapsedTimings={collapsedTimings}
+                onToggleTiming={toggleTiming}
                 onTimingChange={setActiveTiming}
               />
             </div>
@@ -528,12 +545,16 @@ interface PhaseContentProps {
   abilitiesByTiming: Record<Timing, Record<string, Ability[]>>
   collapsedUnits: Set<string>
   onToggleUnit: (unitName: string) => void
+  collapsedTimings: Set<Timing>
+  onToggleTiming: (timing: Timing) => void
   onTimingChange?: (timing: Timing) => void
 }
 
-function PhaseContent({ phase, turnOwner, activeAbilities, abilitiesByTiming, collapsedUnits, onToggleUnit, onTimingChange }: PhaseContentProps) {
+function PhaseContent({
+  phase, turnOwner, activeAbilities, abilitiesByTiming,
+  collapsedUnits, onToggleUnit, collapsedTimings, onToggleTiming, onTimingChange
+}: PhaseContentProps) {
   const timingRefs = useRef<(HTMLDivElement | null)[]>([])
-  const [collapsedTimings, setCollapsedTimings] = useState<Set<Timing>>(new Set())
 
   useEffect(() => {
     if (!onTimingChange || phase === 'Start of Game' || phase === 'Start of Battle Round') return
@@ -565,11 +586,7 @@ function PhaseContent({ phase, turnOwner, activeAbilities, abilitiesByTiming, co
             return (
             <div key={timing} ref={el => { timingRefs.current[idx] = el }} className="bg-surface p-4 rounded-lg">
               <button
-                onClick={() => setCollapsedTimings(prev => {
-                  const next = new Set(prev)
-                  next.has(timing) ? next.delete(timing) : next.add(timing)
-                  return next
-                })}
+                onClick={() => onToggleTiming(timing)}
                 className="flex items-center gap-2 font-semibold text-text mb-3 hover:text-accent transition-colors w-full text-left"
               >
                 {collapsedTimings.has(timing) ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
