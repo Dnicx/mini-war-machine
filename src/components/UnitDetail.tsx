@@ -216,9 +216,11 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
       if (gestureAxis.current === 'h') setDragging(true)
     }
     if (gestureAxis.current !== 'h') return
-    // Dampen drag past the last tab, where there is nothing to swipe to
+    // Dampen drag at both edges, where there is nothing to swipe to
     const pastEnd = dx < 0 && activeIndex === contentTabs.length - 1
-    setDragX(pastEnd ? dx / 3 : dx)
+    const pastStart = dx > 0 && activeIndex === 0
+    if ( pastEnd || pastStart ) setDragX( dx/3 )
+    else setDragX( dx)
   }
 
   const handleTouchEnd = () => {
@@ -226,10 +228,8 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
       setSliding(true)
       if (dragX < -50 && activeIndex < contentTabs.length - 1) {
         setActiveContent(contentTabs[activeIndex + 1])
-      } else if (dragX > 50) {
-        // Swiping right past the first tab keeps the existing back-to-list gesture
-        if (activeIndex > 0) setActiveContent(contentTabs[activeIndex - 1])
-        else onBack()
+      } else if (dragX > 50 && activeIndex > 0) {
+        setActiveContent(contentTabs[activeIndex - 1])
       }
     }
     setDragX(0)
@@ -365,7 +365,7 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
           className="flex items-start"
           style={{
             transform: `translateX(calc(${activeIndex * -100}% + ${dragX}px))`,
-            transition: dragging ? 'none' : 'transform 300ms ease-out',
+            transition: dragging ? 'none' : 'transform 200ms ease-out',
           }}
           onTransitionEnd={e => {
             if (e.propertyName === 'transform') setSliding(false)
