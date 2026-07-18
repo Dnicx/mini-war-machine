@@ -38,17 +38,34 @@ function resizeImage(file: File, maxPx: number, quality: number): Promise<string
   })
 }
 
-function UnitWeaponsBlock({ unit }: { unit: Unit }) {
-  const mergedMap = new Map<string, { weapon: Unit['models'][0]['weapons'][0]; count: number }>()
+type MergedWeapon = {
+  weapon: Unit['models'][0]['weapons'][0]
+  count: number
+  // model name -> how many of that model carry this weapon, to show attribution
+  carriers: Map<string, number>
+}
 
-  for (const model of unit.models) {
-    for (const weapon of model.weapons) {
-      const key = [weapon.name, weapon.range, weapon.attacks, weapon.bs, weapon.s, weapon.ap, weapon.damage, weapon.keywords.join(',')].join('|')
-      const existing = mergedMap.get(key)
-      if (existing) {
-        existing.count += model.count
-      } else {
-        mergedMap.set(key, { weapon, count: model.count })
+function UnitWeaponsBlock({ units }: { units: Unit[] }) {
+  const mergedMap = new Map<string, MergedWeapon>()
+
+  // Merge weapons across the host unit and any attached leaders so identical
+  // weapons (same name AND same stats) share one row under a single
+  // Ranged/Melee section, while carriers records which models hold them.
+  for (const unit of units) {
+    for (const model of unit.models) {
+      for (const weapon of model.weapons) {
+        const key = [weapon.name, weapon.range, weapon.attacks, weapon.bs, weapon.s, weapon.ap, weapon.damage, weapon.keywords.join(',')].join('|')
+        const existing = mergedMap.get(key)
+        if (existing) {
+          existing.count += model.count
+          existing.carriers.set(model.name, (existing.carriers.get(model.name) ?? 0) + model.count)
+        } else {
+          mergedMap.set(key, {
+            weapon,
+            count: model.count,
+            carriers: new Map([[model.name, model.count]]),
+          })
+        }
       }
     }
   }
@@ -59,12 +76,20 @@ function UnitWeaponsBlock({ unit }: { unit: Unit }) {
 
   if (all.length === 0) return null
 
-  const renderWeapon = ({ weapon, count }: { weapon: Unit['models'][0]['weapons'][0]; count: number }, i: number) => (
+  // Skip the carriers line when there is only one model type — attribution is obvious.
+  const multiModel = units.reduce((total, unit) => total + unit.models.length, 0) > 1
+
+  const renderWeapon = ({ weapon, count, carriers }: MergedWeapon, i: number) => (
     <div key={i} className="bg-surface rounded-lg p-3">
       <div className="flex items-baseline gap-2 mb-2">
         <p className="text-text text-sm font-semibold">{weapon.name}</p>
         <span className="text-xs font-semibold text-accent">×{count}</span>
       </div>
+      {multiModel && (
+        <p className="text-xs text-text2 mb-2">
+          {Array.from(carriers, ([name, n]) => `${name} ×${n}`).join(', ')}
+        </p>
+      )}
       <div className="grid grid-cols-3 gap-2 mb-2">
         <StatTile label="Range" value={weapon.range} />
         <StatTile label="A" value={weapon.attacks} />
@@ -109,17 +134,7 @@ function WeaponsSubView({ unit, attachedUnits }: { unit: Unit; attachedUnits?: U
     return <p className="text-text2 text-sm italic">No weapons</p>
   }
 
-  return (
-    <div className="space-y-4">
-      <UnitWeaponsBlock unit={unit} />
-      {attachedUnits?.map(leader => (
-        <div key={leader.id} className="pt-4 border-t border-surface2/50">
-          <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-3">Attaching: {leader.name}</p>
-          <UnitWeaponsBlock unit={leader} />
-        </div>
-      ))}
-    </div>
-  )
+  return <UnitWeaponsBlock units={[unit, ...(attachedUnits ?? [])]} />
 }
 
 function ModelBlock({ model, showName, collapsedModels, onToggleModel }: {
