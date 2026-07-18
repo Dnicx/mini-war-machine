@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useEffect } from 'react'
 import { flushSync } from 'react-dom'
 
 // 'right' = the incoming pane slides in from the right (finger moves left).
@@ -47,6 +47,21 @@ export function useCarouselDrag(
   })
   const animating = useRef(false)
   const frame = useRef<number | null>(null)
+  // Backstop timer for settle; mounted flag so a queued rAF/timer never runs
+  // flushSync after the component unmounts.
+  const settleTimer = useRef<number | null>(null)
+  const mounted = useRef(true)
+
+  useEffect(() => {
+    // Re-arm on every mount: StrictMode dev runs mount → cleanup → remount,
+    // so a cleanup-only effect would leave mounted stuck at false.
+    mounted.current = true
+    return () => {
+      mounted.current = false
+      if (frame.current !== null) cancelAnimationFrame(frame.current)
+      if (settleTimer.current !== null) window.clearTimeout(settleTimer.current)
+    }
+  }, [])
 
   const setTransform = (value: string, transition = '') => {
     const track = trackRef.current
@@ -56,6 +71,7 @@ export function useCarouselDrag(
   }
 
   const settle = (committed: boolean, side: CarouselSide) => {
+    if (!mounted.current) return
     const track = trackRef.current
     if (!track) {
       // No track to animate — still notify so the parent can clear state.
@@ -66,11 +82,24 @@ export function useCarouselDrag(
     animating.current = true
     const width = track.clientWidth
     const target = committed ? (side === 'right' ? -width : width) : 0
-    setTransform(
-      `translateX(${target}px)`,
-      `transform ${SETTLE_DURATION_MS}ms ease-out`
-    )
-    window.setTimeout(() => {
+
+    // Finalize once, driven by the real transitionend so slow devices are not
+    // cut short. The timer is only a backstop for the rare case where no
+    // transition runs (released exactly at rest) or the browser drops it.
+    let settled = false
+    const finalize = () => {
+      if (settled) return
+      settled = true
+      if (settleTimer.current !== null) {
+        window.clearTimeout(settleTimer.current)
+        settleTimer.current = null
+      }
+      track.removeEventListener('transitionend', handleEnd)
+      // Bail after unmount: never drive a synchronous parent render then.
+      if (!mounted.current) {
+        animating.current = false
+        return
+      }
       // flushSync forces the parent's phase update into the DOM before the
       // transform reset below, so both land in one paint. Without it React
       // renders in a later task and the browser paints the old pane back at
@@ -78,7 +107,17 @@ export function useCarouselDrag(
       flushSync(() => callbacksRef.current.onSettle(committed))
       setTransform('')
       animating.current = false
-    }, SETTLE_DURATION_MS + 20)
+    }
+    function handleEnd(e: TransitionEvent) {
+      if (e.propertyName === 'transform') finalize()
+    }
+    track.addEventListener('transitionend', handleEnd)
+    settleTimer.current = window.setTimeout(finalize, SETTLE_DURATION_MS * 2)
+
+    setTransform(
+      `translateX(${target}px)`,
+      `transform ${SETTLE_DURATION_MS}ms ease-out`
+    )
   }
 
   // Programmatic slide (chevrons / phase pills). The parent must render the
