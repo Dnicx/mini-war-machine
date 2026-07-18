@@ -54,7 +54,16 @@ function UnitWeaponsBlock({ units }: { units: Unit[] }) {
   for (const unit of units) {
     for (const model of unit.models) {
       for (const weapon of model.weapons) {
-        const key = [weapon.name, weapon.range, weapon.attacks, weapon.bs, weapon.s, weapon.ap, weapon.damage, weapon.keywords.join(',')].join('|')
+        const key = [
+          weapon.name,
+          weapon.range,
+          weapon.attacks,
+          weapon.bs,
+          weapon.s,
+          weapon.ap,
+          weapon.damage,
+          weapon.keywords.join(','),
+        ].join('|')
         const existing = mergedMap.get(key)
         if (existing) {
           existing.count += model.count
