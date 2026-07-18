@@ -89,23 +89,26 @@ All core features are implemented and functional. The application can:
 - in unit list, only show (somewhat) unique keyword and show all keywords in detail. 
 - Merge unit's common profile 
 - add invul save to unit list
+- multi detachment
+- stores multiple roster
+- go to unit detail from stratagem's view.
+- foldable section ( stratagems )
+- foldable timing in play view
+- add timing to abilities
+- All stratagem view
+- swipe to change between model, weapons, abilities
 
 ## Bug
 
 ## Future Enhancements (Potential)
-- stores multiple roster
-- go to unit detail from stratagem's view.
+- group range and melee regardless of character in attach unit
 - set different bg color for each stratagems type`
-- foldable section ( stratagems )
-- foldable timing in play view
-- support model with special keyword ( centurion sergeant have grenade )
-- add timing to abilities
+- support model with special keyword in phase view ( centurion sergeant have grenade )
 - Add roll timing for remind during dice rolling ( e.g. +1 to hit, -1 hit roll )
 - Phase tracking to reset stratagems usage
 - Add modifier tracker ( separate dice and characteristic modifiers)
 - track battleshocked state ( reset by 'new battle round' button )
 - Add visual indicators for once-per-battle abilities in play mode ( reset by 'new battle round' button )
-- All stratagem view
 - keep track of which units is dead and show only available weapon profile on remainnig model in unit
 ---
 - Add ability to track CP usage
