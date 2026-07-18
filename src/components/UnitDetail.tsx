@@ -1,9 +1,13 @@
 import { useState, useRef } from 'react'
 import { ChevronLeft, ChevronDown, ChevronUp, Camera, Swords, Shield, User } from 'lucide-react'
 import type { Unit, Model } from '../types/roster'
-import { useSwipe } from '../hooks/useSwipe'
 import { StatTile } from './StatTile'
 import { PlayAbilityCard } from './PlayAbilityCard'
+
+// Gesture tuning: deadzone must stay smaller than the commit threshold so the
+// axis locks before a swipe can advance a tab
+const AXIS_LOCK_DEADZONE = 10 // px moved before we decide horizontal vs vertical
+const SWIPE_COMMIT_PX = 50 // px of horizontal drag needed to advance a tab
 
 interface UnitDetailProps {
   unit: Unit
@@ -191,7 +195,64 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
   const [activeContent, setActiveContent] = useState<'models' | 'weapons' | 'abilities'>('models')
   const [collapsedModels, setCollapsedModels] = useState<Set<string>>(new Set())
   const imageInputRef = useRef<HTMLInputElement>(null)
-  const swipeHandlers = useSwipe(() => {}, onBack)
+
+  const contentTabs = ['models', 'weapons', 'abilities'] as const
+  const activeIndex = contentTabs.indexOf(activeContent)
+
+  // Carousel drag: content follows the finger, then slides to a tab on release
+  const [dragX, setDragX] = useState(0)
+  const [dragging, setDragging] = useState(false)
+  const [sliding, setSliding] = useState(false)
+  const touchStart = useRef({ x: 0, y: 0 })
+  // Set once per gesture so a horizontal drag never fights native vertical scroll
+  const gestureAxis = useRef<'h' | 'v' | null>(null)
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+    gestureAxis.current = null
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const dx = e.touches[0].clientX - touchStart.current.x
+    const dy = e.touches[0].clientY - touchStart.current.y
+    if (!gestureAxis.current) {
+      if (Math.abs(dx) < AXIS_LOCK_DEADZONE && Math.abs(dy) < AXIS_LOCK_DEADZONE) return
+      gestureAxis.current = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v'
+      if (gestureAxis.current === 'h') setDragging(true)
+    }
+    if (gestureAxis.current !== 'h') return
+    // Dampen drag at both edges, where there is nothing to swipe to
+    const pastEnd = dx < 0 && activeIndex === contentTabs.length - 1
+    const pastStart = dx > 0 && activeIndex === 0
+    if ( pastEnd || pastStart ) setDragX( dx/3 )
+    else setDragX( dx )
+  }
+
+  const handleTouchEnd = () => {
+    if (gestureAxis.current === 'h' && dragX !== 0) {
+      setSliding(true)
+      if (dragX < -SWIPE_COMMIT_PX && activeIndex < contentTabs.length - 1) {
+        setActiveContent(contentTabs[activeIndex + 1])
+      } else if (dragX > SWIPE_COMMIT_PX && activeIndex > 0) {
+        setActiveContent(contentTabs[activeIndex - 1])
+      }
+    }
+    setDragX(0)
+    setDragging(false)
+    gestureAxis.current = null
+  }
+
+  const selectTab = (tab: typeof contentTabs[number]) => {
+    if (tab !== activeContent) setSliding(true)
+    setActiveContent(tab)
+  }
+
+  // Inactive panels collapse when idle so the tallest tab does not stretch the page,
+  // but must be visible while dragging or sliding for the carousel effect
+  const panelClass = (tab: typeof contentTabs[number]) =>
+    `w-full flex-shrink-0 ${
+      tab === activeContent || dragging || sliding ? '' : 'h-0 overflow-hidden'
+    }`
 
   const toggleModel = (id: string) => {
     setCollapsedModels(prev => {
@@ -218,7 +279,15 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
   const imageUrl = unitImages[unit.id]
 
   return (
-    <div {...swipeHandlers}>
+    <div
+      // Fill the viewport so swipes on empty space below short content still register
+      className="min-h-screen"
+      style={{ touchAction: 'pan-y' }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
+    >
       {/* Sticky floating header */}
       <div className="sticky top-0 z-20 bg-background pt-1 pb-2">
         {/* Row 1: back arrow + image + unit name */}
@@ -266,7 +335,7 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
         {/* Row 3: nav tabs */}
         <div className="flex gap-2">
           <button
-            onClick={() => setActiveContent('models')}
+            onClick={() => selectTab('models')}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium transition-colors ${
               activeContent === 'models' ? 'bg-accent text-white' : 'bg-surface2 text-text'
             }`}
@@ -275,7 +344,7 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
             Models
           </button>
           <button
-            onClick={() => setActiveContent('weapons')}
+            onClick={() => selectTab('weapons')}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium transition-colors ${
               activeContent === 'weapons' ? 'bg-accent text-white' : 'bg-surface2 text-text'
             }`}
@@ -284,7 +353,7 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
             Weapons
           </button>
           <button
-            onClick={() => setActiveContent('abilities')}
+            onClick={() => selectTab('abilities')}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium transition-colors ${
               activeContent === 'abilities' ? 'bg-accent text-white' : 'bg-surface2 text-text'
             }`}
@@ -295,16 +364,25 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
         </div>
       </div>
 
-      {/* Scrollable content area */}
-      <div className="pt-3 pb-20">
-        {activeContent === 'models' && (
-          <ModelsSubView unit={unit} attachedUnits={attachedUnits} collapsedModels={collapsedModels} onToggleModel={toggleModel} />
-        )}
-        {activeContent === 'weapons' && (
-          <WeaponsSubView unit={unit} attachedUnits={attachedUnits} />
-        )}
-        {activeContent === 'abilities' && (
-          <div className="space-y-2">
+      {/* Scrollable content area: panels sit side by side in a sliding track */}
+      <div className="pt-3 pb-20 overflow-hidden">
+        <div
+          className="flex items-start"
+          style={{
+            transform: `translateX(calc(${activeIndex * -100}% + ${dragX}px))`,
+            transition: dragging ? 'none' : 'transform 200ms ease-out',
+          }}
+          onTransitionEnd={e => {
+            if (e.propertyName === 'transform') setSliding(false)
+          }}
+        >
+          <div className={panelClass('models')}>
+            <ModelsSubView unit={unit} attachedUnits={attachedUnits} collapsedModels={collapsedModels} onToggleModel={toggleModel} />
+          </div>
+          <div className={panelClass('weapons')}>
+            <WeaponsSubView unit={unit} attachedUnits={attachedUnits} />
+          </div>
+          <div className={`${panelClass('abilities')} space-y-2`}>
             {unit.abilities.length === 0 && (!attachedUnits || attachedUnits.length === 0) ? (
               <p className="text-text2 text-sm text-center py-8">No abilities defined for this unit</p>
             ) : (
@@ -323,7 +401,7 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
               </>
             )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   )

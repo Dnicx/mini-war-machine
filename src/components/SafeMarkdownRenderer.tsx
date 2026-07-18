@@ -1,9 +1,18 @@
 import React from 'react'
-import ReactMarkdown from 'react-markdown'
+import ReactMarkdown, { type Components } from 'react-markdown'
 
 interface SafeMarkdownRendererProps {
   content: string
   className?: string
+}
+
+// Must be module-level: inline component overrides get a new identity each
+// render, so React remounts the rendered DOM nodes. That detaches the node a
+// touch gesture started on, which froze carousel swipes over ability text.
+const markdownComponents: Components = {
+  // Ensure newlines are preserved
+  br: ({ node, ...props }) => <br {...props} />,
+  p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
 }
 
 export function SafeMarkdownRenderer({ content, className }: SafeMarkdownRendererProps) {
@@ -14,13 +23,7 @@ export function SafeMarkdownRenderer({ content, className }: SafeMarkdownRendere
     
     return (
       <div className={`prose prose-invert max-w-none ${className || ''}`}>
-        <ReactMarkdown 
-          components={{
-            // Ensure newlines are preserved
-            br: ({ node, ...props }) => <br {...props} />,
-            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-          }}
-        >
+        <ReactMarkdown components={markdownComponents}>
           {content}
         </ReactMarkdown>
       </div>
