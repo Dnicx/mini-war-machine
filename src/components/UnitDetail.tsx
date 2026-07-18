@@ -4,6 +4,11 @@ import type { Unit, Model } from '../types/roster'
 import { StatTile } from './StatTile'
 import { PlayAbilityCard } from './PlayAbilityCard'
 
+// Gesture tuning: deadzone must stay smaller than the commit threshold so the
+// axis locks before a swipe can advance a tab
+const AXIS_LOCK_DEADZONE = 10 // px moved before we decide horizontal vs vertical
+const SWIPE_COMMIT_PX = 50 // px of horizontal drag needed to advance a tab
+
 interface UnitDetailProps {
   unit: Unit
   attachedUnits?: Unit[]
@@ -211,7 +216,7 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
     const dx = e.touches[0].clientX - touchStart.current.x
     const dy = e.touches[0].clientY - touchStart.current.y
     if (!gestureAxis.current) {
-      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return
+      if (Math.abs(dx) < AXIS_LOCK_DEADZONE && Math.abs(dy) < AXIS_LOCK_DEADZONE) return
       gestureAxis.current = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v'
       if (gestureAxis.current === 'h') setDragging(true)
     }
@@ -220,15 +225,15 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
     const pastEnd = dx < 0 && activeIndex === contentTabs.length - 1
     const pastStart = dx > 0 && activeIndex === 0
     if ( pastEnd || pastStart ) setDragX( dx/3 )
-    else setDragX( dx)
+    else setDragX( dx )
   }
 
   const handleTouchEnd = () => {
     if (gestureAxis.current === 'h' && dragX !== 0) {
       setSliding(true)
-      if (dragX < -50 && activeIndex < contentTabs.length - 1) {
+      if (dragX < -SWIPE_COMMIT_PX && activeIndex < contentTabs.length - 1) {
         setActiveContent(contentTabs[activeIndex + 1])
-      } else if (dragX > 50 && activeIndex > 0) {
+      } else if (dragX > SWIPE_COMMIT_PX && activeIndex > 0) {
         setActiveContent(contentTabs[activeIndex - 1])
       }
     }
