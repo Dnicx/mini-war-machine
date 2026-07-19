@@ -14,10 +14,16 @@ const FLICK_VELOCITY = 0.4
 const FLICK_MIN_DISTANCE = 30
 const SETTLE_DURATION_MS = 250
 
+// Fraction applied to the drag when pulling past a carousel edge, so the
+// track resists instead of revealing empty space.
+const EDGE_DAMPING = 1 / 3
+
 interface CarouselDragCallbacks {
   // A horizontal drag started revealing the pane on the given side; the
   // parent must render that pane (offset by ±100%) inside the track.
-  onDragSide: (side: CarouselSide) => void
+  // Return false when no pane exists on that side (carousel edge): the
+  // drag is then dampened and the release can never commit.
+  onDragSide: (side: CarouselSide) => boolean | void
   // The slide finished. committed=false means it snapped back to rest.
   onSettle: (committed: boolean) => void
 }
@@ -43,7 +49,8 @@ export function useCarouselDrag(
     lastTime: 0,
     velocity: 0,
     deltaX: 0,
-    side: null as CarouselSide | null
+    side: null as CarouselSide | null,
+    hasPane: true
   })
   const animating = useRef(false)
   const frame = useRef<number | null>(null)
@@ -156,6 +163,7 @@ export function useCarouselDrag(
       Math.sign(state.velocity) !== Math.sign(state.deltaX)
     const committed =
       width > 0 &&
+      state.hasPane &&
       !opposingFlick &&
       (distance > width * COMMIT_DISTANCE_RATIO || flick)
     settle(committed, state.side)
@@ -174,7 +182,8 @@ export function useCarouselDrag(
         lastTime: e.timeStamp,
         velocity: 0,
         deltaX: 0,
-        side: null
+        side: null,
+        hasPane: true
       }
     },
     onTouchMove: (e: React.TouchEvent) => {
@@ -203,8 +212,10 @@ export function useCarouselDrag(
       const side: CarouselSide = state.deltaX < 0 ? 'right' : 'left'
       if (state.deltaX !== 0 && side !== state.side) {
         state.side = side
-        callbacksRef.current.onDragSide(side)
+        // undefined (void) keeps the pre-boolean contract: pane assumed present.
+        state.hasPane = callbacksRef.current.onDragSide(side) !== false
       }
+      if (!state.hasPane) state.deltaX *= EDGE_DAMPING
 
       if (frame.current === null) {
         frame.current = requestAnimationFrame(() => {

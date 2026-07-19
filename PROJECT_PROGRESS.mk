@@ -97,12 +97,13 @@ All core features are implemented and functional. The application can:
 - add timing to abilities
 - All stratagem view
 - swipe to change between model, weapons, abilities
+- group range and melee regardless of character in attach unit
 
 ## Bug
 
 ## Future Enhancements (Potential)
-- group range and melee regardless of character in attach unit
-- set different bg color for each stratagems type`
+- unit detail carousel look a little stuttering
+- set different bg color for each stratagems type
 - support model with special keyword in phase view ( centurion sergeant have grenade )
 - Add roll timing for remind during dice rolling ( e.g. +1 to hit, -1 hit roll )
 - Phase tracking to reset stratagems usage
