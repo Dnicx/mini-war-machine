@@ -566,15 +566,3 @@ export function downloadRosterDebug(roster: Roster) {
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
 }
-
-export async function fetchFromYellowscribe(id: string, debug: boolean = false): Promise<Roster> {
-  const response = await fetch(`https://yellowscribe.link/get_army_by_id?id=${id}`)
-  if (!response.ok) {
-    throw new Error('Failed to fetch from Yellowscribe')
-  }
-  const text = await response.text()
-
-  // Create a File object from the response
-  const file = new File([text], 'roster.ros', { type: 'text/xml' })
-  return parseRosFile(file, debug)
-}
