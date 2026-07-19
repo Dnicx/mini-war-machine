@@ -1,13 +1,10 @@
 import { useState, useRef } from 'react'
 import { ChevronLeft, ChevronDown, ChevronUp, Camera, Swords, Shield, User } from 'lucide-react'
+import { useCarouselDrag } from '../hooks/useCarouselDrag'
+import type { CarouselSide } from '../hooks/useCarouselDrag'
 import type { Unit, Model } from '../types/roster'
 import { StatTile } from './StatTile'
 import { PlayAbilityCard } from './PlayAbilityCard'
-
-// Gesture tuning: deadzone must stay smaller than the commit threshold so the
-// axis locks before a swipe can advance a tab
-const AXIS_LOCK_DEADZONE = 10 // px moved before we decide horizontal vs vertical
-const SWIPE_COMMIT_PX = 50 // px of horizontal drag needed to advance a tab
 
 interface UnitDetailProps {
   unit: Unit
@@ -223,60 +220,36 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
   const contentTabs = ['models', 'weapons', 'abilities'] as const
   const activeIndex = contentTabs.indexOf(activeContent)
 
-  // Carousel drag: content follows the finger, then slides to a tab on release
-  const [dragX, setDragX] = useState(0)
-  const [dragging, setDragging] = useState(false)
-  const [sliding, setSliding] = useState(false)
-  const touchStart = useRef({ x: 0, y: 0 })
-  // Set once per gesture so a horizontal drag never fights native vertical scroll
-  const gestureAxis = useRef<'h' | 'v' | null>(null)
+  // The pane sliding in during a drag or programmatic slide. Rendered
+  // offset by ±100% inside the track; null when the carousel is at rest.
+  const [incomingTab, setIncomingTab] =
+    useState<{ tab: typeof contentTabs[number]; side: CarouselSide } | null>(null)
+  const trackRef = useRef<HTMLDivElement | null>(null)
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
-    gestureAxis.current = null
-  }
+  // Tabs do not wrap around: past the first/last tab there is no pane, so
+  // onDragSide returns false and the hook dampens the drag instead.
+  const adjacentTab = (side: CarouselSide) =>
+    contentTabs[activeIndex + (side === 'right' ? 1 : -1)] ?? null
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    const dx = e.touches[0].clientX - touchStart.current.x
-    const dy = e.touches[0].clientY - touchStart.current.y
-    if (!gestureAxis.current) {
-      if (Math.abs(dx) < AXIS_LOCK_DEADZONE && Math.abs(dy) < AXIS_LOCK_DEADZONE) return
-      gestureAxis.current = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v'
-      if (gestureAxis.current === 'h') setDragging(true)
+  const { handlers: swipeHandlers, slide } = useCarouselDrag(trackRef, {
+    onDragSide: (side) => {
+      const tab = adjacentTab(side)
+      setIncomingTab(tab ? { tab, side } : null)
+      return tab !== null
+    },
+    onSettle: (committed) => {
+      if (committed && incomingTab) setActiveContent(incomingTab.tab)
+      setIncomingTab(null)
     }
-    if (gestureAxis.current !== 'h') return
-    // Dampen drag at both edges, where there is nothing to swipe to
-    const pastEnd = dx < 0 && activeIndex === contentTabs.length - 1
-    const pastStart = dx > 0 && activeIndex === 0
-    if ( pastEnd || pastStart ) setDragX( dx/3 )
-    else setDragX( dx )
-  }
+  })
 
-  const handleTouchEnd = () => {
-    if (gestureAxis.current === 'h' && dragX !== 0) {
-      setSliding(true)
-      if (dragX < -SWIPE_COMMIT_PX && activeIndex < contentTabs.length - 1) {
-        setActiveContent(contentTabs[activeIndex + 1])
-      } else if (dragX > SWIPE_COMMIT_PX && activeIndex > 0) {
-        setActiveContent(contentTabs[activeIndex - 1])
-      }
-    }
-    setDragX(0)
-    setDragging(false)
-    gestureAxis.current = null
-  }
-
+  // Tab buttons reuse the same track animation as finger drags.
   const selectTab = (tab: typeof contentTabs[number]) => {
-    if (tab !== activeContent) setSliding(true)
-    setActiveContent(tab)
+    if (incomingTab || tab === activeContent) return
+    const side: CarouselSide = contentTabs.indexOf(tab) > activeIndex ? 'right' : 'left'
+    setIncomingTab({ tab, side })
+    slide(side)
   }
-
-  // Inactive panels collapse when idle so the tallest tab does not stretch the page,
-  // but must be visible while dragging or sliding for the carousel effect
-  const panelClass = (tab: typeof contentTabs[number]) =>
-    `w-full flex-shrink-0 ${
-      tab === activeContent || dragging || sliding ? '' : 'h-0 overflow-hidden'
-    }`
 
   const toggleModel = (id: string) => {
     setCollapsedModels(prev => {
@@ -302,15 +275,49 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
 
   const imageUrl = unitImages[unit.id]
 
+  const renderPane = (tab: typeof contentTabs[number]) => {
+    if (tab === 'models') {
+      return (
+        <ModelsSubView
+          unit={unit}
+          attachedUnits={attachedUnits}
+          collapsedModels={collapsedModels}
+          onToggleModel={toggleModel}
+        />
+      )
+    }
+    if (tab === 'weapons') {
+      return <WeaponsSubView unit={unit} attachedUnits={attachedUnits} />
+    }
+    return (
+      <div className="space-y-2">
+        {unit.abilities.length === 0 && (!attachedUnits || attachedUnits.length === 0) ? (
+          <p className="text-text2 text-sm text-center py-8">No abilities defined for this unit</p>
+        ) : (
+          <>
+            {unit.abilities.map(ability => (
+              <PlayAbilityCard key={ability.id} ability={ability} />
+            ))}
+            {attachedUnits?.map(leader => (
+              <div key={leader.id} className="pt-4 border-t border-surface2/50">
+                <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-2">Leader: {leader.name}</p>
+                {leader.abilities.map(ability => (
+                  <PlayAbilityCard key={ability.id} ability={ability} />
+                ))}
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div
       // Fill the viewport so swipes on empty space below short content still register
       className="min-h-screen"
       style={{ touchAction: 'pan-y' }}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      onTouchCancel={handleTouchEnd}
+      {...swipeHandlers}
     >
       {/* Sticky floating header */}
       <div className="sticky top-0 z-20 bg-background pt-1 pb-2">
@@ -388,43 +395,25 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
         </div>
       </div>
 
-      {/* Scrollable content area: panels sit side by side in a sliding track */}
+      {/* Draggable content area. The track's translateX follows the finger
+          (written by useCarouselDrag); the incoming pane sits offset by
+          ±100% so it slides in as the track moves. */}
       <div className="pt-3 pb-20 overflow-hidden">
-        <div
-          className="flex items-start"
-          style={{
-            transform: `translateX(calc(${activeIndex * -100}% + ${dragX}px))`,
-            transition: dragging ? 'none' : 'transform 200ms ease-out',
-          }}
-          onTransitionEnd={e => {
-            if (e.propertyName === 'transform') setSliding(false)
-          }}
-        >
-          <div className={panelClass('models')}>
-            <ModelsSubView unit={unit} attachedUnits={attachedUnits} collapsedModels={collapsedModels} onToggleModel={toggleModel} />
-          </div>
-          <div className={panelClass('weapons')}>
-            <WeaponsSubView unit={unit} attachedUnits={attachedUnits} />
-          </div>
-          <div className={`${panelClass('abilities')} space-y-2`}>
-            {unit.abilities.length === 0 && (!attachedUnits || attachedUnits.length === 0) ? (
-              <p className="text-text2 text-sm text-center py-8">No abilities defined for this unit</p>
-            ) : (
-              <>
-                {unit.abilities.map(ability => (
-                  <PlayAbilityCard key={ability.id} ability={ability} />
-                ))}
-                {attachedUnits?.map(leader => (
-                  <div key={leader.id} className="pt-4 border-t border-surface2/50">
-                    <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-2">Leader: {leader.name}</p>
-                    {leader.abilities.map(ability => (
-                      <PlayAbilityCard key={ability.id} ability={ability} />
-                    ))}
-                  </div>
-                ))}
-              </>
-            )}
-          </div>
+        {/* select-none: long-pressing selectable ability text makes Android
+            hijack the touch (touchcancel), killing the swipe. */}
+        <div ref={trackRef} className="select-none" style={{ position: 'relative' }}>
+          {incomingTab && (
+            <div
+              style={{
+                position: 'absolute', top: 0, left: 0, right: 0,
+                transform: incomingTab.side === 'right'
+                  ? 'translateX(100%)' : 'translateX(-100%)'
+              }}
+            >
+              {renderPane(incomingTab.tab)}
+            </div>
+          )}
+          {renderPane(activeContent)}
         </div>
       </div>
     </div>
