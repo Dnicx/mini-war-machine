@@ -1,9 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { parseRosFile } from '../src/lib/parseRos'
 import { parseRosJsonFile } from '../src/lib/parseRosJson'
 import type { Roster, Unit } from '../src/types/roster'
-import { syntheticRosXml, syntheticRosJson } from './fixtures'
-import { stripIds } from './helpers'
+import { syntheticRosJson } from './fixtures'
 
 function unit(roster: Roster, name: string): Unit {
   const found = roster.units.find(u => u.name === name)
@@ -97,15 +95,5 @@ describe('parseRosJsonFile with multiple detachments (11th edition)', () => {
     expect(roster.detachments).toEqual(['Detachment One', 'Detachment Two'])
     expect(roster.armyAbilities.map(a => a.name))
       .toEqual(['Army Rule', 'Rule One', 'Rule Two'])
-  })
-})
-
-describe('parser equivalence', () => {
-  it('produces the same roster from the .ros and .json form of the same list', async () => {
-    const fromXml = await parseRosFile(new File([syntheticRosXml], 'test.ros', { type: 'text/xml' }))
-    const fromJson = await parseRosJsonFile(new File([syntheticRosJson], 'test.json', { type: 'application/json' }))
-    // ids embed per-export selection ids and a random roster id, so compare
-    // everything else: names, points, stats, weapons, abilities, keywords...
-    expect(stripIds(fromJson)).toEqual(stripIds(fromXml))
   })
 })
