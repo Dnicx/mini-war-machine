@@ -175,17 +175,47 @@ function ModelBlock({ model, showName, collapsedModels, onToggleModel }: {
   )
 }
 
+// Merge models whose stat lines are identical (e.g. a sergeant sharing the
+// troops' profile) so they render as one block. Only applied to the host
+// unit's own models — attached leader units are listed separately and kept
+// distinct even when their stats happen to match.
+function mergeIdenticalModels(models: Model[]): Model[] {
+  const merged = new Map<string, Model>()
+  for (const model of models) {
+    const key = [
+      model.movement,
+      model.toughness,
+      model.wounds,
+      model.save,
+      model.invulnerableSave,
+      model.leadership,
+      model.objectiveControl,
+    ].join('|')
+    const existing = merged.get(key)
+    if (existing) {
+      existing.count += model.count
+      if (!existing.name.split(', ').includes(model.name)) existing.name += `, ${model.name}`
+      // Composite id keeps the collapse toggle stable for the merged block.
+      existing.id += `|${model.id}`
+    } else {
+      merged.set(key, { ...model })
+    }
+  }
+  return Array.from(merged.values())
+}
+
 function ModelsSubView({ unit, attachedUnits, collapsedModels, onToggleModel }: {
   unit: Unit
   attachedUnits?: Unit[]
   collapsedModels: Set<string>
   onToggleModel: (id: string) => void
 }) {
-  const multiModel = unit.models.length > 1
+  const hostModels = mergeIdenticalModels(unit.models)
+  const multiModel = hostModels.length > 1
 
   return (
     <div className="space-y-4">
-      {unit.models.map((model: Model) => (
+      {hostModels.map((model: Model) => (
         <ModelBlock
           key={model.id}
           model={model}
