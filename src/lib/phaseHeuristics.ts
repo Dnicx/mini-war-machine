@@ -73,13 +73,26 @@ const PHASE_PATTERNS: Record<Phase, RegExp[]> = {
 }
 
 const TIMING_PATTERNS: Record<Timing, RegExp[]> = {
-  'attacking/saving': [/hit roll/i, 
-    /wound roll/i, 
-    /save roll/i, 
-    /damage roll/i, 
+  // Key order is detection precedence: before/afterExecution wording contains
+  // dice-roll terms and generic "before"/"after", so it must be checked ahead
+  // of both 'execution' and the beforeTarget/afterTargeted patterns.
+  beforeExecution: [/before .*(hit|wound|save|damage) roll/i,
+    /before (making|rolling)/i,
+    /selected to (shoot|fight)/i
+  ],
+
+  afterExecution: [/after .*(hit|wound|save|damage) roll/i,
+    /after (making|resolving)/i,
+    /attacks? (is|are|have been) resolved/i
+  ],
+
+  execution: [/hit roll/i,
+    /wound roll/i,
+    /save roll/i,
+    /damage roll/i,
     /re-?roll/i
   ],
-  
+
   start: [/start of/i, 
     /beginning of/i, 
     /at the start/i
@@ -127,6 +140,13 @@ export function detectTiming(description: string): Timing | undefined {
     }
   }
   return undefined
+}
+
+// Saved plans may hold timing values from before a rename (e.g. 'attacking',
+// 'attacking/saving'); drop unknown values so the ability falls back to its
+// autoDetectedTiming instead of carrying a stale override.
+export function normalizeTiming(timing: Timing | undefined): Timing | undefined {
+  return timing && timing in TIMING_PATTERNS ? timing : undefined
 }
 
 export function detectOncePerBattle(description: string): boolean {

@@ -173,7 +173,7 @@ function UnitAbilityCard({
     e.target.value = ''
   }
   const PHASES: Phase[] = ['Start of Game', 'Start of Battle Round', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight']
-  const TIMINGS: Timing[] = ['start', 'beforeTarget', 'attacking/saving', 'afterTargeted', 'end']
+  const TIMINGS: Timing[] = ['start', 'beforeTarget', 'afterTargeted', 'beforeExecution', 'execution', 'afterExecution', 'end']
 
   const unitId = _unitId
   // Datasheets this leader may attach to, per its ability text (null = no list).

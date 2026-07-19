@@ -3,7 +3,7 @@ import type { Stratagem, Phase, Timing, TurnOwner } from '../types/roster'
 import { effectiveTurnOwner } from '../lib/turnOwnerHeuristics'
 
 const PHASES: Phase[] = ['Start of Game', 'Start of Battle Round', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight']
-const TIMINGS: Timing[] = ['start', 'beforeTarget', 'attacking/saving', 'afterTargeted', 'end']
+const TIMINGS: Timing[] = ['start', 'beforeTarget', 'afterTargeted', 'beforeExecution', 'execution', 'afterExecution', 'end']
 
 interface StratagemCardProps {
   stratagem: Stratagem

@@ -53,7 +53,7 @@ interface AbilityCardProps {
 
 function AbilityCard({ ability, onPhaseToggle, onTimingChange, onTurnOwnerChange, onNotesChange, onResetAbility, ref }: AbilityCardProps) {
   const PHASES: Phase[] = ['Start of Game', 'Start of Battle Round', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight']
-  const TIMINGS: Timing[] = ['start', 'beforeTarget', 'attacking/saving', 'afterTargeted', 'end']
+  const TIMINGS: Timing[] = ['start', 'beforeTarget', 'afterTargeted', 'beforeExecution', 'execution', 'afterExecution', 'end']
   
   const currentPhases = ability.phases || []
   const currentTiming = ability.timing || ''
