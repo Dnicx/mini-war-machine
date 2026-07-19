@@ -142,13 +142,6 @@ export function detectTiming(description: string): Timing | undefined {
   return undefined
 }
 
-// Saved plans may hold timing values from before a rename (e.g. 'attacking',
-// 'attacking/saving'); drop unknown values so the ability falls back to its
-// autoDetectedTiming instead of carrying a stale override.
-export function normalizeTiming(timing: Timing | undefined): Timing | undefined {
-  return timing && timing in TIMING_PATTERNS ? timing : undefined
-}
-
 export function detectOncePerBattle(description: string): boolean {
   return ONCE_PER_BATTLE.some(pattern => pattern.test(description))
 }

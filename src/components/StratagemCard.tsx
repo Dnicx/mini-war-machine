@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import type { Stratagem, Phase, Timing, TurnOwner } from '../types/roster'
 import { effectiveTurnOwner } from '../lib/turnOwnerHeuristics'
+import { TIMINGS, TIMING_LABELS } from '../lib/timing'
 
 const PHASES: Phase[] = ['Start of Game', 'Start of Battle Round', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight']
-const TIMINGS: Timing[] = ['start', 'beforeTarget', 'afterTargeted', 'beforeExecution', 'execution', 'afterExecution', 'end']
 
 interface StratagemCardProps {
   stratagem: Stratagem
@@ -189,9 +189,9 @@ export function StratagemCard({ stratagem, type, onToggleEnable, onPhaseToggle, 
               onChange={(e) => onTimingChange(stratagem.id, e.target.value as Timing)}
               className="w-full px-2 py-1 bg-surface2 border border-surface2 rounded text-text text-sm focus:outline-none focus:border-accent"
             >
-              <option value="">Auto ({autoTiming || 'None'})</option>
+              <option value="">Auto ({autoTiming ? TIMING_LABELS[autoTiming] : 'None'})</option>
               {TIMINGS.map(timing => (
-                <option key={timing} value={timing}>{timing}</option>
+                <option key={timing} value={timing}>{TIMING_LABELS[timing]}</option>
               ))}
             </select>
           </div>

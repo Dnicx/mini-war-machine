@@ -6,7 +6,8 @@ import { appIcon } from '../config/icons'
 import { cardStyles } from '../styles/components'
 import type { Roster, Phase, Timing, Ability, GameState, Stratagem, TurnOwner } from '../types/roster'
 import { loadPlan, saveGameState, loadGameState, loadUnitImages, saveUnitImages } from '../lib/storage'
-import { applyHeuristicsToAll, normalizeTiming } from '../lib/phaseHeuristics'
+import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
+import { TIMINGS, TIMING_LABELS, normalizeTiming } from '../lib/timing'
 import { effectiveTurnOwner } from '../lib/turnOwnerHeuristics'
 import {
   getCoreStratagems, getAvailableDetachments, getDetachmentStratagems
@@ -25,16 +26,6 @@ interface PlayDashboardProps {
 }
 
 const PHASES: Phase[] = ['Start of Game', 'Start of Battle Round', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight']
-const TIMINGS: Timing[] = ['start', 'beforeTarget', 'afterTargeted', 'beforeExecution', 'execution', 'afterExecution', 'end']
-const TIMING_LABELS: Record<Timing, string> = {
-  start: 'Start of Phase',
-  beforeTarget: 'During Phase (Before Choosing Target)',
-  afterTargeted: 'During Phase (After Being Targeted)',
-  beforeExecution: 'Before Execution',
-  execution: 'Execution',
-  afterExecution: 'After Execution',
-  end: 'End of Phase'
-}
 
 export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const [gameState, setGameState] = useState<GameState>({
