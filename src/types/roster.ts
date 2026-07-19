@@ -1,5 +1,5 @@
 export type Phase = 'Start of Game' | 'Start of Battle Round' | 'Command' | 'Movement' | 'Shooting' | 'Charge' | 'Fight'
-export type Timing = 'start' | 'beforeTarget' | 'attacking/saving' | 'afterTargeted' | 'end'
+export type Timing = 'start' | 'beforeTarget' | 'afterTargeted' | 'beforeExecution' | 'execution' | 'afterExecution' | 'end'
 export type TurnOwner = 'yours' | 'opponent' | 'either'
 
 export interface Ability {

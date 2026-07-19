@@ -1,5 +1,6 @@
 import type { Ability, Phase, Timing, TurnOwner } from '../types/roster'
 import { effectiveTurnOwner } from '../lib/turnOwnerHeuristics'
+import { TIMINGS, TIMING_LABELS } from '../lib/timing'
 import { SafeMarkdownRenderer } from './SafeMarkdownRenderer'
 
 interface ArmyAbilitiesSectionProps {
@@ -53,8 +54,6 @@ interface AbilityCardProps {
 
 function AbilityCard({ ability, onPhaseToggle, onTimingChange, onTurnOwnerChange, onNotesChange, onResetAbility, ref }: AbilityCardProps) {
   const PHASES: Phase[] = ['Start of Game', 'Start of Battle Round', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight']
-  const TIMINGS: Timing[] = ['start', 'beforeTarget', 'attacking/saving', 'afterTargeted', 'end']
-  
   const currentPhases = ability.phases || []
   const currentTiming = ability.timing || ''
   const autoPhases = ability.autoDetectedPhases || []
@@ -124,9 +123,11 @@ function AbilityCard({ ability, onPhaseToggle, onTimingChange, onTurnOwnerChange
               onChange={(e) => onTimingChange(ability.id, e.target.value as Timing)}
               className="w-full px-2 py-1 bg-surface2 border border-surface2 rounded text-text text-sm focus:outline-none focus:border-accent"
             >
-              <option value="">Auto ({ability.autoDetectedTiming || 'None'})</option>
+              <option value="">
+                Auto ({ability.autoDetectedTiming ? TIMING_LABELS[ability.autoDetectedTiming] : 'None'})
+              </option>
               {TIMINGS.map(timing => (
-                <option key={timing} value={timing}>{timing}</option>
+                <option key={timing} value={timing}>{TIMING_LABELS[timing]}</option>
               ))}
             </select>
           </div>

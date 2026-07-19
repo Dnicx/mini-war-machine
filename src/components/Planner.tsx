@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import type { Roster, Ability, Phase, Timing, Stratagem, TurnOwner } from '../types/roster'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
+import { normalizeTiming } from '../lib/timing'
 import { savePlan, loadPlan, loadUnitImages, saveUnitImages } from '../lib/storage'
 import { getCoreStratagems, getAvailableDetachments, getDetachmentStratagems } from '../lib/stratagemRegistry'
 import { getStratagemFolderName } from '../lib/factionMapping'
@@ -106,7 +107,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
           return {
             ...ability,
             phases: saved.phases,
-            timing: saved.timing,
+            timing: normalizeTiming(saved.timing),
             turnOwner: saved.turnOwner,
             notes: saved.notes
           }
@@ -122,7 +123,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
           return {
             ...strat,
             phases: saved.phases,
-            timing: saved.timing,
+            timing: normalizeTiming(saved.timing),
             turnOwner: saved.turnOwner,
             enabled: saved.enabled ?? true
           }
@@ -137,7 +138,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
           return {
             ...strat,
             phases: saved.phases,
-            timing: saved.timing,
+            timing: normalizeTiming(saved.timing),
             turnOwner: saved.turnOwner
           }
         }

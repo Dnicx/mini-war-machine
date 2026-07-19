@@ -7,6 +7,7 @@ import { cardStyles } from '../styles/components'
 import type { Roster, Phase, Timing, Ability, GameState, Stratagem, TurnOwner } from '../types/roster'
 import { loadPlan, saveGameState, loadGameState, loadUnitImages, saveUnitImages } from '../lib/storage'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
+import { TIMINGS, TIMING_LABELS, normalizeTiming } from '../lib/timing'
 import { effectiveTurnOwner } from '../lib/turnOwnerHeuristics'
 import {
   getCoreStratagems, getAvailableDetachments, getDetachmentStratagems
@@ -25,14 +26,6 @@ interface PlayDashboardProps {
 }
 
 const PHASES: Phase[] = ['Start of Game', 'Start of Battle Round', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight']
-const TIMINGS: Timing[] = ['start', 'beforeTarget', 'attacking/saving', 'afterTargeted', 'end']
-const TIMING_LABELS: Record<Timing, string> = {
-  start: 'Start of Phase',
-  beforeTarget: 'During Phase (Before Choosing Target)',
-  'attacking/saving': 'During Attack (Dice Rolls)',
-  afterTargeted: 'During Phase (After Being Targeted)',
-  end: 'End of Phase'
-}
 
 export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const [gameState, setGameState] = useState<GameState>({
@@ -95,7 +88,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
           return {
             ...ability,
             phases: planEntry.phases,
-            timing: planEntry.timing,
+            timing: normalizeTiming(planEntry.timing),
             // Without this, the turn owner picked in the Planner is ignored and
             // the filter falls back to the auto-detected default ('either').
             turnOwner: planEntry.turnOwner,
@@ -121,7 +114,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
           return {
             ...strat,
             phases: saved.phases,
-            timing: saved.timing,
+            timing: normalizeTiming(saved.timing),
             turnOwner: saved.turnOwner,
             enabled: saved.enabled ?? true
           }
@@ -148,7 +141,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
             return {
               ...strat,
               phases: saved.phases,
-              timing: saved.timing,
+              timing: normalizeTiming(saved.timing),
               turnOwner: saved.turnOwner
             }
           }
@@ -262,15 +255,15 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     const byTiming: Record<Timing, Record<string, Ability[]>> = {
       start: {},
       beforeTarget: {},
-      'attacking/saving': {},
       afterTargeted: {},
+      beforeExecution: {},
+      execution: {},
+      afterExecution: {},
       end: {}
     }
 
     abilities.forEach(ability => {
-      let timing = ability.timing || ability.autoDetectedTiming
-      // Legacy saved data used 'attacking' before it was renamed to 'attacking/saving'.
-      if ((timing as string) === 'attacking') timing = 'attacking/saving'
+      const timing = ability.timing || ability.autoDetectedTiming
       // For stratagems, use "Stratagems" as the source unit. Discriminate on
       // 'cpCost' (required on Stratagem, absent on Ability) — unit abilities
       // can also carry a turnOwner key now that plan overrides restore it.
