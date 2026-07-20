@@ -11,7 +11,7 @@ export function PlayAbilityCard({ ability }: PlayAbilityCardProps) {
   const isStratagem = 'cpCost' in ability
   const stratagem = isStratagem ? ability as Stratagem : null
   // Stratagems start folded (showing CP + effect), like the Stratagems view.
-  const [isCollapsed, setIsCollapsed] = useState(isStratagem)
+  const [isCollapsed, setIsCollapsed] = useState( isStratagem || ability.notes )
 
   return (
     <div
@@ -38,9 +38,6 @@ export function PlayAbilityCard({ ability }: PlayAbilityCardProps) {
         )}
         {!isCollapsed && (
           <>
-            {ability.sourceUnit && (
-              <p className="text-text2 text-xs">{ability.sourceUnit}</p>
-            )}
             {stratagem ? (
               <div className="text-text2 text-sm mt-1">
                 <p className="mb-1"><span className="font-semibold text-purple-400">WHEN: </span>{stratagem.when}</p>
@@ -51,10 +48,11 @@ export function PlayAbilityCard({ ability }: PlayAbilityCardProps) {
             ) : (
               <SafeMarkdownRenderer content={ability.description} className="text-text2 text-sm mt-1 whitespace-pre-wrap" />
             )}
-            {ability.notes && (
-              <p className="text-accent text-xs mt-1 italic">Note: {ability.notes}</p>
-            )}
+            
           </>
+        )}
+        {ability.notes && (
+          <p className="text-accent text-sm mt-1 italic">Note: {ability.notes}</p>
         )}
       </div>
     </div>
