@@ -53,6 +53,9 @@ export function useCarouselDrag(
     hasPane: true
   })
   const animating = useRef(false)
+  // Set while a settle transition runs; lets a new touch finish the settle
+  // immediately instead of being dropped (fast consecutive swipes).
+  const interruptSettle = useRef<(() => void) | null>(null)
   const frame = useRef<number | null>(null)
   // Backstop timer for settle; mounted flag so a queued rAF/timer never runs
   // flushSync after the component unmounts.
@@ -97,6 +100,7 @@ export function useCarouselDrag(
     const finalize = () => {
       if (settled) return
       settled = true
+      interruptSettle.current = null
       if (settleTimer.current !== null) {
         window.clearTimeout(settleTimer.current)
         settleTimer.current = null
@@ -119,6 +123,7 @@ export function useCarouselDrag(
       if (e.propertyName === 'transform') finalize()
     }
     track.addEventListener('transitionend', handleEnd)
+    interruptSettle.current = finalize
     settleTimer.current = window.setTimeout(finalize, SETTLE_DURATION_MS * 2)
 
     setTransform(
@@ -171,7 +176,15 @@ export function useCarouselDrag(
 
   const handlers = {
     onTouchStart: (e: React.TouchEvent) => {
-      if (animating.current) return
+      if (animating.current) {
+        // A settle animation is in flight: finish it instantly (commit its
+        // end state) so this swipe tracks from rest instead of being
+        // ignored — otherwise fast consecutive swipes are dropped.
+        // interruptSettle is null only in slide()'s pre-settle rAF window,
+        // where there is no transform to cut short yet.
+        if (!interruptSettle.current) return
+        interruptSettle.current()
+      }
       const touch = e.touches[0]
       gesture.current = {
         active: true,
