@@ -451,7 +451,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
 
           {/* Sticky control section: phase strip, advance buttons, and the
               phase/timing header stay visible while scrolling abilities. */}
-          <div className="sticky top-0 z-30 bg-background border-b border-surface2 -mx-4 px-4 mb-4 pt-2">
+          <div ref={stickyHeaderRef} className="sticky top-0 z-30 bg-background border-b border-surface2 -mx-4 px-4 mb-4 pt-2">
             {/* Phase strip: the per-turn loop, all segments visible at once
                 so no horizontal scrolling is needed on narrow screens. Taps
                 jump within the current turn. */}
@@ -489,7 +489,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
               </button>
             </div>
 
-            <div ref={stickyHeaderRef} className="flex items-center gap-2 py-2 border-t border-surface2">
+            <div className="flex items-center gap-2 py-2 border-t border-surface2">
               <span className="font-semibold text-text">{gameState.currentPhase}</span>
               <span className={`text-xs px-2 py-0.5 rounded-full ${
                 gameState.turnOwner === 'yours' ? 'bg-accent/20 text-accent' : 'bg-surface2 text-text2'
