@@ -53,11 +53,16 @@ export function useCarouselDrag(
     hasPane: true
   })
   const animating = useRef(false)
+  // Set while a settle transition runs; lets a new touch finish the settle
+  // immediately instead of being dropped (fast consecutive swipes).
+  const interruptSettle = useRef<(() => void) | null>(null)
   const frame = useRef<number | null>(null)
   // Backstop timer for settle; mounted flag so a queued rAF/timer never runs
   // flushSync after the component unmounts.
   const settleTimer = useRef<number | null>(null)
   const mounted = useRef(true)
+  // Removes the per-gesture native listeners (see onTouchStart).
+  const removeGestureListeners = useRef<(() => void) | null>(null)
 
   useEffect(() => {
     // Re-arm on every mount: StrictMode dev runs mount → cleanup → remount,
@@ -67,6 +72,8 @@ export function useCarouselDrag(
       mounted.current = false
       if (frame.current !== null) cancelAnimationFrame(frame.current)
       if (settleTimer.current !== null) window.clearTimeout(settleTimer.current)
+      removeGestureListeners.current?.()
+      removeGestureListeners.current = null
     }
   }, [])
 
@@ -97,6 +104,7 @@ export function useCarouselDrag(
     const finalize = () => {
       if (settled) return
       settled = true
+      interruptSettle.current = null
       if (settleTimer.current !== null) {
         window.clearTimeout(settleTimer.current)
         settleTimer.current = null
@@ -119,6 +127,7 @@ export function useCarouselDrag(
       if (e.propertyName === 'transform') finalize()
     }
     track.addEventListener('transitionend', handleEnd)
+    interruptSettle.current = finalize
     settleTimer.current = window.setTimeout(finalize, SETTLE_DURATION_MS * 2)
 
     setTransform(
@@ -139,6 +148,8 @@ export function useCarouselDrag(
   // gesture for long-press text selection). Velocity is unreliable there,
   // so decide by distance alone rather than throwing the swipe away.
   const endDrag = (fromCancel: boolean) => {
+    removeGestureListeners.current?.()
+    removeGestureListeners.current = null
     if (frame.current !== null) {
       cancelAnimationFrame(frame.current)
       frame.current = null
@@ -169,9 +180,55 @@ export function useCarouselDrag(
     settle(committed, state.side)
   }
 
+  const moveGesture = (touch: Touch, timeStamp: number) => {
+    const state = gesture.current
+    if (!state.active || state.axis === 'vertical') return
+    const deltaX = touch.clientX - state.startX
+    const deltaY = touch.clientY - state.startY
+
+    if (state.axis === 'undecided') {
+      if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < AXIS_LOCK_THRESHOLD) return
+      state.axis = Math.abs(deltaX) > Math.abs(deltaY) ? 'horizontal' : 'vertical'
+      if (state.axis === 'vertical') return
+    }
+
+    const width = trackRef.current?.clientWidth ?? 0
+    state.deltaX = Math.max(-width, Math.min(width, deltaX))
+
+    const elapsed = timeStamp - state.lastTime
+    if (elapsed > 0) {
+      state.velocity = (touch.clientX - state.lastX) / elapsed
+      state.lastX = touch.clientX
+      state.lastTime = timeStamp
+    }
+
+    const side: CarouselSide = state.deltaX < 0 ? 'right' : 'left'
+    if (state.deltaX !== 0 && side !== state.side) {
+      state.side = side
+      // undefined (void) keeps the pre-boolean contract: pane assumed present.
+      state.hasPane = callbacksRef.current.onDragSide(side) !== false
+    }
+    if (!state.hasPane) state.deltaX *= EDGE_DAMPING
+
+    if (frame.current === null) {
+      frame.current = requestAnimationFrame(() => {
+        frame.current = null
+        setTransform(`translateX(${gesture.current.deltaX}px)`)
+      })
+    }
+  }
+
   const handlers = {
     onTouchStart: (e: React.TouchEvent) => {
-      if (animating.current) return
+      if (animating.current) {
+        // A settle animation is in flight: finish it instantly (commit its
+        // end state) so this swipe tracks from rest instead of being
+        // ignored — otherwise fast consecutive swipes are dropped.
+        // interruptSettle is null only in slide()'s pre-settle rAF window,
+        // where there is no transform to cut short yet.
+        if (!interruptSettle.current) return
+        interruptSettle.current()
+      }
       const touch = e.touches[0]
       gesture.current = {
         active: true,
@@ -185,47 +242,27 @@ export function useCarouselDrag(
         side: null,
         hasPane: true
       }
-    },
-    onTouchMove: (e: React.TouchEvent) => {
-      const state = gesture.current
-      if (!state.active || state.axis === 'vertical') return
-      const touch = e.touches[0]
-      const deltaX = touch.clientX - state.startX
-      const deltaY = touch.clientY - state.startY
 
-      if (state.axis === 'undecided') {
-        if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < AXIS_LOCK_THRESHOLD) return
-        state.axis = Math.abs(deltaX) > Math.abs(deltaY) ? 'horizontal' : 'vertical'
-        if (state.axis === 'vertical') return
+      // Later events for this touch fire at the touchstart target even if a
+      // settle commit re-renders it out of the DOM (e.g. the interrupt above
+      // unmounts the pane under the finger). A detached target no longer
+      // bubbles to React's root listener, so synthetic onTouchMove would go
+      // silent mid-gesture; listeners bound directly on the target keep
+      // firing regardless, so the gesture is handled natively per touch.
+      removeGestureListeners.current?.()
+      const target = e.target as HTMLElement
+      const onMove = (ev: TouchEvent) => moveGesture(ev.touches[0], ev.timeStamp)
+      const onEnd = () => endDrag(false)
+      const onCancel = () => endDrag(true)
+      target.addEventListener('touchmove', onMove, { passive: true })
+      target.addEventListener('touchend', onEnd)
+      target.addEventListener('touchcancel', onCancel)
+      removeGestureListeners.current = () => {
+        target.removeEventListener('touchmove', onMove)
+        target.removeEventListener('touchend', onEnd)
+        target.removeEventListener('touchcancel', onCancel)
       }
-
-      const width = trackRef.current?.clientWidth ?? 0
-      state.deltaX = Math.max(-width, Math.min(width, deltaX))
-
-      const elapsed = e.timeStamp - state.lastTime
-      if (elapsed > 0) {
-        state.velocity = (touch.clientX - state.lastX) / elapsed
-        state.lastX = touch.clientX
-        state.lastTime = e.timeStamp
-      }
-
-      const side: CarouselSide = state.deltaX < 0 ? 'right' : 'left'
-      if (state.deltaX !== 0 && side !== state.side) {
-        state.side = side
-        // undefined (void) keeps the pre-boolean contract: pane assumed present.
-        state.hasPane = callbacksRef.current.onDragSide(side) !== false
-      }
-      if (!state.hasPane) state.deltaX *= EDGE_DAMPING
-
-      if (frame.current === null) {
-        frame.current = requestAnimationFrame(() => {
-          frame.current = null
-          setTransform(`translateX(${gesture.current.deltaX}px)`)
-        })
-      }
-    },
-    onTouchEnd: () => endDrag(false),
-    onTouchCancel: () => endDrag(true)
+    }
   }
 
   return { handlers, slide }
