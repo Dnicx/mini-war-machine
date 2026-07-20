@@ -185,14 +185,25 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
 
   // After a committed swipe, scroll back to the top of the phase content but
   // no further: scrolling to the very page top would pull the non-sticky
-  // headers above the sticky bar back into view.
+  // headers above the sticky bar back into view. Deferred to a microtask so
+  // the incoming pane (and its sticky header height) is measured after the
+  // React flush, not the outgoing pane.
   const scrollToContentTop = () => {
-    const track = trackRef.current
-    if (!track) return
-    const stickyHeight = stickyHeaderRef.current?.offsetHeight ?? 0
-    const contentTop =
-      window.scrollY + track.getBoundingClientRect().top - stickyHeight
-    if (window.scrollY > contentTop) window.scrollTo(0, contentTop)
+    queueMicrotask(() => {
+      const track = trackRef.current
+      if (!track) return
+      const stickyHeight = stickyHeaderRef.current?.offsetHeight ?? 0
+      const contentTop =
+        window.scrollY + track.getBoundingClientRect().top - stickyHeight
+      const maxScroll =
+        document.documentElement.scrollHeight - window.innerHeight
+      // A short pane cannot scroll far enough to pin the sticky bar; go to
+      // the page top then instead of stopping with the header half cut off
+      // (+1 absorbs fractional layout rounding).
+      const target =
+        contentTop <= maxScroll + 1 ? Math.min(contentTop, maxScroll) : 0
+      if (window.scrollY > target) window.scrollTo(0, target)
+    })
   }
 
   const { handlers: swipeHandlers, slide } = useCarouselDrag(trackRef, {
