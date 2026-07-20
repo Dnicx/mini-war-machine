@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useCarouselDrag } from '../hooks/useCarouselDrag'
 import type { CarouselSide } from '../hooks/useCarouselDrag'
-import { ChevronLeft, ChevronRight, Swords, ChevronDown, ChevronUp, Users, Scroll } from 'lucide-react'
+import {
+  Swords, ChevronDown, ChevronUp, Users, Scroll,
+  Crown, Footprints, Crosshair, Zap
+} from 'lucide-react'
 import { appIcon } from '../config/icons'
 import { cardStyles } from '../styles/components'
 import type { Roster, Phase, Timing, Ability, GameState, Stratagem, TurnOwner } from '../types/roster'
@@ -26,6 +29,64 @@ interface PlayDashboardProps {
 }
 
 const PHASES: Phase[] = ['Start of Game', 'Start of Battle Round', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight']
+
+// The repeating per-turn loop shown in the phase strip. The two "Start of…"
+// pseudo-phases only appear transiently via the Next button / swipe.
+const MAIN_PHASES: Phase[] = ['Command', 'Movement', 'Shooting', 'Charge', 'Fight']
+
+const PHASE_STRIP: { phase: Phase; label: string; icon: typeof Swords }[] = [
+  { phase: 'Command', label: 'Cmd', icon: Crown },
+  { phase: 'Movement', label: 'Move', icon: Footprints },
+  { phase: 'Shooting', label: 'Shoot', icon: Crosshair },
+  { phase: 'Charge', label: 'Charge', icon: Zap },
+  { phase: 'Fight', label: 'Fight', icon: Swords }
+]
+
+// One position in the linear game sequence. Advancing past Fight flips the
+// turn owner; advancing past the opponent's Fight starts the next round, so
+// phase navigation and turn/round changes are a single motion.
+interface GameStep {
+  phase: Phase
+  turnOwner: TurnOwner
+  battleRound: number
+}
+
+function nextStep(state: GameState): GameStep {
+  const { currentPhase, turnOwner, battleRound } = state
+  if (currentPhase === 'Start of Game') {
+    return { phase: 'Start of Battle Round', turnOwner: 'yours', battleRound }
+  }
+  if (currentPhase === 'Start of Battle Round') {
+    return { phase: 'Command', turnOwner, battleRound }
+  }
+  const idx = MAIN_PHASES.indexOf(currentPhase)
+  if (idx < MAIN_PHASES.length - 1) {
+    return { phase: MAIN_PHASES[idx + 1], turnOwner, battleRound }
+  }
+  // End of Fight: second player's turn, or a new battle round after theirs
+  return turnOwner === 'yours'
+    ? { phase: 'Command', turnOwner: 'opponent', battleRound }
+    : { phase: 'Start of Battle Round', turnOwner: 'yours', battleRound: battleRound + 1 }
+}
+
+// null at Start of Game: there is nothing before it, so a back-swipe hits
+// the carousel edge instead of wrapping around.
+function prevStep(state: GameState): GameStep | null {
+  const { currentPhase, turnOwner, battleRound } = state
+  if (currentPhase === 'Start of Game') return null
+  if (currentPhase === 'Start of Battle Round') {
+    return battleRound === 1
+      ? { phase: 'Start of Game', turnOwner: 'yours', battleRound: 1 }
+      : { phase: 'Fight', turnOwner: 'opponent', battleRound: battleRound - 1 }
+  }
+  if (currentPhase === 'Command') {
+    return turnOwner === 'opponent'
+      ? { phase: 'Fight', turnOwner: 'yours', battleRound }
+      : { phase: 'Start of Battle Round', turnOwner: 'yours', battleRound }
+  }
+  const idx = MAIN_PHASES.indexOf(currentPhase)
+  return { phase: MAIN_PHASES[idx - 1], turnOwner, battleRound }
+}
 
 export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const [gameState, setGameState] = useState<GameState>({
@@ -54,7 +115,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const [attachments, setAttachments] = useState<Record<string, string>>({})
   // The pane sliding in during a drag or programmatic slide. Rendered
   // offset by ±100% inside the track; null when the carousel is at rest.
-  const [incomingPhase, setIncomingPhase] = useState<{ phase: Phase; side: CarouselSide } | null>(null)
+  const [incoming, setIncoming] = useState<{ step: GameStep; side: CarouselSide } | null>(null)
   const [activeTiming, setActiveTiming] = useState<Timing>('start')
   const trackRef = useRef<HTMLDivElement | null>(null)
 
@@ -176,55 +237,57 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     })
   }
 
-  const adjacentPhase = (side: CarouselSide) => {
-    const currentIndex = PHASES.indexOf(gameState.currentPhase)
-    const offset = side === 'right' ? 1 : -1
-    return PHASES[(currentIndex + offset + PHASES.length) % PHASES.length]
+  const commitStep = (step: GameStep) => {
+    setActiveTiming('start')
+    updateGameState({
+      currentPhase: step.phase,
+      turnOwner: step.turnOwner,
+      battleRound: step.battleRound,
+      currentTiming: 'start',
+      // Reset once-per-battle-round abilities when a new round begins
+      ...(step.battleRound > gameState.battleRound ? { usedAbilities: {} } : {})
+    })
   }
 
   const { handlers: swipeHandlers, slide } = useCarouselDrag(trackRef, {
     onDragSide: (side) => {
-      setIncomingPhase({ phase: adjacentPhase(side), side })
+      const step = side === 'right' ? nextStep(gameState) : prevStep(gameState)
+      if (!step) return false
+      setIncoming({ step, side })
     },
     onSettle: (committed) => {
-      if (committed && incomingPhase) {
-        setActiveTiming('start')
-        updateGameState({ currentPhase: incomingPhase.phase })
+      if (committed && incoming) {
+        commitStep(incoming.step)
       }
-      setIncomingPhase(null)
+      setIncoming(null)
     }
   })
 
-  // Programmatic navigation (chevrons and phase pills) reuses the same
+  // Programmatic navigation (Next button and phase strip) reuses the same
   // track animation as finger drags so all phase changes feel identical.
-  const goToPhase = (phase: Phase, side: CarouselSide) => {
-    if (incomingPhase || phase === gameState.currentPhase) return
-    setIncomingPhase({ phase, side })
+  const goToStep = (step: GameStep, side: CarouselSide) => {
+    if (incoming || step.phase === gameState.currentPhase) return
+    setIncoming({ step, side })
     slide(side)
   }
 
-  const nextPhase = () => goToPhase(adjacentPhase('right'), 'right')
-  const prevPhase = () => goToPhase(adjacentPhase('left'), 'left')
-
-  const nextTurn = () => {
-    if (gameState.turnOwner === 'yours') {
-      updateGameState({
-        turnOwner: 'opponent',
-        currentPhase: 'Command',
-        currentTiming: 'start'
-      })
-    } else {
-      // End of battle round
-      const newRound = gameState.battleRound + 1
-      updateGameState({
-        battleRound: newRound,
-        turnOwner: 'yours',
-        currentPhase: 'Command',
-        currentTiming: 'start',
-        usedAbilities: {} // Reset once-per-battle-round abilities
-      })
-    }
+  // Strip taps jump within the current turn: the owner and round are kept.
+  const jumpToPhase = (phase: Phase) => {
+    const side: CarouselSide =
+      PHASES.indexOf(phase) > PHASES.indexOf(gameState.currentPhase) ? 'right' : 'left'
+    goToStep(
+      { phase, turnOwner: gameState.turnOwner, battleRound: gameState.battleRound },
+      side
+    )
   }
+
+  const upcoming = nextStep(gameState)
+  const nextLabel =
+    upcoming.battleRound > gameState.battleRound
+      ? 'Next: New Round'
+      : upcoming.turnOwner !== gameState.turnOwner
+        ? "Next: Command — Opponent's Turn"
+        : `Next: ${upcoming.phase}`
 
   const getActiveAbilities = (phase: Phase, turnOwner: TurnOwner) => {
     // Filter core stratagems (only enabled ones)
@@ -307,7 +370,12 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 pb-16" style={{ touchAction: 'pan-y' }} {...(activeTab === 'phase' ? swipeHandlers : {})}>
+    <div
+      // Extra bottom padding in Phase View so content clears the Next button
+      className={`max-w-4xl mx-auto p-4 ${activeTab === 'phase' ? 'pb-32' : 'pb-16'}`}
+      style={{ touchAction: 'pan-y' }}
+      {...(activeTab === 'phase' ? swipeHandlers : {})}
+    >
       {/* Header — always visible */}
       <div className="flex items-center justify-between mb-4">
         <button
@@ -324,66 +392,29 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
       {/* Phase View content — hidden in Unit View */}
       {activeTab === 'phase' && (
         <>
-          {/* Game State Header */}
-          <div className="bg-surface p-4 rounded-lg mb-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-4">
-                <span className="text-text2">Round {gameState.battleRound}</span>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  gameState.turnOwner === 'yours' ? 'bg-accent text-white' : 'bg-surface2 text-text'
-                }`}>
-                  {gameState.turnOwner === 'yours' ? 'Your Turn' : "Opponent's Turn"}
-                </span>
-              </div>
+          {/* Phase strip: the 5-phase turn loop, all segments visible at
+              once so no horizontal scrolling is needed on narrow screens.
+              Taps jump within the current turn; the "Start of…" pseudo-
+              phases have no segment (nothing is highlighted while active). */}
+          <div
+            className="flex gap-1 mb-4"
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
+          >
+            {PHASE_STRIP.map(({ phase, label, icon: Icon }) => (
               <button
-                onClick={nextTurn}
-                className="px-3 py-1 bg-surface2 text-text rounded hover:bg-surface2/80 text-sm"
+                key={phase}
+                onClick={() => jumpToPhase(phase)}
+                className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded text-xs ${
+                  gameState.currentPhase === phase
+                    ? 'bg-accent text-white'
+                    : 'bg-surface2 text-text2 hover:bg-surface2/80'
+                }`}
               >
-                Next Turn
+                <Icon size={16} />
+                {label}
               </button>
-            </div>
-
-            {/* Phase Navigation */}
-            <div className="flex items-center gap-2 mb-3">
-              <button
-                onClick={prevPhase}
-                className="p-1 text-text2 hover:text-accent flex-shrink-0"
-              >
-                <ChevronLeft size={20} />
-              </button>
-              <div
-                className="flex-1 overflow-x-auto"
-                onTouchStart={(e) => e.stopPropagation()}
-                onTouchEnd={(e) => e.stopPropagation()}
-              >
-                <div className="flex gap-1 min-w-max justify-center">
-                  {PHASES.map(phase => (
-                    <button
-                      key={phase}
-                      onClick={() => {
-                        const side: CarouselSide =
-                          PHASES.indexOf(phase) > PHASES.indexOf(gameState.currentPhase)
-                            ? 'right' : 'left'
-                        goToPhase(phase, side)
-                      }}
-                      className={`px-3 py-1 rounded text-sm whitespace-nowrap ${
-                        gameState.currentPhase === phase
-                          ? 'bg-accent text-white'
-                          : 'bg-surface2 text-text hover:bg-surface2/80'
-                      }`}
-                    >
-                      {phase}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <button
-                onClick={nextPhase}
-                className="p-1 text-text2 hover:text-accent flex-shrink-0"
-              >
-                <ChevronRight size={20} />
-              </button>
-            </div>
+            ))}
           </div>
 
           {/* Score & CP Tracker */}
@@ -451,20 +482,22 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
             {/* select-none: long-pressing selectable ability text makes
                 Android hijack the touch (touchcancel), killing the swipe. */}
             <div ref={trackRef} className="select-none" style={{ position: 'relative' }}>
-              {incomingPhase && (() => {
-                const incomingAbilities = getActiveAbilities(incomingPhase.phase, gameState.turnOwner)
-                const incomingByTiming = getAbilitiesByTiming(incomingPhase.phase, gameState.turnOwner)
+              {incoming && (() => {
+                // The step's own turn owner: sliding past Fight previews the
+                // other player's Command phase, not the current owner's.
+                const incomingAbilities = getActiveAbilities(incoming.step.phase, incoming.step.turnOwner)
+                const incomingByTiming = getAbilitiesByTiming(incoming.step.phase, incoming.step.turnOwner)
                 return (
                   <div
                     style={{
                       position: 'absolute', top: 0, left: 0, right: 0,
-                      transform: incomingPhase.side === 'right'
+                      transform: incoming.side === 'right'
                         ? 'translateX(100%)' : 'translateX(-100%)'
                     }}
                   >
                     <PhaseContent
-                      phase={incomingPhase.phase}
-                      turnOwner={gameState.turnOwner}
+                      phase={incoming.step.phase}
+                      turnOwner={incoming.step.turnOwner}
                       activeAbilities={incomingAbilities}
                       abilitiesByTiming={incomingByTiming}
                       collapsedUnits={collapsedUnits}
@@ -507,6 +540,21 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
           onImagesChange={handleImagesChange}
           attachments={attachments}
         />
+      )}
+
+      {/* Primary advance control, kept in the thumb zone above the tab bar.
+          Walks the linear game sequence, so turn flips and new rounds happen
+          here too — there is no separate "Next Turn" button. */}
+      {activeTab === 'phase' && (
+        <div className="fixed bottom-16 left-0 right-0 z-40 px-4 pb-2 pointer-events-none">
+          <button
+            onClick={() => goToStep(upcoming, 'right')}
+            className="pointer-events-auto block w-full max-w-4xl mx-auto py-3 bg-accent
+              text-white rounded-lg font-semibold shadow-lg"
+          >
+            {nextLabel} ›
+          </button>
+        </div>
       )}
 
       {/* Bottom tab bar */}
