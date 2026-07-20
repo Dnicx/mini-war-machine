@@ -268,7 +268,12 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
       return tab !== null
     },
     onSettle: (committed) => {
-      if (committed && incomingTab) setActiveContent(incomingTab.tab)
+      if (committed && incomingTab) {
+        setActiveContent(incomingTab.tab)
+        // Each tab starts reading from the top; keeping the old scroll
+        // position would land mid-content on the incoming pane.
+        window.scrollTo(0, 0)
+      }
       setIncomingTab(null)
     }
   })

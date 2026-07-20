@@ -190,6 +190,9 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
       if (committed && incomingPhase) {
         setActiveTiming('start')
         updateGameState({ currentPhase: incomingPhase.phase })
+        // Each phase starts reading from the top; keeping the old scroll
+        // position would land mid-content on the incoming pane.
+        window.scrollTo(0, 0)
       }
       setIncomingPhase(null)
     }
