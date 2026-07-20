@@ -212,9 +212,11 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
           <label htmlFor="debug" className="text-sm text-text2">Debug mode (dump parsed roster to JSON)</label>
         </div>
 
-        <p className="text-center text-text2/60 text-xs">
-          {__GIT_BRANCH__} @ {__GIT_COMMIT__} · built {new Date(__BUILD_TIME__).toLocaleString()}
-        </p>
+        {import.meta.env.DEV && (
+          <p className="text-center text-text2/60 text-xs">
+            {__GIT_BRANCH__} @ {__GIT_COMMIT__} · built {new Date(__BUILD_TIME__).toLocaleString()}
+          </p>
+        )}
       </div>
     </div>
   )
