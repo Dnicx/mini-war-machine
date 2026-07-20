@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { useCarouselDrag } from '../hooks/useCarouselDrag'
 import type { CarouselSide } from '../hooks/useCarouselDrag'
 import {
@@ -107,6 +107,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   // so it stays out of the phase sequence entirely.
   const [showStartOfGame, setShowStartOfGame] = useState(false)
   const trackRef = useRef<HTMLDivElement | null>(null)
+  const stickyHeaderRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     // Load saved game state
@@ -235,6 +236,43 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     })
   }
 
+  // Give every phase pane at least enough height for its non-sticky preamble
+  // (Back button, game-state header, score/CP) to scroll fully off, so short
+  // phases reach the same rest position as tall ones. Without this, a short
+  // pane can't scroll far enough to pin the sticky bar and scrollToContentTop
+  // has nowhere to land. Run as a layout effect so the height is applied
+  // before scrollToContentTop's microtask measures the page.
+  useLayoutEffect(() => {
+    if (activeTab !== 'phase') return
+    const applyMinHeight = () => {
+      const track = trackRef.current
+      if (!track) return
+      const stickyHeight = stickyHeaderRef.current?.offsetHeight ?? 0
+      track.style.minHeight = `${window.innerHeight - stickyHeight}px`
+    }
+    applyMinHeight()
+    window.addEventListener('resize', applyMinHeight)
+    return () => window.removeEventListener('resize', applyMinHeight)
+  }, [activeTab, gameState.currentPhase, gameState.turnOwner])
+
+  // After a committed swipe, scroll back to the top of the phase content but
+  // no further: scrolling to the very page top would pull the non-sticky
+  // headers above the sticky bar back into view. Deferred to a microtask so
+  // the incoming pane (and its sticky header height) is measured after the
+  // React flush, not the outgoing pane.
+  const scrollToContentTop = () => {
+    queueMicrotask(() => {
+      const track = trackRef.current
+      if (!track) return
+      const stickyHeight = stickyHeaderRef.current?.offsetHeight ?? 0
+      const contentTop =
+        window.scrollY + track.getBoundingClientRect().top - stickyHeight
+      // Browser clamps to the max scroll; the min-height above guarantees
+      // contentTop is reachable, so the sticky bar always ends up pinned.
+      if (window.scrollY > contentTop) window.scrollTo(0, contentTop)
+    })
+  }
+
   const { handlers: swipeHandlers, slide } = useCarouselDrag(trackRef, {
     onDragSide: (side) => {
       const step = side === 'right' ? nextStep(gameState) : prevStep(gameState)
@@ -243,6 +281,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     onSettle: (committed) => {
       if (committed && incoming) {
         commitStep(incoming.step)
+        scrollToContentTop()
       }
       setIncoming(null)
     }
@@ -412,7 +451,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
 
           {/* Sticky control section: phase strip, advance buttons, and the
               phase/timing header stay visible while scrolling abilities. */}
-          <div className="sticky top-0 z-30 bg-background border-b border-surface2 -mx-4 px-4 mb-4 pt-2">
+          <div ref={stickyHeaderRef} className="sticky top-0 z-30 bg-background border-b border-surface2 -mx-4 px-4 mb-4 pt-2">
             {/* Phase strip: the per-turn loop, all segments visible at once
                 so no horizontal scrolling is needed on narrow screens. Taps
                 jump within the current turn. */}
