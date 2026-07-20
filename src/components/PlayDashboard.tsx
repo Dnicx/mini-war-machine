@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useCarouselDrag } from '../hooks/useCarouselDrag'
 import type { CarouselSide } from '../hooks/useCarouselDrag'
-import { ChevronLeft, ChevronRight, Swords, ChevronDown, ChevronUp, Users, Scroll } from 'lucide-react'
+import {
+  Swords, ChevronDown, ChevronUp, Users, Scroll,
+  Crown, Footprints, Crosshair, Zap, Flag
+} from 'lucide-react'
 import { appIcon } from '../config/icons'
 import { cardStyles } from '../styles/components'
 import type { Roster, Phase, Timing, Ability, GameState, Stratagem, TurnOwner } from '../types/roster'
@@ -25,13 +28,57 @@ interface PlayDashboardProps {
   onBackToPlanner: () => void
 }
 
-const PHASES: Phase[] = ['Start of Game', 'Start of Battle Round', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight']
+// A player's turn walks these phases in order. 'Start of Battle Round' is
+// treated as part of each turn — the app does not track battle rounds, so
+// whichever player actually starts the round plays through that section
+// and the other player simply advances past it. 'Start of Game' is not in
+// the sequence: it is shown in a collapsible reference panel instead.
+const TURN_PHASES: Phase[] = [
+  'Start of Battle Round', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight'
+]
+
+const PHASE_STRIP: { phase: Phase; label: string; icon: typeof Swords }[] = [
+  { phase: 'Start of Battle Round', label: 'Round', icon: Flag },
+  { phase: 'Command', label: 'Cmd', icon: Crown },
+  { phase: 'Movement', label: 'Move', icon: Footprints },
+  { phase: 'Shooting', label: 'Shoot', icon: Crosshair },
+  { phase: 'Charge', label: 'Charge', icon: Zap },
+  { phase: 'Fight', label: 'Fight', icon: Swords }
+]
+
+// One position in the game: turns simply alternate, with each turn walking
+// TURN_PHASES from Start of Battle Round through Fight.
+interface GameStep {
+  phase: Phase
+  turnOwner: TurnOwner
+}
+
+const otherPlayer = (owner: TurnOwner): TurnOwner =>
+  owner === 'yours' ? 'opponent' : 'yours'
+
+function nextStep(state: GameState): GameStep {
+  const { currentPhase, turnOwner } = state
+  const idx = TURN_PHASES.indexOf(currentPhase)
+  // -1: stale 'Start of Game' persisted from before it left the sequence
+  if (idx === -1) return { phase: 'Start of Battle Round', turnOwner }
+  if (idx === TURN_PHASES.length - 1) {
+    return { phase: 'Start of Battle Round', turnOwner: otherPlayer(turnOwner) }
+  }
+  return { phase: TURN_PHASES[idx + 1], turnOwner }
+}
+
+function prevStep(state: GameState): GameStep {
+  const { currentPhase, turnOwner } = state
+  const idx = TURN_PHASES.indexOf(currentPhase)
+  if (idx <= 0) return { phase: 'Fight', turnOwner: otherPlayer(turnOwner) }
+  return { phase: TURN_PHASES[idx - 1], turnOwner }
+}
 
 export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const [gameState, setGameState] = useState<GameState>({
     battleRound: 1,
     turnOwner: 'yours',
-    currentPhase: 'Command',
+    currentPhase: 'Start of Battle Round',
     currentTiming: 'start',
     yourScore: 0,
     opponentScore: 0,
@@ -54,8 +101,11 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const [attachments, setAttachments] = useState<Record<string, string>>({})
   // The pane sliding in during a drag or programmatic slide. Rendered
   // offset by ±100% inside the track; null when the carousel is at rest.
-  const [incomingPhase, setIncomingPhase] = useState<{ phase: Phase; side: CarouselSide } | null>(null)
+  const [incoming, setIncoming] = useState<{ step: GameStep; side: CarouselSide } | null>(null)
   const [activeTiming, setActiveTiming] = useState<Timing>('start')
+  // 'Start of Game' reference panel, collapsed by default: needed rarely,
+  // so it stays out of the phase sequence entirely.
+  const [showStartOfGame, setShowStartOfGame] = useState(false)
   const trackRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -176,55 +226,56 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     })
   }
 
-  const adjacentPhase = (side: CarouselSide) => {
-    const currentIndex = PHASES.indexOf(gameState.currentPhase)
-    const offset = side === 'right' ? 1 : -1
-    return PHASES[(currentIndex + offset + PHASES.length) % PHASES.length]
+  const commitStep = (step: GameStep) => {
+    setActiveTiming('start')
+    updateGameState({
+      currentPhase: step.phase,
+      turnOwner: step.turnOwner,
+      currentTiming: 'start'
+    })
   }
 
   const { handlers: swipeHandlers, slide } = useCarouselDrag(trackRef, {
     onDragSide: (side) => {
-      setIncomingPhase({ phase: adjacentPhase(side), side })
+      const step = side === 'right' ? nextStep(gameState) : prevStep(gameState)
+      setIncoming({ step, side })
     },
     onSettle: (committed) => {
-      if (committed && incomingPhase) {
-        setActiveTiming('start')
-        updateGameState({ currentPhase: incomingPhase.phase })
+      if (committed && incoming) {
+        commitStep(incoming.step)
       }
-      setIncomingPhase(null)
+      setIncoming(null)
     }
   })
 
-  // Programmatic navigation (chevrons and phase pills) reuses the same
+  // Programmatic navigation (Next buttons and phase strip) reuses the same
   // track animation as finger drags so all phase changes feel identical.
-  const goToPhase = (phase: Phase, side: CarouselSide) => {
-    if (incomingPhase || phase === gameState.currentPhase) return
-    setIncomingPhase({ phase, side })
+  // Compare the full step: "Next Turn" from a phase lands on the other
+  // player's copy of a phase — same phase name, different step.
+  const goToStep = (step: GameStep, side: CarouselSide) => {
+    if (incoming) return
+    if (
+      step.phase === gameState.currentPhase &&
+      step.turnOwner === gameState.turnOwner
+    ) return
+    setIncoming({ step, side })
     slide(side)
   }
 
-  const nextPhase = () => goToPhase(adjacentPhase('right'), 'right')
-  const prevPhase = () => goToPhase(adjacentPhase('left'), 'left')
+  // Jump to the start of the next player's turn from anywhere in this one.
+  const nextTurnStep = (): GameStep => ({
+    phase: 'Start of Battle Round',
+    turnOwner: otherPlayer(gameState.turnOwner)
+  })
 
-  const nextTurn = () => {
-    if (gameState.turnOwner === 'yours') {
-      updateGameState({
-        turnOwner: 'opponent',
-        currentPhase: 'Command',
-        currentTiming: 'start'
-      })
-    } else {
-      // End of battle round
-      const newRound = gameState.battleRound + 1
-      updateGameState({
-        battleRound: newRound,
-        turnOwner: 'yours',
-        currentPhase: 'Command',
-        currentTiming: 'start',
-        usedAbilities: {} // Reset once-per-battle-round abilities
-      })
-    }
+  // Strip taps jump within the current turn: the owner is kept.
+  const jumpToPhase = (phase: Phase) => {
+    const side: CarouselSide =
+      TURN_PHASES.indexOf(phase) > TURN_PHASES.indexOf(gameState.currentPhase)
+        ? 'right' : 'left'
+    goToStep({ phase, turnOwner: gameState.turnOwner }, side)
   }
+
 
   const getActiveAbilities = (phase: Phase, turnOwner: TurnOwner) => {
     // Filter core stratagems (only enabled ones)
@@ -300,6 +351,9 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
 
   const activeAbilities = getActiveAbilities(gameState.currentPhase, gameState.turnOwner)
   const abilitiesByTiming = getAbilitiesByTiming(gameState.currentPhase, gameState.turnOwner)
+  // Reference panel is about the player's own pre-game setup, so it always
+  // filters as "your" abilities regardless of whose turn it is.
+  const startOfGameAbilities = getActiveAbilities('Start of Game', 'yours')
 
   const handleImagesChange = (images: Record<string, string>) => {
     setUnitImages(images)
@@ -307,7 +361,11 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 pb-16" style={{ touchAction: 'pan-y' }} {...(activeTab === 'phase' ? swipeHandlers : {})}>
+    <div
+      className="max-w-4xl mx-auto p-4 pb-16"
+      style={{ touchAction: 'pan-y' }}
+      {...(activeTab === 'phase' ? swipeHandlers : {})}
+    >
       {/* Header — always visible */}
       <div className="flex items-center justify-between mb-4">
         <button
@@ -324,111 +382,75 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
       {/* Phase View content — hidden in Unit View */}
       {activeTab === 'phase' && (
         <>
-          {/* Game State Header */}
-          <div className="bg-surface p-4 rounded-lg mb-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-4">
-                <span className="text-text2">Round {gameState.battleRound}</span>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  gameState.turnOwner === 'yours' ? 'bg-accent text-white' : 'bg-surface2 text-text'
-                }`}>
-                  {gameState.turnOwner === 'yours' ? 'Your Turn' : "Opponent's Turn"}
-                </span>
+          {/* Start of Game: phase-level reference sitting above the strip.
+              Not part of the sticky section — it scrolls away, since it is
+              rarely needed once the game is underway. */}
+          <div className="mb-2">
+            <button
+              onClick={() => setShowStartOfGame(v => !v)}
+              className="w-full flex items-center justify-between px-3 py-2 rounded
+                bg-surface2 text-text text-sm font-medium hover:bg-surface2/80"
+            >
+              <span className="flex items-center gap-2">
+                <Flag className="text-accent" size={16} />
+                Start of Game
+              </span>
+              {showStartOfGame ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+            {showStartOfGame && (
+              <div className="bg-surface rounded-lg p-3 mt-2 space-y-2">
+                {startOfGameAbilities.length === 0 ? (
+                  <p className="text-text2 text-center py-2">No abilities for this phase</p>
+                ) : (
+                  startOfGameAbilities.map(ability => (
+                    <PlayAbilityCard key={ability.id} ability={ability} />
+                  ))
+                )}
               </div>
-              <button
-                onClick={nextTurn}
-                className="px-3 py-1 bg-surface2 text-text rounded hover:bg-surface2/80 text-sm"
-              >
-                Next Turn
-              </button>
-            </div>
-
-            {/* Phase Navigation */}
-            <div className="flex items-center gap-2 mb-3">
-              <button
-                onClick={prevPhase}
-                className="p-1 text-text2 hover:text-accent flex-shrink-0"
-              >
-                <ChevronLeft size={20} />
-              </button>
-              <div
-                className="flex-1 overflow-x-auto"
-                onTouchStart={(e) => e.stopPropagation()}
-                onTouchEnd={(e) => e.stopPropagation()}
-              >
-                <div className="flex gap-1 min-w-max justify-center">
-                  {PHASES.map(phase => (
-                    <button
-                      key={phase}
-                      onClick={() => {
-                        const side: CarouselSide =
-                          PHASES.indexOf(phase) > PHASES.indexOf(gameState.currentPhase)
-                            ? 'right' : 'left'
-                        goToPhase(phase, side)
-                      }}
-                      className={`px-3 py-1 rounded text-sm whitespace-nowrap ${
-                        gameState.currentPhase === phase
-                          ? 'bg-accent text-white'
-                          : 'bg-surface2 text-text hover:bg-surface2/80'
-                      }`}
-                    >
-                      {phase}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <button
-                onClick={nextPhase}
-                className="p-1 text-text2 hover:text-accent flex-shrink-0"
-              >
-                <ChevronRight size={20} />
-              </button>
-            </div>
+            )}
           </div>
 
-          {/* Score & CP Tracker */}
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="bg-surface p-4 rounded-lg">
-              <h3 className="text-sm font-semibold text-text2 mb-2">Your Score</h3>
-              <div className="flex items-center justify-between">
+          {/* Sticky control section: phase strip, advance buttons, and the
+              phase/timing header stay visible while scrolling abilities. */}
+          <div className="sticky top-0 z-30 bg-background border-b border-surface2 -mx-4 px-4 mb-4 pt-2">
+            {/* Phase strip: the per-turn loop, all segments visible at once
+                so no horizontal scrolling is needed on narrow screens. Taps
+                jump within the current turn. */}
+            <div className="flex gap-1 mb-2">
+              {PHASE_STRIP.map(({ phase, label, icon: Icon }) => (
                 <button
-                  onClick={() => updateGameState({ yourScore: Math.max(0, gameState.yourScore - 1) })}
-                  className="w-8 h-8 bg-surface2 rounded text-text hover:bg-surface2/80"
+                  key={phase}
+                  onClick={() => jumpToPhase(phase)}
+                  className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded text-xs ${
+                    gameState.currentPhase === phase
+                      ? 'bg-accent text-white'
+                      : 'bg-surface2 text-text2 hover:bg-surface2/80'
+                  }`}
                 >
-                  -
+                  <Icon size={16} />
+                  {label}
                 </button>
-                <span className="text-2xl font-bold text-accent">{gameState.yourScore}</span>
-                <button
-                  onClick={() => updateGameState({ yourScore: gameState.yourScore + 1 })}
-                  className="w-8 h-8 bg-surface2 rounded text-text hover:bg-surface2/80"
-                >
-                  +
-                </button>
-              </div>
+              ))}
             </div>
-            <div className="bg-surface p-4 rounded-lg">
-              <h3 className="text-sm font-semibold text-text2 mb-2">Your CP</h3>
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={() => updateGameState({ yourCP: Math.max(0, gameState.yourCP - 1) })}
-                  className="w-8 h-8 bg-surface2 rounded text-text hover:bg-surface2/80"
-                >
-                  -
-                </button>
-                <span className="text-2xl font-bold text-accent">{gameState.yourCP}</span>
-                <button
-                  onClick={() => updateGameState({ yourCP: gameState.yourCP + 1 })}
-                  className="w-8 h-8 bg-surface2 rounded text-text hover:bg-surface2/80"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-          </div>
 
-          {/* Sticky Phase + Timing Headers */}
-          <div className="sticky top-0 z-30 bg-background border-b border-surface2 -mx-4 px-4 mb-4">
-            <div className="flex items-center gap-2 py-2">
+            {/* Advance controls */}
+            <div className="flex gap-2 mb-2">
+              <button
+                onClick={() => goToStep(nextStep(gameState), 'right')}
+                className="flex-1 py-2 bg-accent text-white rounded-lg font-semibold text-sm"
+              >
+                Next Phase ›
+              </button>
+              <button
+                onClick={() => goToStep(nextTurnStep(), 'right')}
+                className="flex-1 py-2 bg-surface2 text-text rounded-lg font-semibold text-sm
+                  hover:bg-surface2/80"
+              >
+                Next Turn »
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 py-2 border-t border-surface2">
               <span className="font-semibold text-text">{gameState.currentPhase}</span>
               <span className={`text-xs px-2 py-0.5 rounded-full ${
                 gameState.turnOwner === 'yours' ? 'bg-accent/20 text-accent' : 'bg-surface2 text-text2'
@@ -451,20 +473,22 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
             {/* select-none: long-pressing selectable ability text makes
                 Android hijack the touch (touchcancel), killing the swipe. */}
             <div ref={trackRef} className="select-none" style={{ position: 'relative' }}>
-              {incomingPhase && (() => {
-                const incomingAbilities = getActiveAbilities(incomingPhase.phase, gameState.turnOwner)
-                const incomingByTiming = getAbilitiesByTiming(incomingPhase.phase, gameState.turnOwner)
+              {incoming && (() => {
+                // The step's own turn owner: sliding past Fight previews the
+                // other player's Command phase, not the current owner's.
+                const incomingAbilities = getActiveAbilities(incoming.step.phase, incoming.step.turnOwner)
+                const incomingByTiming = getAbilitiesByTiming(incoming.step.phase, incoming.step.turnOwner)
                 return (
                   <div
                     style={{
                       position: 'absolute', top: 0, left: 0, right: 0,
-                      transform: incomingPhase.side === 'right'
+                      transform: incoming.side === 'right'
                         ? 'translateX(100%)' : 'translateX(-100%)'
                     }}
                   >
                     <PhaseContent
-                      phase={incomingPhase.phase}
-                      turnOwner={gameState.turnOwner}
+                      phase={incoming.step.phase}
+                      turnOwner={incoming.step.turnOwner}
                       activeAbilities={incomingAbilities}
                       abilitiesByTiming={incomingByTiming}
                       collapsedUnits={collapsedUnits}
@@ -565,8 +589,9 @@ function PhaseContent({
     if (!onTimingChange || phase === 'Start of Game' || phase === 'Start of Battle Round') return
 
     const handleScroll = () => {
-      // 64px covers the two-row sticky header height
-      const STICKY_OFFSET = 64
+      // Covers the sticky control section (phase strip + advance buttons
+      // + phase/timing header rows), measured at ~177px on mobile
+      const STICKY_OFFSET = 180
       let current: Timing = TIMINGS[0]
       TIMINGS.forEach((timing, idx) => {
         const el = timingRefs.current[idx]
