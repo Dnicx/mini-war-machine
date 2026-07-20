@@ -57,6 +57,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const [incomingPhase, setIncomingPhase] = useState<{ phase: Phase; side: CarouselSide } | null>(null)
   const [activeTiming, setActiveTiming] = useState<Timing>('start')
   const trackRef = useRef<HTMLDivElement | null>(null)
+  const stickyHeaderRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     // Load saved game state
@@ -182,6 +183,18 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     return PHASES[(currentIndex + offset + PHASES.length) % PHASES.length]
   }
 
+  // After a committed swipe, scroll back to the top of the phase content but
+  // no further: scrolling to the very page top would pull the non-sticky
+  // headers above the sticky bar back into view.
+  const scrollToContentTop = () => {
+    const track = trackRef.current
+    if (!track) return
+    const stickyHeight = stickyHeaderRef.current?.offsetHeight ?? 0
+    const contentTop =
+      window.scrollY + track.getBoundingClientRect().top - stickyHeight
+    if (window.scrollY > contentTop) window.scrollTo(0, contentTop)
+  }
+
   const { handlers: swipeHandlers, slide } = useCarouselDrag(trackRef, {
     onDragSide: (side) => {
       setIncomingPhase({ phase: adjacentPhase(side), side })
@@ -190,9 +203,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
       if (committed && incomingPhase) {
         setActiveTiming('start')
         updateGameState({ currentPhase: incomingPhase.phase })
-        // Each phase starts reading from the top; keeping the old scroll
-        // position would land mid-content on the incoming pane.
-        window.scrollTo(0, 0)
+        scrollToContentTop()
       }
       setIncomingPhase(null)
     }
@@ -430,7 +441,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
           </div>
 
           {/* Sticky Phase + Timing Headers */}
-          <div className="sticky top-0 z-30 bg-background border-b border-surface2 -mx-4 px-4 mb-4">
+          <div ref={stickyHeaderRef} className="sticky top-0 z-30 bg-background border-b border-surface2 -mx-4 px-4 mb-4">
             <div className="flex items-center gap-2 py-2">
               <span className="font-semibold text-text">{gameState.currentPhase}</span>
               <span className={`text-xs px-2 py-0.5 rounded-full ${

@@ -255,11 +255,24 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
   const [incomingTab, setIncomingTab] =
     useState<{ tab: typeof contentTabs[number]; side: CarouselSide } | null>(null)
   const trackRef = useRef<HTMLDivElement | null>(null)
+  const stickyHeaderRef = useRef<HTMLDivElement | null>(null)
 
   // Tabs do not wrap around: past the first/last tab there is no pane, so
   // onDragSide returns false and the hook dampens the drag instead.
   const adjacentTab = (side: CarouselSide) =>
     contentTabs[activeIndex + (side === 'right' ? 1 : -1)] ?? null
+
+  // After a committed swipe, scroll back to the top of the tab content but
+  // no further: scrolling to the very page top would pull the non-sticky
+  // content above the sticky header back into view.
+  const scrollToContentTop = () => {
+    const track = trackRef.current
+    if (!track) return
+    const stickyHeight = stickyHeaderRef.current?.offsetHeight ?? 0
+    const contentTop =
+      window.scrollY + track.getBoundingClientRect().top - stickyHeight
+    if (window.scrollY > contentTop) window.scrollTo(0, contentTop)
+  }
 
   const { handlers: swipeHandlers, slide } = useCarouselDrag(trackRef, {
     onDragSide: (side) => {
@@ -270,9 +283,7 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
     onSettle: (committed) => {
       if (committed && incomingTab) {
         setActiveContent(incomingTab.tab)
-        // Each tab starts reading from the top; keeping the old scroll
-        // position would land mid-content on the incoming pane.
-        window.scrollTo(0, 0)
+        scrollToContentTop()
       }
       setIncomingTab(null)
     }
@@ -355,7 +366,7 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
       {...swipeHandlers}
     >
       {/* Sticky floating header */}
-      <div className="sticky top-0 z-20 bg-background pt-1 pb-2">
+      <div ref={stickyHeaderRef} className="sticky top-0 z-20 bg-background pt-1 pb-2">
         {/* Row 1: back arrow + image + unit name */}
         <div className="flex items-center gap-3 mb-2">
           <button
