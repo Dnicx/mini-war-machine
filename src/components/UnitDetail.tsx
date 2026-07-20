@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useLayoutEffect, useRef } from 'react'
 import { ChevronLeft, ChevronDown, ChevronUp, Camera, Swords, Shield, User } from 'lucide-react'
 import { useCarouselDrag } from '../hooks/useCarouselDrag'
 import type { CarouselSide } from '../hooks/useCarouselDrag'
@@ -262,6 +262,24 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
   const adjacentTab = (side: CarouselSide) =>
     contentTabs[activeIndex + (side === 'right' ? 1 : -1)] ?? null
 
+  // Give every tab pane at least enough height for the non-sticky content
+  // above the header to scroll fully off, so a short tab reaches the same
+  // rest position as a tall one. Without this, a short pane can't scroll far
+  // enough to pin the sticky header and scrollToContentTop has nowhere to
+  // land. Run as a layout effect so the height is applied before
+  // scrollToContentTop's microtask measures the page.
+  useLayoutEffect(() => {
+    const applyMinHeight = () => {
+      const track = trackRef.current
+      if (!track) return
+      const stickyHeight = stickyHeaderRef.current?.offsetHeight ?? 0
+      track.style.minHeight = `${window.innerHeight - stickyHeight}px`
+    }
+    applyMinHeight()
+    window.addEventListener('resize', applyMinHeight)
+    return () => window.removeEventListener('resize', applyMinHeight)
+  }, [activeContent, unit])
+
   // After a committed swipe, scroll back to the top of the tab content but
   // no further: scrolling to the very page top would pull the non-sticky
   // content above the sticky header back into view. Deferred to a microtask
@@ -274,14 +292,9 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
       const stickyHeight = stickyHeaderRef.current?.offsetHeight ?? 0
       const contentTop =
         window.scrollY + track.getBoundingClientRect().top - stickyHeight
-      const maxScroll =
-        document.documentElement.scrollHeight - window.innerHeight
-      // A short pane cannot scroll far enough to pin the sticky bar; go to
-      // the page top then instead of stopping with the header half cut off
-      // (+1 absorbs fractional layout rounding).
-      const target =
-        contentTop <= maxScroll + 1 ? Math.min(contentTop, maxScroll) : 0
-      if (window.scrollY > target) window.scrollTo(0, target)
+      // Browser clamps to the max scroll; the min-height above guarantees
+      // contentTop is reachable, so the sticky header always ends up pinned.
+      if (window.scrollY > contentTop) window.scrollTo(0, contentTop)
     })
   }
 
