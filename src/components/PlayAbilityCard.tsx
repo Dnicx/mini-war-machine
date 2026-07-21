@@ -8,25 +8,30 @@ interface PlayAbilityCardProps {
 }
 
 export function PlayAbilityCard({ ability }: PlayAbilityCardProps) {
-  const isStratagem = 'cpCost' in ability
-  const stratagem = isStratagem ? ability as Stratagem : null
-  // Stratagems start folded (showing CP + effect), like the Stratagems view.
-  const [isCollapsed, setIsCollapsed] = useState( isStratagem || ability.notes )
+  // A CP cost makes it stratagem-styled (purple + CP badge). Custom stratagems
+  // carry cpCost but no `effect`, so only real stratagems get the WHEN/EFFECT
+  // layout — customs fall through to their description.
+  const hasCp = 'cpCost' in ability
+  const stratagem = 'effect' in ability ? ability as Stratagem : null
+  const cpCost = hasCp ? (ability as Stratagem).cpCost : null
+  // Real stratagems start folded (CP + effect); custom reminders stay open so
+  // their description shows. Plain abilities keep the note-driven fold.
+  const [isCollapsed, setIsCollapsed] = useState( !!stratagem || (!hasCp && !!ability.notes) )
 
   return (
     <div
       onClick={() => setIsCollapsed(prev => !prev)}
       className={`p-3 rounded-lg border-l-4 bg-surface2 cursor-pointer ${
-        isStratagem ? 'border-purple-500' : 'border-accent'
+        hasCp ? 'border-purple-500' : 'border-accent'
       }`}
     >
       <div className="flex-1">
         <div className="flex items-center gap-2 w-full text-left">
           {isCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
           <h4 className="font-semibold text-text flex-1">{ability.name}</h4>
-          {stratagem && (
+          {hasCp && (
             <span className="text-xs bg-surface2 text-text px-2 py-1 rounded font-bold">
-              {stratagem.cpCost}
+              {cpCost}
             </span>
           )}
         </div>
