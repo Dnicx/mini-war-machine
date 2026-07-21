@@ -264,6 +264,15 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
     save({ custom: updated })
   }
 
+  // Custom stratagems have no auto-detection, so a single patch updater covers
+  // every editable field (phase/timing/turn/CP/notes) instead of the granular
+  // handlers used for auto-detected abilities.
+  const handleUpdateStratagem = (id: string, patch: Partial<Ability>) => {
+    const updated = customStratagems.map(s => s.id === id ? { ...s, ...patch } : s)
+    setCustomStratagems(updated)
+    save({ custom: updated })
+  }
+
   const handleScrollToNextEmpty = () => {
     const abilitiesWithEmptyPhases = allAbilities.filter(a => !a.phases || a.phases.length === 0)
     if (abilitiesWithEmptyPhases.length === 0) return
@@ -344,8 +353,8 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
             </button>
           </div>
           <CustomStratagemForm
-            onAddStratagem={(name, description) => {
-              const newStratagem: Ability = { id: `custom-${Date.now()}`, name, description }
+            onAddStratagem={(name, description, cpCost) => {
+              const newStratagem: Ability = { id: `custom-${Date.now()}`, name, description, cpCost }
               const updated = [...customStratagems, newStratagem]
               setCustomStratagems(updated)
               save({ custom: updated })
@@ -475,6 +484,7 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
               <CustomStratagemsSection
                 customStratagems={customStratagems}
                 onDeleteStratagem={handleDeleteStratagem}
+                onUpdateStratagem={handleUpdateStratagem}
               />
             </div>
           )}

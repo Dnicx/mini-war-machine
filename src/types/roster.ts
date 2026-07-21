@@ -16,6 +16,9 @@ export interface Ability {
   phases?: Phase[]
   timing?: Timing
   notes?: string
+  // Custom stratagems set this so they group/display like stratagems (purple
+  // + CP badge). Real stratagems still carry their own required cpCost below.
+  cpCost?: string
 }
 
 export interface Stratagem extends Ability {
