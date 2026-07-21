@@ -437,7 +437,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
               {showStartOfGame ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </button>
             {showStartOfGame && (
-              <div className="bg-surface rounded-lg p-3 mt-2 space-y-2">
+              <div className="bg-surface2/30 rounded-lg p-3 mt-2 space-y-2">
                 {startOfGameAbilities.length === 0 ? (
                   <p className="text-text2 text-center py-2">No abilities for this phase</p>
                 ) : (
@@ -658,7 +658,7 @@ function PhaseContent({
             // Hide timing sections that have no abilities in this phase
             if (Object.keys(abilitiesByTiming[timing]).length === 0) return null
             return (
-            <div key={timing} ref={el => { timingRefs.current[idx] = el }} className="bg-surface p-4 rounded-lg">
+            <div key={timing} ref={el => { timingRefs.current[idx] = el }} className="bg-surface2/30 p-4 rounded-lg">
               <button
                 onClick={() => onToggleTiming(timing)}
                 className="flex items-center gap-2 font-semibold text-text mb-3 hover:text-accent transition-colors w-full text-left"
@@ -684,7 +684,7 @@ function PhaseContent({
           })}
         </div>
       ) : (
-        <div className="bg-surface p-4 rounded-lg">
+        <div className="bg-surface2/30 p-4 rounded-lg">
           <div className="flex items-center gap-2 mb-3">
             <Swords className="text-accent" size={20} />
             <h3 className="font-semibold text-text">
