@@ -129,7 +129,9 @@ interface StratagemGridCardProps {
   stratagem: Stratagem
 }
 
-function StratagemGridCard({ stratagem }: StratagemGridCardProps) {
+// Exported so the Phase view can reuse the same stratagem card presentation
+// instead of its own (kept visually consistent with the Stratagems view).
+export function StratagemGridCard({ stratagem }: StratagemGridCardProps) {
   const [isCollapsed, setIsCollapsed] = useState(true)
   const phases = phasesOf(stratagem)
   const bandColor = turnOwnerColor(effectiveTurnOwner(stratagem))

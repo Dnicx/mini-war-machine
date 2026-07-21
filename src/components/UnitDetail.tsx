@@ -12,6 +12,9 @@ interface UnitDetailProps {
   unitImages: Record<string, string>
   onImagesChange: (images: Record<string, string>) => void
   onBack: () => void
+  // Ability notes keyed by ability id (from the saved plan). Roster abilities
+  // don't carry notes, so they're merged in here for display.
+  abilityNotes?: Record<string, string>
 }
 
 function resizeImage(file: File, maxPx: number, quality: number): Promise<string> {
@@ -242,7 +245,7 @@ function ModelsSubView({ unit, attachedUnits, collapsedModels, onToggleModel }: 
   )
 }
 
-export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, onBack }: UnitDetailProps) {
+export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, onBack, abilityNotes = {} }: UnitDetailProps) {
   const [activeContent, setActiveContent] = useState<'models' | 'weapons' | 'abilities'>('models')
   const [collapsedModels, setCollapsedModels] = useState<Set<string>>(new Set())
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -366,13 +369,13 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
         ) : (
           <>
             {unit.abilities.map(ability => (
-              <PlayAbilityCard key={ability.id} ability={ability} />
+              <PlayAbilityCard key={ability.id} ability={{ ...ability, notes: abilityNotes[ability.id] }} />
             ))}
             {attachedUnits?.map(leader => (
               <div key={leader.id} className="pt-4 border-t border-surface2/50">
                 <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-2">Leader: {leader.name}</p>
                 {leader.abilities.map(ability => (
-                  <PlayAbilityCard key={ability.id} ability={ability} />
+                  <PlayAbilityCard key={ability.id} ability={{ ...ability, notes: abilityNotes[ability.id] }} />
                 ))}
               </div>
             ))}

@@ -98,20 +98,25 @@ All core features are implemented and functional. The application can:
 - All stratagem view
 - swipe to change between model, weapons, abilities
 - group range and melee regardless of character in attach unit
+- unit detail carousel look a little stuttering
 
 ## Bug
 
 ## Future Enhancements (Potential)
-- unit detail carousel look a little stuttering
-- set different bg color for each stratagems type
+- indicate turn by coloring phase strip ( blue - red or from theme )
+- collapse ability card shows Notes
+- abilities in unit detail show Notes
+- increase unit image in planner
+- add unit image in phase view
+---
+- set different bg color for each stratagems type ( make turn in planner more appearant )
 - support model with special keyword in phase view ( centurion sergeant have grenade )
 - Add roll timing for remind during dice rolling ( e.g. +1 to hit, -1 hit roll )
-- Phase tracking to reset stratagems usage
-- Add modifier tracker ( separate dice and characteristic modifiers)
+- Add modifier tracker ( separate dice and characteristic modifiers )
 - track battleshocked state ( reset by 'new battle round' button )
 - Add visual indicators for once-per-battle abilities in play mode ( reset by 'new battle round' button )
 - keep track of which units is dead and show only available weapon profile on remainnig model in unit
----
+- Phase tracking to reset stratagems usage
 - Add ability to track CP usage
 - Add victory point tracking
 - Export plans to shareable format
@@ -188,3 +193,38 @@ Add support for importing rosters exported from the official Warhammer 40k app b
 - User selection dialog for ambiguous matches
 - Progressive loading of BSData files
 - Offline support by bundling commonly used .cat files
+
+# NOTE
+
+[
+  {
+    "file": "src/components/PlayDashboard.tsx",
+    "line": 78,
+    "summary": "Removed round-boundary reset leaves usedAbilities/battleRound/score/CP as write-only dead state.",
+    "failure_scenario": "The old nextTurn() incremented battleRound and reset usedAbilities:{} at the round boundary; the new flow drops both. Grep confirms battleRound, yourScore, opponentScore, yourCP, opponentCP, and usedAbilities are now written once in the initial state and never read anywhere. Harmless today, but any future code that marks an ability 'used' will never see it cleared per round — the reset invariant was silently deleted, and 6 GameState fields are now dead. Consider trimming the type/state or restoring the reset intentionally."
+  },
+  {
+    "file": "src/components/PlayDashboard.tsx",
+    "line": 419,
+    "summary": "Phase strip lost the touch stopPropagation guard the old scrollable pill row had.",
+    "failure_scenario": "The removed pill row wrapped its buttons in a div with onTouchStart/onTouchEnd stopPropagation so touches there didn't reach the root carousel swipeHandlers. The new strip has no such guard, so a horizontal drag that begins on a strip button now propagates to the carousel and can trigger a phase swipe instead of (or in addition to) the intended tap. Low impact since a tap won't cross the 10px axis-lock threshold, but the interaction contract changed."
+  },
+  {
+    "file": "src/components/PlayDashboard.tsx",
+    "line": 356,
+    "summary": "startOfGameAbilities is recomputed every render even while the panel is collapsed.",
+    "failure_scenario": "getActiveAbilities('Start of Game','yours') runs on every render regardless of showStartOfGame, which is false by default and rarely opened. It filters the full allAbilities+stratagems list each time for output that is usually not rendered. Cheap per call, but it's wasted work on every state change (drag, timing scroll). Gate it behind showStartOfGame or memoize."
+  },
+  {
+    "file": "src/components/PlayDashboard.tsx",
+    "line": 594,
+    "summary": "STICKY_OFFSET hardcoded to 180px ('measured ~177px on mobile') is a fragile magic number.",
+    "failure_scenario": "The active-timing scroll heuristic compares element tops against a fixed 180px assumed sticky-section height. The sticky section's real height (phase strip + two buttons + phase/timing header) varies with font scaling, viewport width, and label wrapping. When it diverges from 180, the highlighted timing label lags or leads the actual scroll position. Prefer measuring the sticky container's offsetHeight via a ref rather than a constant."
+  },
+  {
+    "file": "src/components/PlayDashboard.tsx",
+    "line": 278,
+    "summary": "Stray double blank line left after jumpToPhase.",
+    "failure_scenario": "Lines 278-279 are two consecutive blank lines between jumpToPhase and getActiveAbilities, inconsistent with the single-blank-line spacing used elsewhere in the file. Trivial dead whitespace from the edit."
+  }
+]
