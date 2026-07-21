@@ -8,6 +8,8 @@ interface UnitViewProps {
   unitImages: Record<string, string>
   onImagesChange: (images: Record<string, string>) => void
   attachments?: Record<string, string>
+  // Ability notes keyed by ability id (from the saved plan).
+  abilityNotes?: Record<string, string>
 }
 
 // Keywords hidden in the unit list view (still shown in unit detail).
@@ -70,7 +72,7 @@ function UnitStatBlock({ unit }: { unit: Unit }) {
   )
 }
 
-export function UnitView({ roster, unitImages, onImagesChange, attachments = {} }: UnitViewProps) {
+export function UnitView({ roster, unitImages, onImagesChange, attachments = {}, abilityNotes = {} }: UnitViewProps) {
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null)
 
   const selectUnit = (id: string) => {
@@ -119,6 +121,7 @@ export function UnitView({ roster, unitImages, onImagesChange, attachments = {} 
         unitImages={unitImages}
         onImagesChange={onImagesChange}
         onBack={closeUnit}
+        abilityNotes={abilityNotes}
       />
     )
   }

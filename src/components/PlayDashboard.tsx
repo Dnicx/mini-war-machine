@@ -569,6 +569,11 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
           unitImages={unitImages}
           onImagesChange={handleImagesChange}
           attachments={attachments}
+          // Notes live in the saved plan, not on roster abilities; pass them
+          // so the unit detail can show the same notes as the phase view.
+          abilityNotes={Object.fromEntries(
+            allAbilities.filter(a => a.notes).map(a => [a.id, a.notes as string])
+          )}
         />
       )}
 
