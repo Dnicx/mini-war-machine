@@ -21,6 +21,7 @@ import { detectDetachment } from '../lib/detection'
 import { PlayAbilityCard } from './PlayAbilityCard'
 import { UnitView } from './UnitView'
 import { StratagemsView } from './StratagemsView'
+import { PHASE_ICONS } from '../lib/phaseIcons'
 
 const BackIcon = appIcon('back')
 
@@ -38,13 +39,13 @@ const TURN_PHASES: Phase[] = [
   'Start of Battle Round', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight'
 ]
 
-const PHASE_STRIP: { phase: Phase; label: string; icon: typeof Swords }[] = [
-  { phase: 'Start of Battle Round', label: 'Round', icon: Flag },
-  { phase: 'Command', label: 'Cmd', icon: Crown },
-  { phase: 'Movement', label: 'Move', icon: Footprints },
-  { phase: 'Shooting', label: 'Shoot', icon: Crosshair },
-  { phase: 'Charge', label: 'Charge', icon: Zap },
-  { phase: 'Fight', label: 'Fight', icon: Swords }
+const PHASE_STRIP: { phase: Phase; label: string }[] = [
+  { phase: 'Start of Battle Round', label: 'Round' },
+  { phase: 'Command', label: 'Cmd' },
+  { phase: 'Movement', label: 'Move' },
+  { phase: 'Shooting', label: 'Shoot' },
+  { phase: 'Charge', label: 'Charge' },
+  { phase: 'Fight', label: 'Fight' }
 ]
 
 // One position in the game: turns simply alternate, with each turn walking
@@ -495,8 +496,9 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
                 so no horizontal scrolling is needed on narrow screens. Taps
                 jump within the current turn. */}
             <div className="flex gap-1 mb-2">
-              {PHASE_STRIP.map(({ phase, label, icon: Icon }) => (
-                <button
+              {PHASE_STRIP.map(({ phase, label }) => {
+                const PhaseIcon = PHASE_ICONS[phase]
+                return <button
                   key={phase}
                   onClick={() => jumpToPhase(phase)}
                   className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded text-xs ${
@@ -505,10 +507,11 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
                       : 'bg-surface2 text-text2 hover:bg-surface2/80'
                   }`}
                 >
-                  <Icon size={16} />
+                  
+                  <PhaseIcon size={16} />
                   {label}
                 </button>
-              ))}
+              })}
             </div>
 
             {/* Advance controls */}
