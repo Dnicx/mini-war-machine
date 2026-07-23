@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import type { Roster, Ability, Phase, Timing, Stratagem, TurnOwner } from '../types/roster'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
+import { buildCommonAbilities } from '../lib/commonAbilities'
 import { normalizeTiming } from '../lib/timing'
 import { savePlan, loadPlan, loadUnitImages, saveUnitImages } from '../lib/storage'
 import { getCoreStratagems, getAvailableDetachments, getDetachmentStratagems } from '../lib/stratagemRegistry'
@@ -12,6 +13,7 @@ import { CustomStratagemForm } from './CustomStratagemForm'
 import { StratagemSection } from './StratagemSection'
 import { ArmyAbilitiesSection } from './ArmyAbilitiesSection'
 import { UnitAbilitiesSection } from './UnitAbilitiesSection'
+import { CommonAbilitiesSection } from './CommonAbilitiesSection'
 import { CustomStratagemsSection } from './CustomStratagemsSection'
 
 interface PlannerProps {
@@ -91,7 +93,10 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
       )
     ]
 
-    const withHeuristics = applyHeuristicsToAll(allAbilitiesList)
+    // Common abilities are deduped across units and already heuristic-applied;
+    // append them so plan overrides/save treat them like any other ability.
+    const commonAbilities = buildCommonAbilities(roster).map(g => g.ability)
+    const withHeuristics = [...applyHeuristicsToAll(allAbilitiesList), ...commonAbilities]
     const coreStrats = getCoreStratagems()
 
     const detachmentStrats: Stratagem[] = factionFolder
@@ -432,7 +437,19 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
           {!isAbilitiesCollapsed && (
             <div ref={abilitiesRef}>
               <ArmyAbilitiesSection
-                abilities={allAbilities.filter(a => !a.sourceUnit)}
+                abilities={allAbilities.filter(a => !a.sourceUnit && !a.id.startsWith('common-'))}
+                onPhaseToggle={handlePhaseToggle}
+                onTimingChange={handleTimingChange}
+                onTurnOwnerChange={handleTurnOwnerChange}
+                onNotesChange={handleNotesChange}
+                onResetAbility={handleResetAbility}
+                onAbilityRef={(id, node) => {
+                  if (node) abilityRefs.current[id] = node
+                }}
+              />
+
+              <CommonAbilitiesSection
+                abilities={allAbilities.filter(a => a.id.startsWith('common-'))}
                 onPhaseToggle={handlePhaseToggle}
                 onTimingChange={handleTimingChange}
                 onTurnOwnerChange={handleTurnOwnerChange}
