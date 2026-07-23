@@ -617,6 +617,13 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
           abilityNotes={Object.fromEntries(
             allAbilities.filter(a => a.notes).map(a => [a.id, a.notes as string])
           )}
+          // Phases come from heuristics/plan, not raw roster abilities; pass
+          // them so the unit detail cards show the same phase icons.
+          abilityPhases={Object.fromEntries(
+            allAbilities
+              .filter(a => (a.phases ?? a.autoDetectedPhases ?? []).length > 0)
+              .map(a => [a.id, a.phases ?? a.autoDetectedPhases ?? []])
+          )}
         />
       )}
 

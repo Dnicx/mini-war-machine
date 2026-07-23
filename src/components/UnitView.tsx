@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { User } from 'lucide-react'
-import type { Roster, Unit, Ability } from '../types/roster'
+import type { Roster, Unit, Ability, Phase } from '../types/roster'
 import { UnitDetail } from './UnitDetail'
 
 interface UnitViewProps {
@@ -10,6 +10,8 @@ interface UnitViewProps {
   attachments?: Record<string, string>
   // Ability notes keyed by ability id (from the saved plan).
   abilityNotes?: Record<string, string>
+  // Ability phases keyed by ability id (from heuristics/plan) for phase icons.
+  abilityPhases?: Record<string, Phase[]>
   // Common abilities expanded per unit (keyed by unit id) for unit detail.
   commonAbilitiesByUnit?: Record<string, Ability[]>
 }
@@ -74,7 +76,7 @@ function UnitStatBlock({ unit }: { unit: Unit }) {
   )
 }
 
-export function UnitView({ roster, unitImages, onImagesChange, attachments = {}, abilityNotes = {}, commonAbilitiesByUnit = {} }: UnitViewProps) {
+export function UnitView({ roster, unitImages, onImagesChange, attachments = {}, abilityNotes = {}, abilityPhases = {}, commonAbilitiesByUnit = {} }: UnitViewProps) {
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null)
 
   const selectUnit = (id: string) => {
@@ -124,6 +126,7 @@ export function UnitView({ roster, unitImages, onImagesChange, attachments = {},
         onImagesChange={onImagesChange}
         onBack={closeUnit}
         abilityNotes={abilityNotes}
+        abilityPhases={abilityPhases}
         commonAbilitiesByUnit={commonAbilitiesByUnit}
       />
     )
