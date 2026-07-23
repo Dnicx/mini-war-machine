@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Camera } from 'lucide-react'
 import type { Ability, Phase, Timing, TurnOwner } from '../types/roster'
 import { effectiveTurnOwner } from '../lib/turnOwnerHeuristics'
 import { TIMINGS, TIMING_LABELS } from '../lib/timing'
+import { PHASE_ICONS } from '../lib/phaseIcons'
 import { SafeMarkdownRenderer } from './SafeMarkdownRenderer'
 
 // Normalize a unit/datasheet name for comparison: uppercase, collapse whitespace.
@@ -241,12 +242,14 @@ function UnitAbilityCard({
                 >
                   <div className="flex justify-between items-start mb-2">
                     <h4 className="font-semibold text-text">{ability.name}</h4>
-                    <div className="flex gap-2">
-                      {(ability.phases || []).length > 0 && (
-                        <span className="text-xs bg-surface2 text-text2 px-2 py-1 rounded">
-                          {(ability.phases || []).join(', ')}
-                        </span>
-                      )}
+                    {/* Phase icons, same per-phase icons as the stratagem cards */}
+                    <div className="flex gap-2 flex-shrink-0">
+                      {(ability.phases || []).map(phase => {
+                        const PhaseIcon = PHASE_ICONS[phase]
+                        return (
+                          <PhaseIcon key={phase} size={16} className="text-text2" />
+                        )
+                      })}
                     </div>
                   </div>
                   <div className="mb-3 p-3 bg-surface2/50 rounded-lg">
