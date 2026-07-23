@@ -2,8 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { useCarouselDrag } from '../hooks/useCarouselDrag'
 import type { CarouselSide } from '../hooks/useCarouselDrag'
 import {
-  Swords, ChevronDown, ChevronUp, Users, Scroll,
-  Crown, Footprints, Crosshair, Zap, Flag
+  Swords, ChevronDown, ChevronUp, Users, Scroll, Flag
 } from 'lucide-react'
 import { appIcon } from '../config/icons'
 import { cardStyles } from '../styles/components'
