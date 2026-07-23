@@ -1,4 +1,4 @@
-import type { Roster, Unit, Ability } from '../types/roster'
+import type { Roster, Unit, Ability, Rule } from '../types/roster'
 import { applyHeuristics } from './phaseHeuristics'
 
 // "Common abilities" are datasheet rules shared across many units (Deadly
@@ -46,6 +46,21 @@ function unitWeaponKeywordBases(unit: Unit): Set<string> {
     }
   }
   return bases
+}
+
+// Find the datasheet rule that describes a weapon keyword. Weapon keywords
+// ("Rapid Fire 1") carry no description; the text lives in a matching Rule
+// ("Rapid Fire"). Match on the value-stripped base; either side may be longer.
+export function findWeaponKeywordRule(
+  keyword: string,
+  rules: Rule[]
+): Rule | undefined {
+  const base = weaponKeywordBase(keyword)
+  if (!base || base === '-') return undefined
+  return rules.find(rule => {
+    const name = normalizeName(rule.name)
+    return name === base || name.startsWith(base) || base.startsWith(name)
+  })
 }
 
 // Stable id for the single shared plan entry of a common ability. Keyed by the

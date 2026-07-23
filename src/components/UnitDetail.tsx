@@ -1,10 +1,12 @@
-import { useState, useLayoutEffect, useRef } from 'react'
-import { ChevronLeft, ChevronDown, ChevronUp, Camera, Swords, Shield, User } from 'lucide-react'
+import { useState, useLayoutEffect, useRef, useEffect } from 'react'
+import { ChevronLeft, ChevronDown, ChevronUp, Camera, Swords, Shield, User, X } from 'lucide-react'
 import { useCarouselDrag } from '../hooks/useCarouselDrag'
 import type { CarouselSide } from '../hooks/useCarouselDrag'
-import type { Unit, Model, Ability, Phase } from '../types/roster'
+import type { Unit, Model, Ability, Phase, Rule } from '../types/roster'
 import { StatTile } from './StatTile'
 import { PlayAbilityCard } from './PlayAbilityCard'
+import { SafeMarkdownRenderer } from './SafeMarkdownRenderer'
+import { findWeaponKeywordRule } from '../lib/commonAbilities'
 
 interface UnitDetailProps {
   unit: Unit
@@ -52,6 +54,12 @@ type MergedWeapon = {
 }
 
 function UnitWeaponsBlock({ units }: { units: Unit[] }) {
+  // Weapon keywords carry no description; the text lives in datasheet rules on
+  // the unit and its models (leaders merge in via `units`). Gather them once so
+  // each keyword can resolve its describing rule.
+  const rules = units.flatMap(u => [...u.rules, ...u.models.flatMap(m => m.rules)])
+  const [activeRule, setActiveRule] = useState<Rule | null>(null)
+
   const mergedMap = new Map<string, MergedWeapon>()
 
   // Merge weapons across the host unit and any attached leaders so identical
@@ -115,9 +123,28 @@ function UnitWeaponsBlock({ units }: { units: Unit[] }) {
       </div>
       {weapon.keywords.length > 0 && (
         <div className="flex flex-wrap gap-1">
-          {weapon.keywords.map(kw => (
-            <span key={kw} className="text-xs bg-surface2 text-text2 px-2 py-0.5 rounded-full">{kw}</span>
-          ))}
+          {weapon.keywords.map(kw => {
+            const rule = findWeaponKeywordRule(kw, rules)
+            // Keywords with a matching rule are tappable (accent). Ones without
+            // a description render muted and inert.
+            return rule ? (
+              <button
+                key={kw}
+                onClick={() => setActiveRule(rule)}
+                className="text-xs bg-surface2 text-accent px-2 py-0.5 rounded-full
+                  hover:bg-surface2/60"
+              >
+                {kw}
+              </button>
+            ) : (
+              <span
+                key={kw}
+                className="text-xs bg-surface2 text-text2/50 px-2 py-0.5 rounded-full"
+              >
+                {kw}
+              </span>
+            )
+          })}
         </div>
       )}
     </div>
@@ -137,6 +164,51 @@ function UnitWeaponsBlock({ units }: { units: Unit[] }) {
           {melee.map(renderWeapon)}
         </div>
       )}
+      {activeRule && (
+        <KeywordRuleModal rule={activeRule} onClose={() => setActiveRule(null)} />
+      )}
+    </div>
+  )
+}
+
+// Centered modal showing a weapon keyword's describing rule (name + text).
+// Dismisses on backdrop click, the close button, and Escape.
+function KeywordRuleModal({ rule, onClose }: { rule: Rule; onClose: () => void }) {
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [onClose])
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-surface border border-surface2 rounded-lg shadow-lg
+          max-w-md w-full max-h-[80vh] overflow-y-auto"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-surface2">
+          <h3 className="flex-1 text-sm font-semibold text-text">{rule.name}</h3>
+          <button
+            onClick={onClose}
+            className="p-1 text-text2 hover:text-accent"
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <div className="p-4">
+          <SafeMarkdownRenderer
+            content={rule.description}
+            className="text-text2 text-sm whitespace-pre-wrap"
+          />
+        </div>
+      </div>
     </div>
   )
 }
