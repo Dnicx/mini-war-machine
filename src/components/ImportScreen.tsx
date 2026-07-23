@@ -1,8 +1,12 @@
 import { useState, useRef } from 'react'
+import { Copy, RefreshCw } from 'lucide-react'
 import type { Roster, RosterMeta } from '../types/roster'
 import { parseRosFile } from '../lib/parseRos'
 import { parseRosJsonFile } from '../lib/parseRosJson'
-import { loadRostersIndex, loadRosterById, deleteRosterFromLibrary } from '../lib/storage'
+import {
+  loadRostersIndex, loadRosterById, deleteRosterFromLibrary,
+  updateRosterInPlace, duplicateRoster
+} from '../lib/storage'
 import { appIcon } from '../config/icons'
 import { cardStyles } from '../styles/components'
 import { ThemePicker } from './ThemePicker'
@@ -25,6 +29,10 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
   const [debug, setDebug] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // Which roster an "Update from file" click targets; a ref (not state) since
+  // it is only read back inside the file-picker change handler.
+  const updateTargetRef = useRef<string | null>(null)
+  const updateInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -66,6 +74,39 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
     deleteRosterFromLibrary(id)
     setRosters(loadRostersIndex().sort((a, b) => b.lastUsed - a.lastUsed))
     setConfirmDeleteId(null)
+  }
+
+  const handleDuplicateRoster = (id: string) => {
+    duplicateRoster(id)
+    setRosters(loadRostersIndex().sort((a, b) => b.lastUsed - a.lastUsed))
+  }
+
+  // Re-import a GW-updated file over an existing roster, preserving its notes
+  // and phase/timing corrections (reconciled by name inside updateRosterInPlace).
+  const handleUpdateFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    const targetId = updateTargetRef.current
+    if (updateInputRef.current) updateInputRef.current.value = ''
+    if (!file || !targetId) return
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const isJson = file.name.toLowerCase().endsWith('.json')
+      const parsed = isJson ? await parseRosJsonFile(file, debug) : await parseRosFile(file, debug)
+      const updated = updateRosterInPlace(targetId, parsed)
+      if (!updated) {
+        setError('Could not update: roster not found.')
+        return
+      }
+      onRosterLoaded(updated)
+    } catch (err) {
+      console.error(err)
+      setError(`Failed to parse roster file. Make sure it's a valid BattleScribe roster (.ros or .json). "${err}"`)
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (pendingRoster) {
@@ -162,13 +203,33 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
                         </button>
                       </>
                     ) : (
-                      <button
-                        onClick={e => { e.stopPropagation(); setConfirmDeleteId(meta.id) }}
-                        className="p-1 text-text2 hover:text-red-400 rounded"
-                        title="Delete roster"
-                      >
-                        <DeleteIcon size={16} />
-                      </button>
+                      <>
+                        <button
+                          onClick={e => { e.stopPropagation(); handleDuplicateRoster(meta.id) }}
+                          className="p-1 text-text2 hover:text-accent rounded"
+                          title="Duplicate roster"
+                        >
+                          <Copy size={16} />
+                        </button>
+                        <button
+                          onClick={e => {
+                            e.stopPropagation()
+                            updateTargetRef.current = meta.id
+                            updateInputRef.current?.click()
+                          }}
+                          className="p-1 text-text2 hover:text-accent rounded"
+                          title="Update from file (keeps your notes & corrections)"
+                        >
+                          <RefreshCw size={16} />
+                        </button>
+                        <button
+                          onClick={e => { e.stopPropagation(); setConfirmDeleteId(meta.id) }}
+                          className="p-1 text-text2 hover:text-red-400 rounded"
+                          title="Delete roster"
+                        >
+                          <DeleteIcon size={16} />
+                        </button>
+                      </>
                     )}
                   </div>
                 </li>
@@ -194,6 +255,16 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
             <p className="text-text2 text-xs mt-1">Click to upload a .ros or .json file</p>
           </div>
         </label>
+
+        {/* Hidden input driven by each roster's "Update from file" button */}
+        <input
+          ref={updateInputRef}
+          type="file"
+          accept=".ros,.json,.txt,application/octet-stream,*/*"
+          onChange={handleUpdateFileUpload}
+          disabled={loading}
+          className="hidden"
+        />
 
         {error && (
           <div className="p-3 bg-red-900/30 border border-red-800 rounded text-red-200 text-sm">

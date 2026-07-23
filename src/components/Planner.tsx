@@ -117,7 +117,13 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
             notes: saved.notes
           }
         }
-        return ability
+        // Ability new since the plan was saved (e.g. a unit added by an
+        // in-place update): seed from heuristics like the no-plan branch.
+        return {
+          ...ability,
+          phases: ability.autoDetectedPhases,
+          timing: ability.autoDetectedTiming
+        }
       })
       setAllAbilities(withOverrides)
       setCustomStratagems(savedPlan.customStratagems || [])
