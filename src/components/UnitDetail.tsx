@@ -2,7 +2,7 @@ import { useState, useLayoutEffect, useRef } from 'react'
 import { ChevronLeft, ChevronDown, ChevronUp, Camera, Swords, Shield, User } from 'lucide-react'
 import { useCarouselDrag } from '../hooks/useCarouselDrag'
 import type { CarouselSide } from '../hooks/useCarouselDrag'
-import type { Unit, Model } from '../types/roster'
+import type { Unit, Model, Ability } from '../types/roster'
 import { StatTile } from './StatTile'
 import { PlayAbilityCard } from './PlayAbilityCard'
 
@@ -15,6 +15,9 @@ interface UnitDetailProps {
   // Ability notes keyed by ability id (from the saved plan). Roster abilities
   // don't carry notes, so they're merged in here for display.
   abilityNotes?: Record<string, string>
+  // Common abilities expanded per unit (keyed by unit id). Already carry the
+  // shared plan's notes, so they render directly.
+  commonAbilitiesByUnit?: Record<string, Ability[]>
 }
 
 function resizeImage(file: File, maxPx: number, quality: number): Promise<string> {
@@ -245,7 +248,7 @@ function ModelsSubView({ unit, attachedUnits, collapsedModels, onToggleModel }: 
   )
 }
 
-export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, onBack, abilityNotes = {} }: UnitDetailProps) {
+export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, onBack, abilityNotes = {}, commonAbilitiesByUnit = {} }: UnitDetailProps) {
   const [activeContent, setActiveContent] = useState<'models' | 'weapons' | 'abilities'>('models')
   const [collapsedModels, setCollapsedModels] = useState<Set<string>>(new Set())
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -362,20 +365,32 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
     if (tab === 'weapons') {
       return <WeaponsSubView unit={unit} attachedUnits={attachedUnits} />
     }
+    const unitCommon = commonAbilitiesByUnit[unit.id] ?? []
+    const hasHostAbilities = unit.abilities.length > 0 || unitCommon.length > 0
+    const hasLeaderAbilities = attachedUnits?.some(
+      leader => leader.abilities.length > 0 || (commonAbilitiesByUnit[leader.id]?.length ?? 0) > 0
+    )
     return (
       <div className="space-y-2">
-        {unit.abilities.length === 0 && (!attachedUnits || attachedUnits.length === 0) ? (
+        {!hasHostAbilities && !hasLeaderAbilities ? (
           <p className="text-text2 text-sm text-center py-8">No abilities defined for this unit</p>
         ) : (
           <>
             {unit.abilities.map(ability => (
               <PlayAbilityCard key={ability.id} ability={{ ...ability, notes: abilityNotes[ability.id] }} />
             ))}
+            {/* Common abilities already carry the shared plan's notes. */}
+            {unitCommon.map(ability => (
+              <PlayAbilityCard key={ability.id} ability={ability} />
+            ))}
             {attachedUnits?.map(leader => (
               <div key={leader.id} className="pt-4 border-t border-surface2/50">
                 <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-2">Leader: {leader.name}</p>
                 {leader.abilities.map(ability => (
                   <PlayAbilityCard key={ability.id} ability={{ ...ability, notes: abilityNotes[ability.id] }} />
+                ))}
+                {(commonAbilitiesByUnit[leader.id] ?? []).map(ability => (
+                  <PlayAbilityCard key={ability.id} ability={ability} />
                 ))}
               </div>
             ))}

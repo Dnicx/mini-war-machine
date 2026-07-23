@@ -10,6 +10,7 @@ import { cardStyles } from '../styles/components'
 import type { Roster, Phase, Timing, Ability, GameState, Stratagem, TurnOwner } from '../types/roster'
 import { loadPlan, saveGameState, loadGameState, loadUnitImages, saveUnitImages } from '../lib/storage'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
+import { buildCommonAbilities, commonAbilityId, commonAbilityUnitId } from '../lib/commonAbilities'
 import { TIMINGS, TIMING_LABELS, normalizeTiming } from '../lib/timing'
 import { effectiveTurnOwner } from '../lib/turnOwnerHeuristics'
 import {
@@ -99,6 +100,8 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const [activeTab, setActiveTab] = useState<'phase' | 'unit' | 'stratagems'>('phase')
   const [unitImages, setUnitImages] = useState<Record<string, string>>(() => loadUnitImages())
   const [attachments, setAttachments] = useState<Record<string, string>>({})
+  // Common abilities expanded per unit (keyed by unit id) for the unit view.
+  const [commonAbilitiesByUnit, setCommonAbilitiesByUnit] = useState<Record<string, Ability[]>>({})
   // The pane sliding in during a drag or programmatic slide. Rendered
   // offset by ±100% inside the track; null when the carousel is at rest.
   const [incoming, setIncoming] = useState<{ step: GameStep; side: CarouselSide } | null>(null)
@@ -153,7 +156,43 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
         }
       })
 
-      setAllAbilities(withOverrides)
+      // Expand each shared common ability into a per-unit copy so it appears
+      // separately under every owning unit. The shared plan (keyed by the
+      // `common-<name>` id) drives phases/timing/turn; the per-unit rule
+      // supplies the description shown in each card.
+      const commonExpanded: Ability[] = []
+      const commonByUnit: Record<string, Ability[]> = {}
+      buildCommonAbilities(roster).forEach(({ ability, unitNames }) => {
+        const planEntry = plan.phasePlans.find(p => p.abilityId === ability.id)
+        const shared: Partial<Ability> = planEntry
+          ? {
+              phases: planEntry.phases,
+              timing: normalizeTiming(planEntry.timing),
+              turnOwner: planEntry.turnOwner,
+              notes: planEntry.notes
+            }
+          : { phases: ability.autoDetectedPhases }
+        unitNames.forEach(unitName => {
+          const unit = roster.units.find(u => u.name === unitName)
+          if (!unit) return
+          const rule = unit.rules.find(r => commonAbilityId(r.name) === ability.id)
+          const expanded: Ability = {
+            ...ability,
+            ...shared,
+            id: commonAbilityUnitId(unit.id, ability.name),
+            sourceUnit: unit.name,
+            // Restore this unit's full name+description ("Deadly Demise D6")
+            // while phases/timing come from the shared base card.
+            name: rule?.name ?? ability.name,
+            description: rule?.description ?? ability.description
+          }
+          commonExpanded.push(expanded)
+          ;(commonByUnit[unit.id] ??= []).push(expanded)
+        })
+      })
+
+      setAllAbilities([...withOverrides, ...commonExpanded])
+      setCommonAbilitiesByUnit(commonByUnit)
       setCustomStratagems(plan.customStratagems || [])
       setAttachments(plan.attachments ?? {})
 
@@ -569,6 +608,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
           unitImages={unitImages}
           onImagesChange={handleImagesChange}
           attachments={attachments}
+          commonAbilitiesByUnit={commonAbilitiesByUnit}
           // Notes live in the saved plan, not on roster abilities; pass them
           // so the unit detail can show the same notes as the phase view.
           abilityNotes={Object.fromEntries(
