@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 import type { Roster, Unit, Ability, Weapon, Rule, Keyword, Model } from '../types/roster'
-import { mergeUnits, downloadRosterDebug } from './parseRos'
+import { mergeUnitModels, downloadRosterDebug } from './parseRos'
 
 // Shapes of the New Recruit .json export: a 1:1 mirror of the .ros XML where
 // attributes become keys, text content becomes "$text" and child elements
@@ -408,7 +408,7 @@ export async function parseRosJsonFile(file: File, debug: boolean = false): Prom
     faction,
     detachments: detachmentNames,
     points,
-    units: mergeUnits(units, rosterId),
+    units: mergeUnitModels(units),
     armyAbilities: extractArmyAbilities(force)
   }
 
