@@ -58,7 +58,7 @@ function UnitAbilityPlayCard({ ability }: { ability: Ability }) {
               />
             )}
             {ability.notes && (
-              <p className="text-accent text-sm mt-1 italic">Note: {ability.notes}</p>
+              <p className="text-accent text-sm mt-1 italic whitespace-pre-wrap">Note: {ability.notes}</p>
             )}
           </div>
         )}
