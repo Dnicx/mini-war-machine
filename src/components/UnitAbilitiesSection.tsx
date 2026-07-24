@@ -5,9 +5,13 @@ import { effectiveTurnOwner } from '../lib/turnOwnerHeuristics'
 import { TIMINGS, TIMING_LABELS } from '../lib/timing'
 import { SafeMarkdownRenderer } from './SafeMarkdownRenderer'
 
-// Normalize a unit/datasheet name for comparison: uppercase, collapse whitespace.
+// Normalize a unit/datasheet name for comparison: strip the emphasis markup the
+// export wraps datasheet names in (e.g. "^^**Blightlord Terminators^^**"), then
+// uppercase and collapse whitespace. Without stripping, names parsed from a
+// Leader ability never match the plain unit names and the "Attach to..."
+// dropdown comes up empty.
 function normalizeUnitName(name: string): string {
-  return name.toUpperCase().replace(/\s+/g, ' ').trim()
+  return name.replace(/[*_^`]/g, '').toUpperCase().replace(/\s+/g, ' ').trim()
 }
 
 // A Leader's ability lists the datasheets it can attach to as bulleted lines
