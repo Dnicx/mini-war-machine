@@ -20,7 +20,9 @@ describe('parseRosJsonFile with an 11th edition style .json export', () => {
     expect(roster.points).toBe(265)
     expect(roster.faction).toBe('Test Faction')
     expect(roster.detachments).toEqual(['Test Detachment'])
-    expect(roster.units).toHaveLength(2)
+    // Captain Testor + two separate "Test Squad" units (same-name units are
+    // not merged)
+    expect(roster.units).toHaveLength(3)
   })
 
   it('parses character stats including save and invulnerable save', () => {
@@ -40,12 +42,15 @@ describe('parseRosJsonFile with an 11th edition style .json export', () => {
     expect(unit(roster, 'Captain Testor').points).toBe(95)
   })
 
-  it('merges same-name units and applies the invulnerable save fallback', () => {
-    const squad = unit(roster, 'Test Squad')
-    expect(squad.points).toBe(170)
-    expect(squad.models.find(m => m.name === 'Squad Trooper')?.count).toBe(8)
-    for (const model of squad.models) {
-      expect(model.invulnerableSave).toBe('5+')
+  it('keeps same-name units separate and applies the invulnerable save fallback', () => {
+    const squads = roster.units.filter(u => u.name === 'Test Squad')
+    expect(squads).toHaveLength(2)
+    for (const squad of squads) {
+      expect(squad.points).toBe(85)
+      expect(squad.models.find(m => m.name === 'Squad Trooper')?.count).toBe(4)
+      for (const model of squad.models) {
+        expect(model.invulnerableSave).toBe('5+')
+      }
     }
   })
 

@@ -3,7 +3,7 @@
 // - a character with an enhancement (nested pts cost) and wargear nested
 //   inside other wargear (Weapon Rack > Rack Launcher)
 // - a squad whose invulnerable save only exists as a unit-level Abilities
-//   profile, present twice to exercise unit merging
+//   profile, present twice to exercise that same-name units are kept separate
 
 function profileJson(id: string, name: string, typeName: string, chars: Record<string, string>) {
   return {
