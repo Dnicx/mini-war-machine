@@ -146,12 +146,12 @@ export function AbilityCard({ ability, onPhaseToggle, onTimingChange, onTurnOwne
         </div>
       </div>
 
-      <input
-        type="text"
+      <textarea
         value={ability.notes || ''}
         onChange={(e) => onNotesChange(ability.id, e.target.value)}
         placeholder="Add notes..."
-        className="w-full px-3 py-1 bg-surface2 border border-surface2 rounded text-text placeholder-text2 text-sm focus:outline-none focus:border-accent"
+        rows={2}
+        className="w-full px-3 py-1 bg-surface2 border border-surface2 rounded text-text placeholder-text2 text-sm focus:outline-none focus:border-accent resize-y"
       />
     </div>
   )
