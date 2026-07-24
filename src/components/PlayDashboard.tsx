@@ -104,7 +104,10 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const [commonAbilitiesByUnit, setCommonAbilitiesByUnit] = useState<Record<string, Ability[]>>({})
   // The pane sliding in during a drag or programmatic slide. Rendered
   // offset by ±100% inside the track; null when the carousel is at rest.
-  const [incoming, setIncoming] = useState<{ step: GameStep; side: CarouselSide } | null>(null)
+  // topOffset pushes the incoming pane down so its own top aligns with the
+  // content-view top during the slide (see contentTopOffset).
+  const [incoming, setIncoming] =
+    useState<{ step: GameStep; side: CarouselSide; topOffset: number } | null>(null)
   const [activeTiming, setActiveTiming] = useState<Timing>('start')
   // 'Start of Game' reference panel, collapsed by default: needed rarely,
   // so it stays out of the phase sequence entirely.
@@ -312,10 +315,23 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     })
   }
 
+  // How far down to place the incoming pane so its own top sits at the
+  // content-view top (just under the sticky bar) during the slide. Equals the
+  // current scroll depth past the pin: 0 at rest, D when scrolled down by D.
+  // Clamped so an un-pinned page (not scrolled past the preamble) keeps 0,
+  // matching the outgoing pane's top. Without this the incoming pane slides in
+  // at the outgoing pane's scroll depth and snaps to top only after commit.
+  const contentTopOffset = () => {
+    const track = trackRef.current
+    if (!track) return 0
+    const stickyHeight = stickyHeaderRef.current?.offsetHeight ?? 0
+    return Math.max(0, stickyHeight - track.getBoundingClientRect().top)
+  }
+
   const { handlers: swipeHandlers, slide } = useCarouselDrag(trackRef, {
     onDragSide: (side) => {
       const step = side === 'right' ? nextStep(gameState) : prevStep(gameState)
-      setIncoming({ step, side })
+      setIncoming({ step, side, topOffset: contentTopOffset() })
     },
     onSettle: (committed) => {
       if (committed && incoming) {
@@ -336,7 +352,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
       step.phase === gameState.currentPhase &&
       step.turnOwner === gameState.turnOwner
     ) return
-    setIncoming({ step, side })
+    setIncoming({ step, side, topOffset: contentTopOffset() })
     slide(side)
   }
 
@@ -538,12 +554,16 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
                 {gameState.turnOwner === 'yours' ? 'Your Turn' : "Opponent's Turn"}
               </span>
             </div>
-            {gameState.currentPhase !== 'Start of Game' &&
-             gameState.currentPhase !== 'Start of Battle Round' && (
-              <div className="py-1 border-t border-surface2 text-xs text-text2">
-                {TIMING_LABELS[activeTiming]}
-              </div>
-            )}
+            {/* Always render this row so the sticky bar keeps a constant
+                height across phases: a swipe into/out of Start of Battle Round
+                (which has no timing) must not resize the header. Phases without
+                timing reserve the same height via a non-breaking space. */}
+            <div className="py-1 border-t border-surface2 text-xs text-text2">
+              {gameState.currentPhase !== 'Start of Game' &&
+               gameState.currentPhase !== 'Start of Battle Round'
+                ? TIMING_LABELS[activeTiming]
+                : ' '}
+            </div>
           </div>
 
           {/* Draggable phase content area. The track's translateX follows
@@ -561,7 +581,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
                 return (
                   <div
                     style={{
-                      position: 'absolute', top: 0, left: 0, right: 0,
+                      position: 'absolute', top: incoming.topOffset, left: 0, right: 0,
                       transform: incoming.side === 'right'
                         ? 'translateX(100%)' : 'translateX(-100%)'
                     }}

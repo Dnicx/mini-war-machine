@@ -333,8 +333,10 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
 
   // The pane sliding in during a drag or programmatic slide. Rendered
   // offset by ±100% inside the track; null when the carousel is at rest.
+  // topOffset pushes the incoming pane down so its own top aligns with the
+  // content-view top during the slide (see contentTopOffset).
   const [incomingTab, setIncomingTab] =
-    useState<{ tab: typeof contentTabs[number]; side: CarouselSide } | null>(null)
+    useState<{ tab: typeof contentTabs[number]; side: CarouselSide; topOffset: number } | null>(null)
   const trackRef = useRef<HTMLDivElement | null>(null)
   const stickyHeaderRef = useRef<HTMLDivElement | null>(null)
 
@@ -379,10 +381,23 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
     })
   }
 
+  // How far down to place the incoming pane so its own top sits at the
+  // content-view top (just under the sticky header) during the slide. Equals
+  // the current scroll depth past the pin: 0 at rest, D when scrolled down by
+  // D. Clamped so an un-pinned page keeps 0, matching the outgoing pane's top.
+  // Without this the incoming pane slides in at the outgoing pane's scroll
+  // depth and snaps to top only after commit.
+  const contentTopOffset = () => {
+    const track = trackRef.current
+    if (!track) return 0
+    const stickyHeight = stickyHeaderRef.current?.offsetHeight ?? 0
+    return Math.max(0, stickyHeight - track.getBoundingClientRect().top)
+  }
+
   const { handlers: swipeHandlers, slide } = useCarouselDrag(trackRef, {
     onDragSide: (side) => {
       const tab = adjacentTab(side)
-      setIncomingTab(tab ? { tab, side } : null)
+      setIncomingTab(tab ? { tab, side, topOffset: contentTopOffset() } : null)
       return tab !== null
     },
     onSettle: (committed) => {
@@ -398,7 +413,7 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
   const selectTab = (tab: typeof contentTabs[number]) => {
     if (incomingTab || tab === activeContent) return
     const side: CarouselSide = contentTabs.indexOf(tab) > activeIndex ? 'right' : 'left'
-    setIncomingTab({ tab, side })
+    setIncomingTab({ tab, side, topOffset: contentTopOffset() })
     slide(side)
   }
 
@@ -568,7 +583,7 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
           {incomingTab && (
             <div
               style={{
-                position: 'absolute', top: 0, left: 0, right: 0,
+                position: 'absolute', top: incomingTab.topOffset, left: 0, right: 0,
                 transform: incomingTab.side === 'right'
                   ? 'translateX(100%)' : 'translateX(-100%)'
               }}
