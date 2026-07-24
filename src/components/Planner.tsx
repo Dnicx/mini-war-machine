@@ -5,7 +5,7 @@ import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
 import { buildCommonAbilities } from '../lib/commonAbilities'
 import { unitAbilityId } from '../lib/unitAbilityId'
 import { normalizeTiming } from '../lib/timing'
-import { savePlan, loadPlan, loadUnitImages, saveUnitImages } from '../lib/storage'
+import { savePlan, loadPlan, loadUnitImages, saveUnitImages, migratePlanUnitAbilityIds } from '../lib/storage'
 import { getCoreStratagems, getAvailableDetachments, getDetachmentStratagems } from '../lib/stratagemRegistry'
 import { getStratagemFolderName } from '../lib/factionMapping'
 import { detectDetachment } from '../lib/detection'
@@ -84,7 +84,10 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
   }, [])
 
   useEffect(() => {
-    const savedPlan = loadPlan(roster.id)
+    const loadedPlan = loadPlan(roster.id)
+    // Translate pre-shared-id unit-ability plan entries so existing plans keep
+    // their phases/timing/notes instead of resetting.
+    const savedPlan = loadedPlan ? migratePlanUnitAbilityIds(loadedPlan, roster) : null
 
 
     // Same-name units share a datasheet, so collapse their abilities onto one

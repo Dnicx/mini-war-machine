@@ -7,7 +7,7 @@ import {
 import { appIcon } from '../config/icons'
 import { cardStyles } from '../styles/components'
 import type { Roster, Phase, Timing, Ability, GameState, Stratagem, TurnOwner } from '../types/roster'
-import { loadPlan, saveGameState, loadGameState, loadUnitImages, saveUnitImages } from '../lib/storage'
+import { loadPlan, saveGameState, loadGameState, loadUnitImages, saveUnitImages, migratePlanUnitAbilityIds } from '../lib/storage'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
 import { buildCommonAbilities, commonAbilityId, commonAbilityUnitId } from '../lib/commonAbilities'
 import { unitAbilityId } from '../lib/unitAbilityId'
@@ -124,7 +124,9 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     }
 
     // Load plan and get abilities
-    const plan = loadPlan(roster.id)
+    const loadedPlan = loadPlan(roster.id)
+    // Translate pre-shared-id unit-ability plan entries (see storage.ts).
+    const plan = loadedPlan ? migratePlanUnitAbilityIds(loadedPlan, roster) : null
     if (plan) {
       // Collapse same-name units' abilities onto one shared-id entry so they
       // resolve the single saved plan entry and the phase view shows them once.
