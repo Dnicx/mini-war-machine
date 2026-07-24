@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react'
 import type { Roster, Ability, Phase, Timing, Stratagem, TurnOwner } from '../types/roster'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
 import { buildCommonAbilities } from '../lib/commonAbilities'
+import { unitAbilityId } from '../lib/unitAbilityId'
 import { normalizeTiming } from '../lib/timing'
 import { savePlan, loadPlan, loadUnitImages, saveUnitImages } from '../lib/storage'
 import { getCoreStratagems, getAvailableDetachments, getDetachmentStratagems } from '../lib/stratagemRegistry'
@@ -86,12 +87,20 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
     const savedPlan = loadPlan(roster.id)
 
 
-    const allAbilitiesList = [
-      ...roster.armyAbilities,
-      ...roster.units.flatMap(unit =>
-        unit.abilities.map(a => ({ ...a, sourceUnit: unit.name }))
-      )
-    ]
+    // Same-name units share a datasheet, so collapse their abilities onto one
+    // shared-id entry (unitAbilityId). One planner card, one saved plan entry,
+    // and editing it updates every copy. The roster/unit view stay separate.
+    const seenUnitAbilityIds = new Set<string>()
+    const unitAbilities: Ability[] = []
+    for (const unit of roster.units) {
+      for (const a of unit.abilities) {
+        const id = unitAbilityId(unit.name, a.name)
+        if (seenUnitAbilityIds.has(id)) continue
+        seenUnitAbilityIds.add(id)
+        unitAbilities.push({ ...a, id, sourceUnit: unit.name })
+      }
+    }
+    const allAbilitiesList = [...roster.armyAbilities, ...unitAbilities]
 
     // Common abilities are deduped across units and already heuristic-applied;
     // append them so plan overrides/save treat them like any other ability.
@@ -461,7 +470,9 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
               />
 
               <UnitAbilitiesSection
-                units={roster.units.map(unit => ({
+                // Same-name units share abilities (collapsed onto shared ids
+                // above), so render one card per unique unit name.
+                units={[...new Map(roster.units.map(u => [u.name, u])).values()].map(unit => ({
                   id: unit.id,
                   name: unit.name,
                   abilities: allAbilities.filter(a => a.sourceUnit === unit.name),
