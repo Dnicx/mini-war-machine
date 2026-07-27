@@ -99,15 +99,18 @@ All core features are implemented and functional. The application can:
 - swipe to change between model, weapons, abilities
 - group range and melee regardless of character in attach unit
 - unit detail carousel look a little stuttering
+- collapse ability card shows Notes
+- abilities in unit detail show Notes
+- show weapon keyword details
 
 ## Bug
 
 ## Future Enhancements (Potential)
 - indicate turn by coloring phase strip ( blue - red or from theme )
-- collapse ability card shows Notes
-- abilities in unit detail show Notes
 - increase unit image in planner
 - add unit image in phase view
+- if there're unit with same name, show weapon name in unit view
+- attaching unit should be done in unit view instaed of phase planning. Because if there's more than one unit with same name, we need to see exactly which unit leader is attaching to. 
 ---
 - set different bg color for each stratagems type ( make turn in planner more appearant )
 - support model with special keyword in phase view ( centurion sergeant have grenade )
