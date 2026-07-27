@@ -6,6 +6,8 @@ import type { Unit, Model, Ability, Phase, Rule } from '../types/roster'
 import { StatTile } from './StatTile'
 import { PlayAbilityCard } from './PlayAbilityCard'
 import { SafeMarkdownRenderer } from './SafeMarkdownRenderer'
+import { KeywordPill } from './KeywordPill'
+import { normalizeKeyword } from '../lib/storage'
 import { findWeaponKeywordRule } from '../lib/commonAbilities'
 
 interface UnitDetailProps {
@@ -23,6 +25,10 @@ interface UnitDetailProps {
   // Common abilities expanded per unit (keyed by unit id). Already carry the
   // shared plan's notes, so they render directly.
   commonAbilitiesByUnit?: Record<string, Ability[]>
+  // Keyword name (normalized) → palette slot, and setter. Shared with the
+  // list view so a keyword's color is consistent everywhere.
+  keywordColors?: Record<string, number>
+  onKeywordColor?: (name: string, slot: number) => void
 }
 
 function resizeImage(file: File, maxPx: number, quality: number): Promise<string> {
@@ -323,7 +329,7 @@ function ModelsSubView({ unit, attachedUnits, collapsedModels, onToggleModel }: 
   )
 }
 
-export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, onBack, abilityNotes = {}, abilityPhases = {}, commonAbilitiesByUnit = {} }: UnitDetailProps) {
+export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, onBack, abilityNotes = {}, abilityPhases = {}, commonAbilitiesByUnit = {}, keywordColors = {}, onKeywordColor }: UnitDetailProps) {
   const [activeContent, setActiveContent] = useState<'models' | 'weapons' | 'abilities'>('models')
   const [collapsedModels, setCollapsedModels] = useState<Set<string>>(new Set())
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -536,7 +542,12 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
         {unit.keywords.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-2">
             {unit.keywords.map(kw => (
-              <span key={kw.id} className="text-xs bg-surface2 text-accent px-2 py-0.5 rounded-full uppercase font-medium tracking-wide">{kw.name}</span>
+              <KeywordPill
+                key={kw.id}
+                name={kw.name}
+                slot={keywordColors[normalizeKeyword(kw.name)] ?? 0}
+                onPick={slot => onKeywordColor?.(kw.name, slot)}
+              />
             ))}
           </div>
         )}

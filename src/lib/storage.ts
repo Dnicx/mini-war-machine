@@ -169,6 +169,25 @@ export function loadUnitImages(): Record<string, string> {
   try { return JSON.parse(data) as Record<string, string> } catch { return {} }
 }
 
+// --- Keyword colors ---
+
+// Maps a normalized keyword name (lowercased) to a palette slot index.
+// Slots are defined per theme, so the color follows the active theme.
+const KEYWORD_COLORS_KEY = 'wh40k_keyword_colors'
+
+// Normalize a keyword name so casing variants share one color assignment.
+export const normalizeKeyword = (name: string) => name.toLowerCase().trim()
+
+export function saveKeywordColors(map: Record<string, number>): void {
+  localStorage.setItem(KEYWORD_COLORS_KEY, JSON.stringify(map))
+}
+
+export function loadKeywordColors(): Record<string, number> {
+  const data = localStorage.getItem(KEYWORD_COLORS_KEY)
+  if (!data) return {}
+  try { return JSON.parse(data) as Record<string, number> } catch { return {} }
+}
+
 // --- Theme ---
 
 const THEME_KEY = 'wh40k_theme'

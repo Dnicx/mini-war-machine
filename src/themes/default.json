@@ -8,6 +8,12 @@
     "surface3": "#040a19",
     "accent": "#5ead31",
     "text": "#eaeaea",
-    "text2": "#dbc924"
+    "text2": "#dbc924",
+    "kw1-bg": "#7f1d1d", "kw1-text": "#fecaca",
+    "kw2-bg": "#92400e", "kw2-text": "#fde68a",
+    "kw3-bg": "#134e4a", "kw3-text": "#99f6e4",
+    "kw4-bg": "#14532d", "kw4-text": "#bbf7d0",
+    "kw5-bg": "#1e3a8a", "kw5-text": "#bfdbfe",
+    "kw6-bg": "#581c87", "kw6-text": "#e9d5ff"
   }
 }
