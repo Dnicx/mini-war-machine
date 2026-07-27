@@ -67,6 +67,24 @@ describe('migratePlanUnitAbilityIds', () => {
     expect(migrated.phasePlans[0].phases).toEqual(['Shooting'])
   })
 
+  it('keys by ability.id even when unit.id was reassigned (pre-#35 rosters)', () => {
+    // Pre-merge rosters set unit.id = `${rosterId}-${name}` but kept each
+    // ability's original id, so the plan was keyed by ability.id, not by
+    // `${unit.id}-${ability.name}`.
+    const misaligned: Unit = {
+      id: '66720d97-Adrax Agatone',
+      name: 'Adrax Agatone',
+      points: 0,
+      abilities: [{ id: 'sel9-Unto the Anvil', name: 'Unto the Anvil', description: '' }],
+      rules: [], keywords: [], models: []
+    }
+    const r = roster([misaligned])
+    const migrated = migratePlanUnitAbilityIds(
+      plan([{ abilityId: 'sel9-Unto the Anvil', phases: ['Fight'] }]), r)
+    expect(migrated.phasePlans[0].abilityId).toBe(unitAbilityId('Adrax Agatone', 'Unto the Anvil'))
+    expect(migrated.phasePlans[0].phases).toEqual(['Fight'])
+  })
+
   it('returns the same plan object when nothing needs migrating (idempotent)', () => {
     const r = roster([unit('xqqgmsf', 'Typhus', ['Leader'])])
     const already = plan([{ abilityId: unitAbilityId('Typhus', 'Leader'), phases: ['Fight'] }])

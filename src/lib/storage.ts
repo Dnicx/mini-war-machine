@@ -145,7 +145,11 @@ export function migratePlanUnitAbilityIds(plan: Plan, roster: Roster): Plan {
   const oldToNew = new Map<string, string>()
   for (const unit of roster.units) {
     for (const ability of unit.abilities) {
-      oldToNew.set(`${unit.id}-${ability.name}`, unitAbilityId(unit.name, ability.name))
+      // Key by the ability's own id — the value the old plan actually saved.
+      // It is not always `${unit.id}-${name}`: rosters imported before same-name
+      // units were kept separate reassigned unit.id but left ability.id intact,
+      // so the two are misaligned and reconstructing the key would miss them.
+      oldToNew.set(ability.id, unitAbilityId(unit.name, ability.name))
     }
   }
 
