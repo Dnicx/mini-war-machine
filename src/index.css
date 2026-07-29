@@ -14,6 +14,19 @@
     --color-accent: 94 173 49;
     --color-text: 234 234 234;
     --color-text2: 219 201 36;
+    /* Keyword color slots (bg/text pairs). Overridden per theme. */
+    --color-kw1-bg: 127 29 29;
+    --color-kw1-text: 254 202 202;
+    --color-kw2-bg: 146 64 14;
+    --color-kw2-text: 253 230 138;
+    --color-kw3-bg: 19 78 74;
+    --color-kw3-text: 153 246 228;
+    --color-kw4-bg: 20 83 45;
+    --color-kw4-text: 187 247 208;
+    --color-kw5-bg: 30 58 138;
+    --color-kw5-text: 191 219 254;
+    --color-kw6-bg: 88 28 135;
+    --color-kw6-text: 233 213 255;
     --app-font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
     --app-font-size: 16px;
   }

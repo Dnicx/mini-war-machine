@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { User } from 'lucide-react'
 import type { Roster, Unit, Ability, Phase } from '../types/roster'
 import { UnitDetail } from './UnitDetail'
+import { KeywordPill } from './KeywordPill'
+import { loadKeywordColors, saveKeywordColors, normalizeKeyword } from '../lib/storage'
 
 interface UnitViewProps {
   roster: Roster
@@ -78,6 +80,18 @@ function UnitStatBlock({ unit }: { unit: Unit }) {
 
 export function UnitView({ roster, unitImages, onImagesChange, attachments = {}, abilityNotes = {}, abilityPhases = {}, commonAbilitiesByUnit = {} }: UnitViewProps) {
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null)
+  const [keywordColors, setKeywordColors] = useState<Record<string, number>>(loadKeywordColors)
+
+  // Assign a palette slot to a keyword name (globally, by normalized name).
+  const setKeywordColor = (name: string, slot: number) => {
+    setKeywordColors(prev => {
+      const next = { ...prev }
+      if (slot > 0) next[normalizeKeyword(name)] = slot
+      else delete next[normalizeKeyword(name)]
+      saveKeywordColors(next)
+      return next
+    })
+  }
 
   const selectUnit = (id: string) => {
     window.history.pushState({ unitDetail: id }, '')
@@ -128,6 +142,8 @@ export function UnitView({ roster, unitImages, onImagesChange, attachments = {},
         abilityNotes={abilityNotes}
         abilityPhases={abilityPhases}
         commonAbilitiesByUnit={commonAbilitiesByUnit}
+        keywordColors={keywordColors}
+        onKeywordColor={setKeywordColor}
       />
     )
   }
@@ -145,16 +161,22 @@ export function UnitView({ roster, unitImages, onImagesChange, attachments = {},
             // Outer wrapper groups host + leaders as separate cards
             return (
               <div key={unit.id} className="bg-surface2/30 rounded-2xl p-1.5 space-y-1.5">
-                <UnitCard unit={unit} unitImages={unitImages} onSelect={selectUnit} commonAbilities={commonAbilitiesByUnit[unit.id] ?? []} />
+                <UnitCard unit={unit} unitImages={unitImages} onSelect={selectUnit}
+                  commonAbilities={commonAbilitiesByUnit[unit.id] ?? []}
+                  keywordColors={keywordColors} onKeywordColor={setKeywordColor} />
                 {attachedLeaders.map(leader => (
-                  <UnitCard key={leader.id} unit={leader} unitImages={unitImages} onSelect={selectUnit} commonAbilities={commonAbilitiesByUnit[leader.id] ?? []} />
+                  <UnitCard key={leader.id} unit={leader} unitImages={unitImages} onSelect={selectUnit}
+                    commonAbilities={commonAbilitiesByUnit[leader.id] ?? []}
+                    keywordColors={keywordColors} onKeywordColor={setKeywordColor} />
                 ))}
               </div>
             )
           }
 
           return (
-            <UnitCard key={unit.id} unit={unit} unitImages={unitImages} onSelect={selectUnit} commonAbilities={commonAbilitiesByUnit[unit.id] ?? []} />
+            <UnitCard key={unit.id} unit={unit} unitImages={unitImages} onSelect={selectUnit}
+              commonAbilities={commonAbilitiesByUnit[unit.id] ?? []}
+              keywordColors={keywordColors} onKeywordColor={setKeywordColor} />
           )
         })
       )}
@@ -162,7 +184,14 @@ export function UnitView({ roster, unitImages, onImagesChange, attachments = {},
   )
 }
 
-function UnitCard({ unit, unitImages, onSelect, commonAbilities = [] }: { unit: Unit; unitImages: Record<string, string>; onSelect: (id: string) => void; commonAbilities?: Ability[] }) {
+function UnitCard({ unit, unitImages, onSelect, commonAbilities = [], keywordColors, onKeywordColor }: {
+  unit: Unit
+  unitImages: Record<string, string>
+  onSelect: (id: string) => void
+  commonAbilities?: Ability[]
+  keywordColors: Record<string, number>
+  onKeywordColor: (name: string, slot: number) => void
+}) {
   const imageUrl = unitImages[unit.id]
   const unitNameLower = unit.name.toLowerCase()
   const visibleKeywords = unit.keywords.filter(kw => {
@@ -197,12 +226,12 @@ function UnitCard({ unit, unitImages, onSelect, commonAbilities = [] }: { unit: 
         {(visibleKeywords.length > 0 || commonAbilities.length > 0) && (
           <div className="flex flex-wrap gap-1 mt-2">
             {visibleKeywords.map(kw => (
-              <span
+              <KeywordPill
                 key={kw.id}
-                className="text-xs bg-surface2 text-accent px-2 py-0.5 rounded-full uppercase font-medium tracking-wide"
-              >
-                {kw.name}
-              </span>
+                name={kw.name}
+                slot={keywordColors[normalizeKeyword(kw.name)] ?? 0}
+                onPick={slot => onKeywordColor(kw.name, slot)}
+              />
             ))}
             {/* Common abilities (Feel No Pain, Stealth, …) shown as keyword-like
                 pills for at-a-glance scanning. Outlined (not filled) so they
