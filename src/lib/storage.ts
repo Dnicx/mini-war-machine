@@ -1,4 +1,5 @@
-import type { Roster, RosterMeta, Plan, GameState } from '../types/roster'
+import type { Roster, RosterMeta, Plan, PhasePlan, GameState } from '../types/roster'
+import { unitAbilityId } from './unitAbilityId'
 
 const ROSTERS_KEY = 'wh40k_rosters'
 const PLANS_KEY = 'wh40k_plans'
@@ -131,6 +132,50 @@ export function clearPlan(rosterId: string): void {
   const plans = loadAllPlans()
   delete plans[rosterId]
   saveAllPlans(plans)
+}
+
+// One-time migration for plans saved before same-name units shared a plan
+// entry. Unit abilities used to be keyed by the per-unit selection id
+// ("<unitId>-<abilityName>"); they now share a name-based id (unitAbilityId).
+// Rewrite any old-style unit-ability ids in a loaded plan to the shared id,
+// translating via the roster. Other ids (army-/common-/stratagem-/custom-) are
+// left untouched, and the function is a no-op once a plan is migrated. Safe to
+// remove after existing plans have been converted.
+export function migratePlanUnitAbilityIds(plan: Plan, roster: Roster): Plan {
+  const oldToNew = new Map<string, string>()
+  for (const unit of roster.units) {
+    for (const ability of unit.abilities) {
+      // Key by the ability's own id — the value the old plan actually saved.
+      // It is not always `${unit.id}-${name}`: rosters imported before same-name
+      // units were kept separate reassigned unit.id but left ability.id intact,
+      // so the two are misaligned and reconstructing the key would miss them.
+      oldToNew.set(ability.id, unitAbilityId(unit.name, ability.name))
+    }
+  }
+
+  let changed = false
+  const translated = plan.phasePlans.map(entry => {
+    const newId = oldToNew.get(entry.abilityId)
+    if (newId && newId !== entry.abilityId) {
+      changed = true
+      return { ...entry, abilityId: newId }
+    }
+    return entry
+  })
+  if (!changed) return plan
+
+  // Same-name units now collapse onto one id; keep the entry that carries
+  // planning data (non-empty phases wins, otherwise the first seen).
+  const byId = new Map<string, PhasePlan>()
+  for (const entry of translated) {
+    const existing = byId.get(entry.abilityId)
+    if (!existing) {
+      byId.set(entry.abilityId, entry)
+    } else if ((existing.phases?.length ?? 0) === 0 && (entry.phases?.length ?? 0) > 0) {
+      byId.set(entry.abilityId, entry)
+    }
+  }
+  return { ...plan, phasePlans: Array.from(byId.values()) }
 }
 
 // --- Game state ---

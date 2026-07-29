@@ -9,6 +9,7 @@ import { SafeMarkdownRenderer } from './SafeMarkdownRenderer'
 import { KeywordPill } from './KeywordPill'
 import { normalizeKeyword } from '../lib/storage'
 import { findWeaponKeywordRule } from '../lib/commonAbilities'
+import { unitAbilityId } from '../lib/unitAbilityId'
 
 interface UnitDetailProps {
   unit: Unit
@@ -472,9 +473,14 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
           <p className="text-text2 text-sm text-center py-8">No abilities defined for this unit</p>
         ) : (
           <>
-            {unit.abilities.map(ability => (
-              <PlayAbilityCard key={ability.id} ability={{ ...ability, notes: abilityNotes[ability.id], phases: abilityPhases[ability.id] }} />
-            ))}
+            {unit.abilities.map(ability => {
+              // Plan notes/phases are keyed by the shared unit-ability id, not
+              // the raw per-unit ability id, so same-name units resolve them.
+              const planId = unitAbilityId(unit.name, ability.name)
+              return (
+                <PlayAbilityCard key={ability.id} ability={{ ...ability, notes: abilityNotes[planId], phases: abilityPhases[planId] }} />
+              )
+            })}
             {/* Common abilities already carry the shared plan's notes. */}
             {unitCommon.map(ability => (
               <PlayAbilityCard key={ability.id} ability={ability} />
@@ -482,9 +488,12 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
             {attachedUnits?.map(leader => (
               <div key={leader.id} className="pt-4 border-t border-surface2/50">
                 <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-2">Leader: {leader.name}</p>
-                {leader.abilities.map(ability => (
-                  <PlayAbilityCard key={ability.id} ability={{ ...ability, notes: abilityNotes[ability.id], phases: abilityPhases[ability.id] }} />
-                ))}
+                {leader.abilities.map(ability => {
+                  const planId = unitAbilityId(leader.name, ability.name)
+                  return (
+                    <PlayAbilityCard key={ability.id} ability={{ ...ability, notes: abilityNotes[planId], phases: abilityPhases[planId] }} />
+                  )
+                })}
                 {(commonAbilitiesByUnit[leader.id] ?? []).map(ability => (
                   <PlayAbilityCard key={ability.id} ability={ability} />
                 ))}
