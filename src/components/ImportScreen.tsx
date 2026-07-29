@@ -217,6 +217,8 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
             {__GIT_BRANCH__} @ {__GIT_COMMIT__} · built {new Date(__BUILD_TIME__).toLocaleString()}
           </p>
         )}
+
+         <p className="text-center text-xs text-text2 mt-4">Powered by Wahapedia</p>
       </div>
     </div>
   )

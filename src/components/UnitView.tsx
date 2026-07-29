@@ -162,9 +162,11 @@ export function UnitView({ roster, unitImages, onImagesChange, attachments = {},
             return (
               <div key={unit.id} className="bg-surface2/30 rounded-2xl p-1.5 space-y-1.5">
                 <UnitCard unit={unit} unitImages={unitImages} onSelect={selectUnit}
+                  commonAbilities={commonAbilitiesByUnit[unit.id] ?? []}
                   keywordColors={keywordColors} onKeywordColor={setKeywordColor} />
                 {attachedLeaders.map(leader => (
                   <UnitCard key={leader.id} unit={leader} unitImages={unitImages} onSelect={selectUnit}
+                    commonAbilities={commonAbilitiesByUnit[leader.id] ?? []}
                     keywordColors={keywordColors} onKeywordColor={setKeywordColor} />
                 ))}
               </div>
@@ -173,6 +175,7 @@ export function UnitView({ roster, unitImages, onImagesChange, attachments = {},
 
           return (
             <UnitCard key={unit.id} unit={unit} unitImages={unitImages} onSelect={selectUnit}
+              commonAbilities={commonAbilitiesByUnit[unit.id] ?? []}
               keywordColors={keywordColors} onKeywordColor={setKeywordColor} />
           )
         })
@@ -181,10 +184,11 @@ export function UnitView({ roster, unitImages, onImagesChange, attachments = {},
   )
 }
 
-function UnitCard({ unit, unitImages, onSelect, keywordColors, onKeywordColor }: {
+function UnitCard({ unit, unitImages, onSelect, commonAbilities = [], keywordColors, onKeywordColor }: {
   unit: Unit
   unitImages: Record<string, string>
   onSelect: (id: string) => void
+  commonAbilities?: Ability[]
   keywordColors: Record<string, number>
   onKeywordColor: (name: string, slot: number) => void
 }) {
@@ -219,7 +223,7 @@ function UnitCard({ unit, unitImages, onSelect, keywordColors, onKeywordColor }:
         <div className="mt-1.5">
           <UnitStatBlock unit={unit} />
         </div>
-        {visibleKeywords.length > 0 && (
+        {(visibleKeywords.length > 0 || commonAbilities.length > 0) && (
           <div className="flex flex-wrap gap-1 mt-2">
             {visibleKeywords.map(kw => (
               <KeywordPill
@@ -228,6 +232,17 @@ function UnitCard({ unit, unitImages, onSelect, keywordColors, onKeywordColor }:
                 slot={keywordColors[normalizeKeyword(kw.name)] ?? 0}
                 onPick={slot => onKeywordColor(kw.name, slot)}
               />
+            ))}
+            {/* Common abilities (Feel No Pain, Stealth, …) shown as keyword-like
+                pills for at-a-glance scanning. Outlined (not filled) so they
+                stay visually distinct from actual unit keywords above. */}
+            {commonAbilities.map(ability => (
+              <span
+                key={ability.id}
+                className="text-xs border border-accent/40 text-accent px-2 py-0.5 rounded-full uppercase font-medium tracking-wide"
+              >
+                {ability.name}
+              </span>
             ))}
           </div>
         )}
