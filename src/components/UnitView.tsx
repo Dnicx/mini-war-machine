@@ -145,16 +145,16 @@ export function UnitView({ roster, unitImages, onImagesChange, attachments = {},
             // Outer wrapper groups host + leaders as separate cards
             return (
               <div key={unit.id} className="bg-surface2/30 rounded-2xl p-1.5 space-y-1.5">
-                <UnitCard unit={unit} unitImages={unitImages} onSelect={selectUnit} />
+                <UnitCard unit={unit} unitImages={unitImages} onSelect={selectUnit} commonAbilities={commonAbilitiesByUnit[unit.id] ?? []} />
                 {attachedLeaders.map(leader => (
-                  <UnitCard key={leader.id} unit={leader} unitImages={unitImages} onSelect={selectUnit} />
+                  <UnitCard key={leader.id} unit={leader} unitImages={unitImages} onSelect={selectUnit} commonAbilities={commonAbilitiesByUnit[leader.id] ?? []} />
                 ))}
               </div>
             )
           }
 
           return (
-            <UnitCard key={unit.id} unit={unit} unitImages={unitImages} onSelect={selectUnit} />
+            <UnitCard key={unit.id} unit={unit} unitImages={unitImages} onSelect={selectUnit} commonAbilities={commonAbilitiesByUnit[unit.id] ?? []} />
           )
         })
       )}
@@ -162,7 +162,7 @@ export function UnitView({ roster, unitImages, onImagesChange, attachments = {},
   )
 }
 
-function UnitCard({ unit, unitImages, onSelect }: { unit: Unit; unitImages: Record<string, string>; onSelect: (id: string) => void }) {
+function UnitCard({ unit, unitImages, onSelect, commonAbilities = [] }: { unit: Unit; unitImages: Record<string, string>; onSelect: (id: string) => void; commonAbilities?: Ability[] }) {
   const imageUrl = unitImages[unit.id]
   const unitNameLower = unit.name.toLowerCase()
   const visibleKeywords = unit.keywords.filter(kw => {
@@ -194,7 +194,7 @@ function UnitCard({ unit, unitImages, onSelect }: { unit: Unit; unitImages: Reco
         <div className="mt-1.5">
           <UnitStatBlock unit={unit} />
         </div>
-        {visibleKeywords.length > 0 && (
+        {(visibleKeywords.length > 0 || commonAbilities.length > 0) && (
           <div className="flex flex-wrap gap-1 mt-2">
             {visibleKeywords.map(kw => (
               <span
@@ -202,6 +202,17 @@ function UnitCard({ unit, unitImages, onSelect }: { unit: Unit; unitImages: Reco
                 className="text-xs bg-surface2 text-accent px-2 py-0.5 rounded-full uppercase font-medium tracking-wide"
               >
                 {kw.name}
+              </span>
+            ))}
+            {/* Common abilities (Feel No Pain, Stealth, …) shown as keyword-like
+                pills for at-a-glance scanning. Outlined (not filled) so they
+                stay visually distinct from actual unit keywords above. */}
+            {commonAbilities.map(ability => (
+              <span
+                key={ability.id}
+                className="text-xs border border-accent/40 text-accent px-2 py-0.5 rounded-full uppercase font-medium tracking-wide"
+              >
+                {ability.name}
               </span>
             ))}
           </div>
