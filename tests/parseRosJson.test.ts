@@ -102,3 +102,75 @@ describe('parseRosJsonFile with multiple detachments (11th edition)', () => {
       .toEqual(['Army Rule', 'Rule One', 'Rule Two'])
   })
 })
+
+describe('parseRosJsonFile with same-name units of different loadouts', () => {
+  // A character unit (type="model") with its own weapon and abilities. Two of
+  // these share the datasheet name "War Drone" but carry different weapons and
+  // partly different abilities.
+  function droneUnit(id: string, weaponName: string, weaponKeywords: string, extraAbility?: string) {
+    const abilities: Array<Record<string, unknown>> = [
+      { id: `${id}-hov`, name: 'Hover', typeName: 'Abilities',
+        characteristics: [{ name: 'Description', $text: 'It hovers.' }] }
+    ]
+    if (extraAbility) {
+      abilities.push({ id: `${id}-x`, name: extraAbility, typeName: 'Abilities',
+        characteristics: [{ name: 'Description', $text: 'Extra.' }] })
+    }
+    return {
+      id, name: 'War Drone', type: 'model', from: 'entry', number: 1,
+      profiles: [
+        { id: `${id}-u`, name: 'War Drone', typeName: 'Unit', characteristics: [
+          { name: 'M', $text: '10"' }, { name: 'T', $text: '9' }, { name: 'Sv', $text: '3+' },
+          { name: 'W', $text: '9' }, { name: 'LD', $text: '7+' }, { name: 'OC', $text: '2' }
+        ] },
+        ...abilities
+      ],
+      selections: [
+        { id: `${id}-w`, name: weaponName, type: 'upgrade', from: 'group', number: 1,
+          profiles: [{ id: `${id}-wp`, name: weaponName, typeName: 'Ranged Weapons', characteristics: [
+            { name: 'Range', $text: '12"' }, { name: 'A', $text: 'D6' }, { name: 'BS', $text: '3+' },
+            { name: 'S', $text: '5' }, { name: 'AP', $text: '-1' }, { name: 'D', $text: '1' },
+            { name: 'Keywords', $text: weaponKeywords }
+          ] }] }
+      ],
+      costs: [{ name: 'pts', typeId: 'pts', value: 100 }],
+      categories: [{ id: `${id}-c`, name: 'Vehicle', primary: true }]
+    }
+  }
+
+  it('lists each unit separately with its own weapons and abilities', async () => {
+    const json = JSON.stringify({
+      roster: {
+        name: 'Drone List', costs: [{ name: 'pts', value: 200 }],
+        forces: [{
+          catalogueName: 'Test Faction',
+          selections: [
+            { id: 'det', name: 'Detachment', type: 'upgrade', from: 'entry', selections: [
+              { id: 'det1', name: 'Test Detachment', type: 'upgrade', from: 'group', group: 'Detachment', rules: [] }
+            ] },
+            droneUnit('drone1', 'Plague Spitter', 'Torrent', 'Barrage'),
+            droneUnit('drone2', 'Heavy Blaster', 'Blast')
+          ]
+        }]
+      }
+    })
+    const roster = await parseRosJsonFile(new File([json], 'drones.json', { type: 'application/json' }))
+
+    const drones = roster.units.filter(u => u.name === 'War Drone')
+    expect(drones).toHaveLength(2)
+
+    const weaponsOf = (u: Unit) => u.models.flatMap(m => m.weapons.map(w => w.name))
+    const byWeapon = (name: string) => drones.find(d => weaponsOf(d).includes(name))!
+
+    // Each unit keeps only its own weapon...
+    expect(weaponsOf(byWeapon('Plague Spitter'))).toEqual(['Plague Spitter'])
+    expect(weaponsOf(byWeapon('Heavy Blaster'))).toEqual(['Heavy Blaster'])
+    // ...with that weapon's own keywords.
+    expect(byWeapon('Plague Spitter').models[0].weapons[0].keywords).toEqual(['Torrent'])
+    expect(byWeapon('Heavy Blaster').models[0].weapons[0].keywords).toEqual(['Blast'])
+
+    // Abilities stay with the right unit: both have Hover, only drone1 has Barrage.
+    expect(byWeapon('Plague Spitter').abilities.map(a => a.name).sort()).toEqual(['Barrage', 'Hover'])
+    expect(byWeapon('Heavy Blaster').abilities.map(a => a.name)).toEqual(['Hover'])
+  })
+})

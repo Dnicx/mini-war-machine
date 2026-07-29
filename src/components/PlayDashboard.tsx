@@ -10,7 +10,7 @@ import type { Roster, Phase, Timing, Ability, GameState, Stratagem, TurnOwner } 
 import { loadPlan, saveGameState, loadGameState, loadUnitImages, saveUnitImages, migratePlanUnitAbilityIds } from '../lib/storage'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
 import { buildCommonAbilities, commonAbilityId, commonAbilityUnitId } from '../lib/commonAbilities'
-import { unitAbilityId } from '../lib/unitAbilityId'
+import { buildUnitAbilities } from '../lib/unitAbilityId'
 import { TIMINGS, TIMING_LABELS, normalizeTiming } from '../lib/timing'
 import { effectiveTurnOwner } from '../lib/turnOwnerHeuristics'
 import {
@@ -130,21 +130,8 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     if (plan) {
       // Collapse same-name units' abilities onto one shared-id entry so they
       // resolve the single saved plan entry and the phase view shows them once.
-      // Must match the id scheme the Planner saves under (unitAbilityId).
-      const abilities: Ability[] = [...roster.armyAbilities]
-      const seenUnitAbilityIds = new Set<string>()
-      roster.units.forEach(unit => {
-        unit.abilities.forEach(ability => {
-          const id = unitAbilityId(unit.name, ability.name)
-          if (seenUnitAbilityIds.has(id)) return
-          seenUnitAbilityIds.add(id)
-          abilities.push({
-            ...ability,
-            id,
-            sourceUnit: unit.name
-          })
-        })
-      })
+      // Same builder (and id scheme) the Planner saves under.
+      const abilities: Ability[] = [...roster.armyAbilities, ...buildUnitAbilities(roster.units)]
 
       // Apply heuristics to get auto-detected phases
       const withHeuristics = applyHeuristicsToAll(abilities)

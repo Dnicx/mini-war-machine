@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react'
 import type { Roster, Ability, Phase, Timing, Stratagem, TurnOwner } from '../types/roster'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
 import { buildCommonAbilities } from '../lib/commonAbilities'
-import { unitAbilityId } from '../lib/unitAbilityId'
+import { buildUnitAbilities } from '../lib/unitAbilityId'
 import { normalizeTiming } from '../lib/timing'
 import { savePlan, loadPlan, loadUnitImages, saveUnitImages, migratePlanUnitAbilityIds } from '../lib/storage'
 import { getCoreStratagems, getAvailableDetachments, getDetachmentStratagems } from '../lib/stratagemRegistry'
@@ -90,20 +90,11 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
     const savedPlan = loadedPlan ? migratePlanUnitAbilityIds(loadedPlan, roster) : null
 
 
-    // Same-name units share a datasheet, so collapse their abilities onto one
-    // shared-id entry (unitAbilityId). One planner card, one saved plan entry,
-    // and editing it updates every copy. The roster/unit view stay separate.
-    const seenUnitAbilityIds = new Set<string>()
-    const unitAbilities: Ability[] = []
-    for (const unit of roster.units) {
-      for (const a of unit.abilities) {
-        const id = unitAbilityId(unit.name, a.name)
-        if (seenUnitAbilityIds.has(id)) continue
-        seenUnitAbilityIds.add(id)
-        unitAbilities.push({ ...a, id, sourceUnit: unit.name })
-      }
-    }
-    const allAbilitiesList = [...roster.armyAbilities, ...unitAbilities]
+    // Same-name units share a datasheet, so their abilities collapse onto one
+    // shared-id entry (buildUnitAbilities). One planner card, one saved plan
+    // entry, and editing it updates every copy. The roster/unit view stay
+    // separate.
+    const allAbilitiesList = [...roster.armyAbilities, ...buildUnitAbilities(roster.units)]
 
     // Common abilities are deduped across units and already heuristic-applied;
     // append them so plan overrides/save treat them like any other ability.
