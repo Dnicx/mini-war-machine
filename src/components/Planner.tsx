@@ -2,8 +2,10 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import type { Roster, Ability, Phase, Timing, Stratagem, TurnOwner } from '../types/roster'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
+import { buildCommonAbilities } from '../lib/commonAbilities'
+import { buildUnitAbilities } from '../lib/unitAbilityId'
 import { normalizeTiming } from '../lib/timing'
-import { savePlan, loadPlan, loadUnitImages, saveUnitImages } from '../lib/storage'
+import { savePlan, loadPlan, loadUnitImages, saveUnitImages, migratePlanUnitAbilityIds } from '../lib/storage'
 import { getCoreStratagems, getAvailableDetachments, getDetachmentStratagems } from '../lib/stratagemRegistry'
 import { getStratagemFolderName } from '../lib/factionMapping'
 import { detectDetachment } from '../lib/detection'
@@ -12,6 +14,7 @@ import { CustomStratagemForm } from './CustomStratagemForm'
 import { StratagemSection } from './StratagemSection'
 import { ArmyAbilitiesSection } from './ArmyAbilitiesSection'
 import { UnitAbilitiesSection } from './UnitAbilitiesSection'
+import { CommonAbilitiesSection } from './CommonAbilitiesSection'
 import { CustomStratagemsSection } from './CustomStratagemsSection'
 
 interface PlannerProps {
@@ -81,17 +84,22 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
   }, [])
 
   useEffect(() => {
-    const savedPlan = loadPlan(roster.id)
+    const loadedPlan = loadPlan(roster.id)
+    // Translate pre-shared-id unit-ability plan entries so existing plans keep
+    // their phases/timing/notes instead of resetting.
+    const savedPlan = loadedPlan ? migratePlanUnitAbilityIds(loadedPlan, roster) : null
 
 
-    const allAbilitiesList = [
-      ...roster.armyAbilities,
-      ...roster.units.flatMap(unit =>
-        unit.abilities.map(a => ({ ...a, sourceUnit: unit.name }))
-      )
-    ]
+    // Same-name units share a datasheet, so their abilities collapse onto one
+    // shared-id entry (buildUnitAbilities). One planner card, one saved plan
+    // entry, and editing it updates every copy. The roster/unit view stay
+    // separate.
+    const allAbilitiesList = [...roster.armyAbilities, ...buildUnitAbilities(roster.units)]
 
-    const withHeuristics = applyHeuristicsToAll(allAbilitiesList)
+    // Common abilities are deduped across units and already heuristic-applied;
+    // append them so plan overrides/save treat them like any other ability.
+    const commonAbilities = buildCommonAbilities(roster).map(g => g.ability)
+    const withHeuristics = [...applyHeuristicsToAll(allAbilitiesList), ...commonAbilities]
     const coreStrats = getCoreStratagems()
 
     const detachmentStrats: Stratagem[] = factionFolder
@@ -438,7 +446,19 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
           {!isAbilitiesCollapsed && (
             <div ref={abilitiesRef}>
               <ArmyAbilitiesSection
-                abilities={allAbilities.filter(a => !a.sourceUnit)}
+                abilities={allAbilities.filter(a => !a.sourceUnit && !a.id.startsWith('common-'))}
+                onPhaseToggle={handlePhaseToggle}
+                onTimingChange={handleTimingChange}
+                onTurnOwnerChange={handleTurnOwnerChange}
+                onNotesChange={handleNotesChange}
+                onResetAbility={handleResetAbility}
+                onAbilityRef={(id, node) => {
+                  if (node) abilityRefs.current[id] = node
+                }}
+              />
+
+              <CommonAbilitiesSection
+                abilities={allAbilities.filter(a => a.id.startsWith('common-'))}
                 onPhaseToggle={handlePhaseToggle}
                 onTimingChange={handleTimingChange}
                 onTurnOwnerChange={handleTurnOwnerChange}
@@ -450,7 +470,9 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
               />
 
               <UnitAbilitiesSection
-                units={roster.units.map(unit => ({
+                // Same-name units share abilities (collapsed onto shared ids
+                // above), so render one card per unique unit name.
+                units={[...new Map(roster.units.map(u => [u.name, u])).values()].map(unit => ({
                   id: unit.id,
                   name: unit.name,
                   abilities: allAbilities.filter(a => a.sourceUnit === unit.name),

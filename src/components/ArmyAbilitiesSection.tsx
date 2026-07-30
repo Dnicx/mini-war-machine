@@ -52,7 +52,7 @@ interface AbilityCardProps {
   ref?: (node: HTMLDivElement | null) => void
 }
 
-function AbilityCard({ ability, onPhaseToggle, onTimingChange, onTurnOwnerChange, onNotesChange, onResetAbility, ref }: AbilityCardProps) {
+export function AbilityCard({ ability, onPhaseToggle, onTimingChange, onTurnOwnerChange, onNotesChange, onResetAbility, ref }: AbilityCardProps) {
   const PHASES: Phase[] = ['Start of Game', 'Start of Battle Round', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight']
   const currentPhases = ability.phases || []
   const currentTiming = ability.timing || ''
@@ -146,12 +146,12 @@ function AbilityCard({ ability, onPhaseToggle, onTimingChange, onTurnOwnerChange
         </div>
       </div>
 
-      <input
-        type="text"
+      <textarea
         value={ability.notes || ''}
         onChange={(e) => onNotesChange(ability.id, e.target.value)}
         placeholder="Add notes..."
-        className="w-full px-3 py-1 bg-surface2 border border-surface2 rounded text-text placeholder-text2 text-sm focus:outline-none focus:border-accent"
+        rows={2}
+        className="w-full px-3 py-1 bg-surface2 border border-surface2 rounded text-text placeholder-text2 text-sm focus:outline-none focus:border-accent resize-y"
       />
     </div>
   )

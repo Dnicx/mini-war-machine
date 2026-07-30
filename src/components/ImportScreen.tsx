@@ -81,8 +81,8 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
     setRosters(loadRostersIndex().sort((a, b) => b.lastUsed - a.lastUsed))
   }
 
-  // Re-import a GW-updated file over an existing roster, preserving its notes
-  // and phase/timing corrections (reconciled by name inside updateRosterInPlace).
+  // Re-import a GW-updated file over an existing roster, keeping its identity so
+  // the saved plan (notes, phase/timing corrections) still applies.
   const handleUpdateFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     const targetId = updateTargetRef.current
@@ -288,6 +288,8 @@ export function ImportScreen({ onRosterLoaded }: ImportScreenProps) {
             {__GIT_BRANCH__} @ {__GIT_COMMIT__} · built {new Date(__BUILD_TIME__).toLocaleString()}
           </p>
         )}
+
+         <p className="text-center text-xs text-text2 mt-4">Powered by Wahapedia</p>
       </div>
     </div>
   )

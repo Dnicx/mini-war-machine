@@ -2,14 +2,15 @@ import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { useCarouselDrag } from '../hooks/useCarouselDrag'
 import type { CarouselSide } from '../hooks/useCarouselDrag'
 import {
-  Swords, ChevronDown, ChevronUp, Users, Scroll,
-  Crown, Footprints, Crosshair, Zap, Flag
+  Swords, ChevronDown, ChevronUp, Users, Scroll, Flag
 } from 'lucide-react'
 import { appIcon } from '../config/icons'
 import { cardStyles } from '../styles/components'
 import type { Roster, Phase, Timing, Ability, GameState, Stratagem, TurnOwner } from '../types/roster'
-import { loadPlan, saveGameState, loadGameState, loadUnitImages, saveUnitImages } from '../lib/storage'
+import { loadPlan, saveGameState, loadGameState, loadUnitImages, saveUnitImages, migratePlanUnitAbilityIds } from '../lib/storage'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
+import { buildCommonAbilities, commonAbilityId, commonAbilityUnitId } from '../lib/commonAbilities'
+import { buildUnitAbilities } from '../lib/unitAbilityId'
 import { TIMINGS, TIMING_LABELS, normalizeTiming } from '../lib/timing'
 import { effectiveTurnOwner } from '../lib/turnOwnerHeuristics'
 import {
@@ -20,6 +21,7 @@ import { detectDetachment } from '../lib/detection'
 import { PlayAbilityCard } from './PlayAbilityCard'
 import { UnitView } from './UnitView'
 import { StratagemsView } from './StratagemsView'
+import { PHASE_ICONS } from '../lib/phaseIcons'
 
 const BackIcon = appIcon('back')
 
@@ -37,13 +39,13 @@ const TURN_PHASES: Phase[] = [
   'Start of Battle Round', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight'
 ]
 
-const PHASE_STRIP: { phase: Phase; label: string; icon: typeof Swords }[] = [
-  { phase: 'Start of Battle Round', label: 'Round', icon: Flag },
-  { phase: 'Command', label: 'Cmd', icon: Crown },
-  { phase: 'Movement', label: 'Move', icon: Footprints },
-  { phase: 'Shooting', label: 'Shoot', icon: Crosshair },
-  { phase: 'Charge', label: 'Charge', icon: Zap },
-  { phase: 'Fight', label: 'Fight', icon: Swords }
+const PHASE_STRIP: { phase: Phase; label: string }[] = [
+  { phase: 'Start of Battle Round', label: 'Round' },
+  { phase: 'Command', label: 'Cmd' },
+  { phase: 'Movement', label: 'Move' },
+  { phase: 'Shooting', label: 'Shoot' },
+  { phase: 'Charge', label: 'Charge' },
+  { phase: 'Fight', label: 'Fight' }
 ]
 
 // One position in the game: turns simply alternate, with each turn walking
@@ -99,9 +101,14 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const [activeTab, setActiveTab] = useState<'phase' | 'unit' | 'stratagems'>('phase')
   const [unitImages, setUnitImages] = useState<Record<string, string>>(() => loadUnitImages())
   const [attachments, setAttachments] = useState<Record<string, string>>({})
+  // Common abilities expanded per unit (keyed by unit id) for the unit view.
+  const [commonAbilitiesByUnit, setCommonAbilitiesByUnit] = useState<Record<string, Ability[]>>({})
   // The pane sliding in during a drag or programmatic slide. Rendered
   // offset by ±100% inside the track; null when the carousel is at rest.
-  const [incoming, setIncoming] = useState<{ step: GameStep; side: CarouselSide } | null>(null)
+  // topOffset pushes the incoming pane down so its own top aligns with the
+  // content-view top during the slide (see contentTopOffset).
+  const [incoming, setIncoming] =
+    useState<{ step: GameStep; side: CarouselSide; topOffset: number } | null>(null)
   const [activeTiming, setActiveTiming] = useState<Timing>('start')
   // 'Start of Game' reference panel, collapsed by default: needed rarely,
   // so it stays out of the phase sequence entirely.
@@ -117,17 +124,14 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     }
 
     // Load plan and get abilities
-    const plan = loadPlan(roster.id)
+    const loadedPlan = loadPlan(roster.id)
+    // Translate pre-shared-id unit-ability plan entries (see storage.ts).
+    const plan = loadedPlan ? migratePlanUnitAbilityIds(loadedPlan, roster) : null
     if (plan) {
-      const abilities: Ability[] = [...roster.armyAbilities]
-      roster.units.forEach(unit => {
-        unit.abilities.forEach(ability => {
-          abilities.push({
-            ...ability,
-            sourceUnit: unit.name
-          })
-        })
-      })
+      // Collapse same-name units' abilities onto one shared-id entry so they
+      // resolve the single saved plan entry and the phase view shows them once.
+      // Same builder (and id scheme) the Planner saves under.
+      const abilities: Ability[] = [...roster.armyAbilities, ...buildUnitAbilities(roster.units)]
 
       // Apply heuristics to get auto-detected phases
       const withHeuristics = applyHeuristicsToAll(abilities)
@@ -153,7 +157,43 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
         }
       })
 
-      setAllAbilities(withOverrides)
+      // Expand each shared common ability into a per-unit copy so it appears
+      // separately under every owning unit. The shared plan (keyed by the
+      // `common-<name>` id) drives phases/timing/turn; the per-unit rule
+      // supplies the description shown in each card.
+      const commonExpanded: Ability[] = []
+      const commonByUnit: Record<string, Ability[]> = {}
+      buildCommonAbilities(roster).forEach(({ ability, unitNames }) => {
+        const planEntry = plan.phasePlans.find(p => p.abilityId === ability.id)
+        const shared: Partial<Ability> = planEntry
+          ? {
+              phases: planEntry.phases,
+              timing: normalizeTiming(planEntry.timing),
+              turnOwner: planEntry.turnOwner,
+              notes: planEntry.notes
+            }
+          : { phases: ability.autoDetectedPhases }
+        unitNames.forEach(unitName => {
+          const unit = roster.units.find(u => u.name === unitName)
+          if (!unit) return
+          const rule = unit.rules.find(r => commonAbilityId(r.name) === ability.id)
+          const expanded: Ability = {
+            ...ability,
+            ...shared,
+            id: commonAbilityUnitId(unit.id, ability.name),
+            sourceUnit: unit.name,
+            // Restore this unit's full name+description ("Deadly Demise D6")
+            // while phases/timing come from the shared base card.
+            name: rule?.name ?? ability.name,
+            description: rule?.description ?? ability.description
+          }
+          commonExpanded.push(expanded)
+          ;(commonByUnit[unit.id] ??= []).push(expanded)
+        })
+      })
+
+      setAllAbilities([...withOverrides, ...commonExpanded])
+      setCommonAbilitiesByUnit(commonByUnit)
       setCustomStratagems(plan.customStratagems || [])
       setAttachments(plan.attachments ?? {})
 
@@ -273,10 +313,23 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     })
   }
 
+  // How far down to place the incoming pane so its own top sits at the
+  // content-view top (just under the sticky bar) during the slide. Equals the
+  // current scroll depth past the pin: 0 at rest, D when scrolled down by D.
+  // Clamped so an un-pinned page (not scrolled past the preamble) keeps 0,
+  // matching the outgoing pane's top. Without this the incoming pane slides in
+  // at the outgoing pane's scroll depth and snaps to top only after commit.
+  const contentTopOffset = () => {
+    const track = trackRef.current
+    if (!track) return 0
+    const stickyHeight = stickyHeaderRef.current?.offsetHeight ?? 0
+    return Math.max(0, stickyHeight - track.getBoundingClientRect().top)
+  }
+
   const { handlers: swipeHandlers, slide } = useCarouselDrag(trackRef, {
     onDragSide: (side) => {
       const step = side === 'right' ? nextStep(gameState) : prevStep(gameState)
-      setIncoming({ step, side })
+      setIncoming({ step, side, topOffset: contentTopOffset() })
     },
     onSettle: (committed) => {
       if (committed && incoming) {
@@ -297,7 +350,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
       step.phase === gameState.currentPhase &&
       step.turnOwner === gameState.turnOwner
     ) return
-    setIncoming({ step, side })
+    setIncoming({ step, side, topOffset: contentTopOffset() })
     slide(side)
   }
 
@@ -456,8 +509,9 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
                 so no horizontal scrolling is needed on narrow screens. Taps
                 jump within the current turn. */}
             <div className="flex gap-1 mb-2">
-              {PHASE_STRIP.map(({ phase, label, icon: Icon }) => (
-                <button
+              {PHASE_STRIP.map(({ phase, label }) => {
+                const PhaseIcon = PHASE_ICONS[phase]
+                return <button
                   key={phase}
                   onClick={() => jumpToPhase(phase)}
                   className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded text-xs ${
@@ -466,10 +520,11 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
                       : 'bg-surface2 text-text2 hover:bg-surface2/80'
                   }`}
                 >
-                  <Icon size={16} />
+                  
+                  <PhaseIcon size={16} />
                   {label}
                 </button>
-              ))}
+              })}
             </div>
 
             {/* Advance controls */}
@@ -497,12 +552,16 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
                 {gameState.turnOwner === 'yours' ? 'Your Turn' : "Opponent's Turn"}
               </span>
             </div>
-            {gameState.currentPhase !== 'Start of Game' &&
-             gameState.currentPhase !== 'Start of Battle Round' && (
-              <div className="py-1 border-t border-surface2 text-xs text-text2">
-                {TIMING_LABELS[activeTiming]}
-              </div>
-            )}
+            {/* Always render this row so the sticky bar keeps a constant
+                height across phases: a swipe into/out of Start of Battle Round
+                (which has no timing) must not resize the header. Phases without
+                timing reserve the same height via a non-breaking space. */}
+            <div className="py-1 border-t border-surface2 text-xs text-text2">
+              {gameState.currentPhase !== 'Start of Game' &&
+               gameState.currentPhase !== 'Start of Battle Round'
+                ? TIMING_LABELS[activeTiming]
+                : ' '}
+            </div>
           </div>
 
           {/* Draggable phase content area. The track's translateX follows
@@ -520,7 +579,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
                 return (
                   <div
                     style={{
-                      position: 'absolute', top: 0, left: 0, right: 0,
+                      position: 'absolute', top: incoming.topOffset, left: 0, right: 0,
                       transform: incoming.side === 'right'
                         ? 'translateX(100%)' : 'translateX(-100%)'
                     }}
@@ -569,10 +628,18 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
           unitImages={unitImages}
           onImagesChange={handleImagesChange}
           attachments={attachments}
+          commonAbilitiesByUnit={commonAbilitiesByUnit}
           // Notes live in the saved plan, not on roster abilities; pass them
           // so the unit detail can show the same notes as the phase view.
           abilityNotes={Object.fromEntries(
             allAbilities.filter(a => a.notes).map(a => [a.id, a.notes as string])
+          )}
+          // Phases come from heuristics/plan, not raw roster abilities; pass
+          // them so the unit detail cards show the same phase icons.
+          abilityPhases={Object.fromEntries(
+            allAbilities
+              .filter(a => (a.phases ?? a.autoDetectedPhases ?? []).length > 0)
+              .map(a => [a.id, a.phases ?? a.autoDetectedPhases ?? []])
           )}
         />
       )}

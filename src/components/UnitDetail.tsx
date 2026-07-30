@@ -1,10 +1,15 @@
-import { useState, useLayoutEffect, useRef } from 'react'
-import { ChevronLeft, ChevronDown, ChevronUp, Camera, Swords, Shield, User } from 'lucide-react'
+import { useState, useLayoutEffect, useRef, useEffect } from 'react'
+import { ChevronLeft, ChevronDown, ChevronUp, Camera, Swords, Shield, User, X } from 'lucide-react'
 import { useCarouselDrag } from '../hooks/useCarouselDrag'
 import type { CarouselSide } from '../hooks/useCarouselDrag'
-import type { Unit, Model } from '../types/roster'
+import type { Unit, Model, Ability, Phase, Rule } from '../types/roster'
 import { StatTile } from './StatTile'
 import { PlayAbilityCard } from './PlayAbilityCard'
+import { SafeMarkdownRenderer } from './SafeMarkdownRenderer'
+import { KeywordPill } from './KeywordPill'
+import { normalizeKeyword } from '../lib/storage'
+import { findWeaponKeywordRule } from '../lib/commonAbilities'
+import { unitAbilityId } from '../lib/unitAbilityId'
 
 interface UnitDetailProps {
   unit: Unit
@@ -15,6 +20,16 @@ interface UnitDetailProps {
   // Ability notes keyed by ability id (from the saved plan). Roster abilities
   // don't carry notes, so they're merged in here for display.
   abilityNotes?: Record<string, string>
+  // Ability phases keyed by ability id (from heuristics/plan). Roster abilities
+  // don't carry phases, so they're merged in here for the phase icons.
+  abilityPhases?: Record<string, Phase[]>
+  // Common abilities expanded per unit (keyed by unit id). Already carry the
+  // shared plan's notes, so they render directly.
+  commonAbilitiesByUnit?: Record<string, Ability[]>
+  // Keyword name (normalized) → palette slot, and setter. Shared with the
+  // list view so a keyword's color is consistent everywhere.
+  keywordColors?: Record<string, number>
+  onKeywordColor?: (name: string, slot: number) => void
 }
 
 function resizeImage(file: File, maxPx: number, quality: number): Promise<string> {
@@ -46,6 +61,12 @@ type MergedWeapon = {
 }
 
 function UnitWeaponsBlock({ units }: { units: Unit[] }) {
+  // Weapon keywords carry no description; the text lives in datasheet rules on
+  // the unit and its models (leaders merge in via `units`). Gather them once so
+  // each keyword can resolve its describing rule.
+  const rules = units.flatMap(u => [...u.rules, ...u.models.flatMap(m => m.rules)])
+  const [activeRule, setActiveRule] = useState<Rule | null>(null)
+
   const mergedMap = new Map<string, MergedWeapon>()
 
   // Merge weapons across the host unit and any attached leaders so identical
@@ -109,9 +130,28 @@ function UnitWeaponsBlock({ units }: { units: Unit[] }) {
       </div>
       {weapon.keywords.length > 0 && (
         <div className="flex flex-wrap gap-1">
-          {weapon.keywords.map(kw => (
-            <span key={kw} className="text-xs bg-surface2 text-text2 px-2 py-0.5 rounded-full">{kw}</span>
-          ))}
+          {weapon.keywords.map(kw => {
+            const rule = findWeaponKeywordRule(kw, rules)
+            // Keywords with a matching rule are tappable (accent). Ones without
+            // a description render muted and inert.
+            return rule ? (
+              <button
+                key={kw}
+                onClick={() => setActiveRule(rule)}
+                className="text-xs bg-surface2 text-accent px-2 py-0.5 rounded-full
+                  hover:bg-surface2/60"
+              >
+                {kw}
+              </button>
+            ) : (
+              <span
+                key={kw}
+                className="text-xs bg-surface2 text-text2/50 px-2 py-0.5 rounded-full"
+              >
+                {kw}
+              </span>
+            )
+          })}
         </div>
       )}
     </div>
@@ -131,6 +171,51 @@ function UnitWeaponsBlock({ units }: { units: Unit[] }) {
           {melee.map(renderWeapon)}
         </div>
       )}
+      {activeRule && (
+        <KeywordRuleModal rule={activeRule} onClose={() => setActiveRule(null)} />
+      )}
+    </div>
+  )
+}
+
+// Centered modal showing a weapon keyword's describing rule (name + text).
+// Dismisses on backdrop click, the close button, and Escape.
+function KeywordRuleModal({ rule, onClose }: { rule: Rule; onClose: () => void }) {
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [onClose])
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-surface border border-surface2 rounded-lg shadow-lg
+          max-w-md w-full max-h-[80vh] overflow-y-auto"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-surface2">
+          <h3 className="flex-1 text-sm font-semibold text-text">{rule.name}</h3>
+          <button
+            onClick={onClose}
+            className="p-1 text-text2 hover:text-accent"
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <div className="p-4">
+          <SafeMarkdownRenderer
+            content={rule.description}
+            className="text-text2 text-sm whitespace-pre-wrap"
+          />
+        </div>
+      </div>
     </div>
   )
 }
@@ -245,7 +330,7 @@ function ModelsSubView({ unit, attachedUnits, collapsedModels, onToggleModel }: 
   )
 }
 
-export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, onBack, abilityNotes = {} }: UnitDetailProps) {
+export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, onBack, abilityNotes = {}, abilityPhases = {}, commonAbilitiesByUnit = {}, keywordColors = {}, onKeywordColor }: UnitDetailProps) {
   const [activeContent, setActiveContent] = useState<'models' | 'weapons' | 'abilities'>('models')
   const [collapsedModels, setCollapsedModels] = useState<Set<string>>(new Set())
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -255,8 +340,10 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
 
   // The pane sliding in during a drag or programmatic slide. Rendered
   // offset by ±100% inside the track; null when the carousel is at rest.
+  // topOffset pushes the incoming pane down so its own top aligns with the
+  // content-view top during the slide (see contentTopOffset).
   const [incomingTab, setIncomingTab] =
-    useState<{ tab: typeof contentTabs[number]; side: CarouselSide } | null>(null)
+    useState<{ tab: typeof contentTabs[number]; side: CarouselSide; topOffset: number } | null>(null)
   const trackRef = useRef<HTMLDivElement | null>(null)
   const stickyHeaderRef = useRef<HTMLDivElement | null>(null)
 
@@ -301,10 +388,23 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
     })
   }
 
+  // How far down to place the incoming pane so its own top sits at the
+  // content-view top (just under the sticky header) during the slide. Equals
+  // the current scroll depth past the pin: 0 at rest, D when scrolled down by
+  // D. Clamped so an un-pinned page keeps 0, matching the outgoing pane's top.
+  // Without this the incoming pane slides in at the outgoing pane's scroll
+  // depth and snaps to top only after commit.
+  const contentTopOffset = () => {
+    const track = trackRef.current
+    if (!track) return 0
+    const stickyHeight = stickyHeaderRef.current?.offsetHeight ?? 0
+    return Math.max(0, stickyHeight - track.getBoundingClientRect().top)
+  }
+
   const { handlers: swipeHandlers, slide } = useCarouselDrag(trackRef, {
     onDragSide: (side) => {
       const tab = adjacentTab(side)
-      setIncomingTab(tab ? { tab, side } : null)
+      setIncomingTab(tab ? { tab, side, topOffset: contentTopOffset() } : null)
       return tab !== null
     },
     onSettle: (committed) => {
@@ -320,7 +420,7 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
   const selectTab = (tab: typeof contentTabs[number]) => {
     if (incomingTab || tab === activeContent) return
     const side: CarouselSide = contentTabs.indexOf(tab) > activeIndex ? 'right' : 'left'
-    setIncomingTab({ tab, side })
+    setIncomingTab({ tab, side, topOffset: contentTopOffset() })
     slide(side)
   }
 
@@ -362,20 +462,40 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
     if (tab === 'weapons') {
       return <WeaponsSubView unit={unit} attachedUnits={attachedUnits} />
     }
+    const unitCommon = commonAbilitiesByUnit[unit.id] ?? []
+    const hasHostAbilities = unit.abilities.length > 0 || unitCommon.length > 0
+    const hasLeaderAbilities = attachedUnits?.some(
+      leader => leader.abilities.length > 0 || (commonAbilitiesByUnit[leader.id]?.length ?? 0) > 0
+    )
     return (
       <div className="space-y-2">
-        {unit.abilities.length === 0 && (!attachedUnits || attachedUnits.length === 0) ? (
+        {!hasHostAbilities && !hasLeaderAbilities ? (
           <p className="text-text2 text-sm text-center py-8">No abilities defined for this unit</p>
         ) : (
           <>
-            {unit.abilities.map(ability => (
-              <PlayAbilityCard key={ability.id} ability={{ ...ability, notes: abilityNotes[ability.id] }} />
+            {unit.abilities.map(ability => {
+              // Plan notes/phases are keyed by the shared unit-ability id, not
+              // the raw per-unit ability id, so same-name units resolve them.
+              const planId = unitAbilityId(unit.name, ability.name)
+              return (
+                <PlayAbilityCard key={ability.id} ability={{ ...ability, notes: abilityNotes[planId], phases: abilityPhases[planId] }} />
+              )
+            })}
+            {/* Common abilities already carry the shared plan's notes. */}
+            {unitCommon.map(ability => (
+              <PlayAbilityCard key={ability.id} ability={ability} />
             ))}
             {attachedUnits?.map(leader => (
               <div key={leader.id} className="pt-4 border-t border-surface2/50">
                 <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-2">Leader: {leader.name}</p>
-                {leader.abilities.map(ability => (
-                  <PlayAbilityCard key={ability.id} ability={{ ...ability, notes: abilityNotes[ability.id] }} />
+                {leader.abilities.map(ability => {
+                  const planId = unitAbilityId(leader.name, ability.name)
+                  return (
+                    <PlayAbilityCard key={ability.id} ability={{ ...ability, notes: abilityNotes[planId], phases: abilityPhases[planId] }} />
+                  )
+                })}
+                {(commonAbilitiesByUnit[leader.id] ?? []).map(ability => (
+                  <PlayAbilityCard key={ability.id} ability={ability} />
                 ))}
               </div>
             ))}
@@ -431,7 +551,12 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
         {unit.keywords.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-2">
             {unit.keywords.map(kw => (
-              <span key={kw.id} className="text-xs bg-surface2 text-accent px-2 py-0.5 rounded-full uppercase font-medium tracking-wide">{kw.name}</span>
+              <KeywordPill
+                key={kw.id}
+                name={kw.name}
+                slot={keywordColors[normalizeKeyword(kw.name)] ?? 0}
+                onPick={slot => onKeywordColor?.(kw.name, slot)}
+              />
             ))}
           </div>
         )}
@@ -478,7 +603,7 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
           {incomingTab && (
             <div
               style={{
-                position: 'absolute', top: 0, left: 0, right: 0,
+                position: 'absolute', top: incomingTab.topOffset, left: 0, right: 0,
                 transform: incomingTab.side === 'right'
                   ? 'translateX(100%)' : 'translateX(-100%)'
               }}

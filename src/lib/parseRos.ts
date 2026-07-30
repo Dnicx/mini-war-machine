@@ -330,87 +330,64 @@ function extractModels(unitSelection: Element, unitId: string, unitName: string,
   return models
 }
 
-// Merge units with the same name. Shared with parseRosJson.ts
-export function mergeUnits(units: Unit[], rosterId: string): Unit[] {
-  const mergedUnits: Unit[] = []
-  const unitsByName = new Map<string, Unit[]>()
-
-  units.forEach(unit => {
-    if (!unitsByName.has(unit.name)) {
-      unitsByName.set(unit.name, [])
-    }
-    unitsByName.get(unit.name)!.push(unit)
-  })
-
-  unitsByName.forEach((unitsWithSameName, name) => {
-    // Deduplicate and combine abilities
-    const allAbilities: Ability[] = []
+// Within each unit, deduplicate abilities/keywords/rules by name and merge
+// models that share a name (summing their counts). Distinct units are NOT
+// merged, even when they share a datasheet name: two units of the same
+// datasheet can carry different loadouts, so collapsing them would drop one
+// loadout's weapons and report the wrong model count for the unit. Shared with
+// parseRosJson.ts.
+export function mergeUnitModels(units: Unit[]): Unit[] {
+  return units.map(unit => {
+    // Deduplicate abilities (a rule/ability can be collected more than once,
+    // e.g. from several weapons that share a keyword)
+    const abilities: Ability[] = []
     const abilityNames = new Set<string>()
-    unitsWithSameName.forEach(unit => {
-      unit.abilities.forEach(ability => {
-        if (!abilityNames.has(ability.name)) {
-          abilityNames.add(ability.name)
-          allAbilities.push(ability)
-        }
-      })
+    unit.abilities.forEach(ability => {
+      if (!abilityNames.has(ability.name)) {
+        abilityNames.add(ability.name)
+        abilities.push(ability)
+      }
     })
 
-    // Deduplicate and combine keywords
-    const allKeywords: Keyword[] = []
+    // Deduplicate keywords
+    const keywords: Keyword[] = []
     const keywordNames = new Set<string>()
-    unitsWithSameName.forEach(unit => {
-      unit.keywords.forEach(keyword => {
-        if (!keywordNames.has(keyword.name)) {
-          keywordNames.add(keyword.name)
-          allKeywords.push(keyword)
-        }
-      })
+    unit.keywords.forEach(keyword => {
+      if (!keywordNames.has(keyword.name)) {
+        keywordNames.add(keyword.name)
+        keywords.push(keyword)
+      }
     })
 
-    // Deduplicate and combine rules
-    const allRules: Rule[] = []
+    // Deduplicate rules
+    const rules: Rule[] = []
     const ruleNames = new Set<string>()
-    unitsWithSameName.forEach(unit => {
-      unit.rules.forEach(rule => {
-        if (!ruleNames.has(rule.name)) {
-          ruleNames.add(rule.name)
-          allRules.push(rule)
-        }
-      })
+    unit.rules.forEach(rule => {
+      if (!ruleNames.has(rule.name)) {
+        ruleNames.add(rule.name)
+        rules.push(rule)
+      }
     })
 
-    // Combine models, summing counts for models with the same name
-    const allModels: Model[] = []
+    // Merge same-name models within this unit, summing counts
     const modelsByName = new Map<string, Model>()
-    unitsWithSameName.forEach(unit => {
-      unit.models.forEach(model => {
-        if (modelsByName.has(model.name)) {
-          // Sum the count for existing model
-          const existing = modelsByName.get(model.name)!
-          existing.count += model.count
-        } else {
-          // Add new model
-          modelsByName.set(model.name, { ...model })
-        }
-      })
+    unit.models.forEach(model => {
+      const existing = modelsByName.get(model.name)
+      if (existing) {
+        existing.count += model.count
+      } else {
+        modelsByName.set(model.name, { ...model })
+      }
     })
-    allModels.push(...Array.from(modelsByName.values()))
 
-    // Sum up points
-    const totalPoints = unitsWithSameName.reduce((sum, unit) => sum + unit.points, 0)
-
-    mergedUnits.push({
-      id: `${rosterId}-${name}`,
-      name,
-      points: totalPoints,
-      abilities: allAbilities,
-      rules: allRules,
-      keywords: allKeywords,
-      models: allModels
-    })
+    return {
+      ...unit,
+      abilities,
+      keywords,
+      rules,
+      models: Array.from(modelsByName.values())
+    }
   })
-
-  return mergedUnits
 }
 
 // Extract army-wide abilities
@@ -529,8 +506,8 @@ export async function parseRosFile(file: File, debug: boolean = false): Promise<
     })
   })
 
-  // Merge units
-  const mergedUnits = mergeUnits(units, rosterId)
+  // Merge models within each unit (same-name units are kept separate)
+  const mergedUnits = mergeUnitModels(units)
 
   // Extract army abilities
   const armyAbilities = force ? extractArmyAbilities(force) : []

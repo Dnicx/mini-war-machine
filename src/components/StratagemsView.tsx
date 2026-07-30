@@ -1,23 +1,12 @@
 import { useState } from 'react'
-import {
-  Flag, RotateCcw, Crown, Move, Crosshair, Zap, Swords, ChevronDown, ChevronUp
-} from 'lucide-react'
+import { Flag, ChevronDown, ChevronUp } from 'lucide-react'
 import type { Stratagem, Phase, TurnOwner } from '../types/roster'
 import { effectiveTurnOwner } from '../lib/turnOwnerHeuristics'
+import { PHASE_ICONS } from '../lib/phaseIcons'
 
 const PHASES: Phase[] = [
   'Start of Game', 'Start of Battle Round', 'Command', 'Movement', 'Shooting', 'Charge', 'Fight'
 ]
-
-const PHASE_ICONS: Record<Phase, typeof Flag> = {
-  'Start of Game': Flag,
-  'Start of Battle Round': RotateCcw,
-  'Command': Crown,
-  'Movement': Move,
-  'Shooting': Crosshair,
-  'Charge': Zap,
-  'Fight': Swords
-}
 
 // 'Either' stratagems are listed under both turns instead of a section of
 // their own; the card band keeps the green color so the turn is still visible

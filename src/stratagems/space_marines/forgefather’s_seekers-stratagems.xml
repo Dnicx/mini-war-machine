@@ -8,7 +8,7 @@
     <lore>The belligerence of the Adeptus Astartes combined with their post‑human physiology makes them unyielding foes to face.</lore>
     <when>Your opponent’s Shooting phase or the Fight phase, just after an enemy unit has selected its targets.</when>
     <target>One Adeptus Astartes  unit from your army that was selected as the target of one or more of the attacking unit’s attacks.</target>
-    <effect>Until the end of the phase, each time an attack targets your unit, worsen the Armour Penetration characteristic of that attack by 1.</effect>
+    <effect>Until the attacking unit has finished making its attacks, each time an attack targets your unit, worsen the Armour Penetration characteristic of that attack by 1.</effect>
   </stratagem>
   <stratagem>
     <name>CRUCIBLE OF BATTLE</name>

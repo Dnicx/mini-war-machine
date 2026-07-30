@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
-import type { Roster, RosterMeta, Plan, GameState } from '../types/roster'
+import type { Roster, RosterMeta, Plan, PhasePlan, GameState } from '../types/roster'
+import { unitAbilityId } from './unitAbilityId'
 import { reconcilePlan } from './reconcilePlan'
 
 const ROSTERS_KEY = 'wh40k_rosters'
@@ -76,7 +77,8 @@ export function renameRoster(id: string, newName: string): void {
 
 // Re-import a GW-updated file over an existing roster, keeping its identity so
 // the library entry is replaced (not duplicated) and its saved plan survives.
-// Corrections are re-mapped by name onto the new abilities via reconcilePlan.
+// Ability ids are name-based, so corrections match the new roster as-is;
+// reconcilePlan only has to carry the file-keyed attachments across.
 export function updateRosterInPlace(targetId: string, parsed: Roster): Roster | null {
   const oldRoster = loadRosterById(targetId)
   if (!oldRoster) return null
@@ -171,6 +173,50 @@ export function clearPlan(rosterId: string): void {
   saveAllPlans(plans)
 }
 
+// One-time migration for plans saved before same-name units shared a plan
+// entry. Unit abilities used to be keyed by the per-unit selection id
+// ("<unitId>-<abilityName>"); they now share a name-based id (unitAbilityId).
+// Rewrite any old-style unit-ability ids in a loaded plan to the shared id,
+// translating via the roster. Other ids (army-/common-/stratagem-/custom-) are
+// left untouched, and the function is a no-op once a plan is migrated. Safe to
+// remove after existing plans have been converted.
+export function migratePlanUnitAbilityIds(plan: Plan, roster: Roster): Plan {
+  const oldToNew = new Map<string, string>()
+  for (const unit of roster.units) {
+    for (const ability of unit.abilities) {
+      // Key by the ability's own id — the value the old plan actually saved.
+      // It is not always `${unit.id}-${name}`: rosters imported before same-name
+      // units were kept separate reassigned unit.id but left ability.id intact,
+      // so the two are misaligned and reconstructing the key would miss them.
+      oldToNew.set(ability.id, unitAbilityId(unit.name, ability.name))
+    }
+  }
+
+  let changed = false
+  const translated = plan.phasePlans.map(entry => {
+    const newId = oldToNew.get(entry.abilityId)
+    if (newId && newId !== entry.abilityId) {
+      changed = true
+      return { ...entry, abilityId: newId }
+    }
+    return entry
+  })
+  if (!changed) return plan
+
+  // Same-name units now collapse onto one id; keep the entry that carries
+  // planning data (non-empty phases wins, otherwise the first seen).
+  const byId = new Map<string, PhasePlan>()
+  for (const entry of translated) {
+    const existing = byId.get(entry.abilityId)
+    if (!existing) {
+      byId.set(entry.abilityId, entry)
+    } else if ((existing.phases?.length ?? 0) === 0 && (entry.phases?.length ?? 0) > 0) {
+      byId.set(entry.abilityId, entry)
+    }
+  }
+  return { ...plan, phasePlans: Array.from(byId.values()) }
+}
+
 // --- Game state ---
 
 export function saveGameState(gameState: GameState): void {
@@ -205,6 +251,25 @@ export function loadUnitImages(): Record<string, string> {
   const data = localStorage.getItem(UNIT_IMAGES_KEY)
   if (!data) return {}
   try { return JSON.parse(data) as Record<string, string> } catch { return {} }
+}
+
+// --- Keyword colors ---
+
+// Maps a normalized keyword name (lowercased) to a palette slot index.
+// Slots are defined per theme, so the color follows the active theme.
+const KEYWORD_COLORS_KEY = 'wh40k_keyword_colors'
+
+// Normalize a keyword name so casing variants share one color assignment.
+export const normalizeKeyword = (name: string) => name.toLowerCase().trim()
+
+export function saveKeywordColors(map: Record<string, number>): void {
+  localStorage.setItem(KEYWORD_COLORS_KEY, JSON.stringify(map))
+}
+
+export function loadKeywordColors(): Record<string, number> {
+  const data = localStorage.getItem(KEYWORD_COLORS_KEY)
+  if (!data) return {}
+  try { return JSON.parse(data) as Record<string, number> } catch { return {} }
 }
 
 // --- Theme ---
