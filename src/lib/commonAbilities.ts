@@ -98,8 +98,9 @@ export function isCommonAbilityRule(
 export interface CommonAbilityGroup {
   // Shared, heuristic-applied ability (id `common-<name>`, no sourceUnit).
   ability: Ability
-  // Units that carry this common ability, for per-unit expansion.
-  unitNames: string[]
+  // Ids of every unit that carries this common ability, for per-unit expansion.
+  // Keyed by id (not name) so same-name units are each expanded, not collapsed.
+  unitIds: string[]
 }
 
 // Build the deduped set of common abilities across the roster, grouped by
@@ -119,7 +120,7 @@ export function buildCommonAbilities(roster: Roster): CommonAbilityGroup[] {
       const key = commonAbilityKey(rule.name)
       const existing = groups.get(key)
       if (existing) {
-        if (!existing.unitNames.includes(unit.name)) existing.unitNames.push(unit.name)
+        if (!existing.unitIds.includes(unit.id)) existing.unitIds.push(unit.id)
       } else {
         // Shared card uses the value-stripped base name; per-unit expansion
         // (PlayDashboard) restores each unit's full name + description.
@@ -128,7 +129,7 @@ export function buildCommonAbilities(roster: Roster): CommonAbilityGroup[] {
           name: stripValueToken(rule.name),
           description: rule.description
         }
-        groups.set(key, { ability: applyHeuristics(base), unitNames: [unit.name] })
+        groups.set(key, { ability: applyHeuristics(base), unitIds: [unit.id] })
       }
     }
   }

@@ -163,7 +163,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
       // supplies the description shown in each card.
       const commonExpanded: Ability[] = []
       const commonByUnit: Record<string, Ability[]> = {}
-      buildCommonAbilities(roster).forEach(({ ability, unitNames }) => {
+      buildCommonAbilities(roster).forEach(({ ability, unitIds }) => {
         const planEntry = plan.phasePlans.find(p => p.abilityId === ability.id)
         const shared: Partial<Ability> = planEntry
           ? {
@@ -173,8 +173,10 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
               notes: planEntry.notes
             }
           : { phases: ability.autoDetectedPhases }
-        unitNames.forEach(unitName => {
-          const unit = roster.units.find(u => u.name === unitName)
+        // Resolve by id so every same-name unit that carries the ability gets
+        // its own expanded copy (find-by-name would only match the first).
+        unitIds.forEach(unitId => {
+          const unit = roster.units.find(u => u.id === unitId)
           if (!unit) return
           const rule = unit.rules.find(r => commonAbilityId(r.name) === ability.id)
           const expanded: Ability = {

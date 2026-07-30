@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { isCommonAbilityRule, commonAbilityId } from '../src/lib/commonAbilities'
+import { isCommonAbilityRule, commonAbilityId, buildCommonAbilities } from '../src/lib/commonAbilities'
+import type { Roster, Unit } from '../src/types/roster'
 
 // Weapon keyword bases as unitWeaponKeywordBases would produce them (values
 // already stripped): "Rapid Fire 1" -> "rapid fire", "Anti-Infantry 4+" ->
@@ -56,5 +57,53 @@ describe('commonAbilityId groups value variants onto one shared card', () => {
 
   it('does not collapse genuinely different abilities', () => {
     expect(commonAbilityId('Deep Strike')).not.toBe(commonAbilityId('Deadly Demise'))
+  })
+})
+
+function unitWithRules(id: string, name: string, ruleNames: string[]): Unit {
+  return {
+    id,
+    name,
+    points: 0,
+    abilities: [],
+    rules: ruleNames.map(n => ({ id: `${id}-rule-${n}`, name: n, description: `${n} text`, sourceUnit: name })),
+    keywords: [],
+    models: []
+  }
+}
+
+function roster(units: Unit[]): Roster {
+  return { id: 'r', name: 'R', faction: 'F', detachments: [], points: 0, units, armyAbilities: [] }
+}
+
+describe('buildCommonAbilities tracks every carrying unit by id', () => {
+  it('lists all same-name units that carry a common ability (not just the first)', () => {
+    const groups = buildCommonAbilities(roster([
+      unitWithRules('w1', 'Tyranid Warriors', ['Feel No Pain 5+']),
+      unitWithRules('w2', 'Tyranid Warriors', ['Feel No Pain 5+'])
+    ]))
+    const fnp = groups.find(g => g.ability.id === commonAbilityId('Feel No Pain'))
+    expect(fnp).toBeDefined()
+    // Before the fix this collapsed to one name -> one unit id.
+    expect(fnp!.unitIds.sort()).toEqual(['w1', 'w2'])
+  })
+
+  it('includes differently-named units carrying the same ability', () => {
+    const groups = buildCommonAbilities(roster([
+      unitWithRules('w1', 'Tyranid Warriors', ['Feel No Pain 5+']),
+      unitWithRules('w2', 'Tyranid Warriors', ['Feel No Pain 5+']),
+      unitWithRules('t1', 'Termagants', ['Feel No Pain 6+'])
+    ]))
+    const fnp = groups.find(g => g.ability.id === commonAbilityId('Feel No Pain'))!
+    expect(fnp.unitIds.sort()).toEqual(['t1', 'w1', 'w2'])
+  })
+
+  it('excludes a same-name unit that does not carry the ability', () => {
+    const groups = buildCommonAbilities(roster([
+      unitWithRules('w1', 'Tyranid Warriors', ['Feel No Pain 5+']),
+      unitWithRules('w2', 'Tyranid Warriors', ['Deep Strike'])
+    ]))
+    const fnp = groups.find(g => g.ability.id === commonAbilityId('Feel No Pain'))!
+    expect(fnp.unitIds).toEqual(['w1'])
   })
 })
