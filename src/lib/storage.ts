@@ -1,5 +1,7 @@
+import { v4 as uuidv4 } from 'uuid'
 import type { Roster, RosterMeta, Plan, PhasePlan, GameState } from '../types/roster'
 import { unitAbilityId } from './unitAbilityId'
+import { reconcilePlan } from './reconcilePlan'
 
 const ROSTERS_KEY = 'wh40k_rosters'
 const PLANS_KEY = 'wh40k_plans'
@@ -71,6 +73,45 @@ export function renameRoster(id: string, newName: string): void {
     roster.name = newName
     saveAllRosters(rosters)
   }
+}
+
+// Re-import a GW-updated file over an existing roster, keeping its identity so
+// the library entry is replaced (not duplicated) and its saved plan survives.
+// Ability ids are name-based, so corrections match the new roster as-is;
+// reconcilePlan only has to carry the file-keyed attachments across.
+export function updateRosterInPlace(targetId: string, parsed: Roster): Roster | null {
+  const oldRoster = loadRosterById(targetId)
+  if (!oldRoster) return null
+  // The file's own name is ignored: the list keeps whatever the user called it
+  // (renaming stays an explicit action via renameRoster).
+  const newRoster = { ...parsed, id: targetId, name: oldRoster.name }
+  const oldPlan = loadPlan(targetId)
+  if (oldPlan) {
+    savePlan(reconcilePlan(oldRoster, newRoster, oldPlan), targetId)
+  }
+  saveRosterToLibrary(newRoster)
+  return newRoster
+}
+
+// Clone a roster and its plan under a brand-new id so two similar lists can
+// diverge. A fresh uuid is required: the source (and the file's roster.id) is
+// shared between a list and its New Recruit duplicate, so reusing it collides.
+export function duplicateRoster(id: string): Roster | null {
+  const roster = loadRosterById(id)
+  if (!roster) return null
+  const clone: Roster = {
+    ...structuredClone(roster),
+    id: uuidv4(),
+    name: `${roster.name} (copy)`
+  }
+  saveRosterToLibrary(clone)
+  const plan = loadPlan(id)
+  if (plan) {
+    // Clone shares the original's ability ids, so plan keys still match; only
+    // the rosterId must be repointed at the new roster.
+    savePlan({ ...structuredClone(plan), rosterId: clone.id }, clone.id)
+  }
+  return clone
 }
 
 // --- Active roster ---
