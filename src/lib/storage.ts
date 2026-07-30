@@ -82,7 +82,9 @@ export function renameRoster(id: string, newName: string): void {
 export function updateRosterInPlace(targetId: string, parsed: Roster): Roster | null {
   const oldRoster = loadRosterById(targetId)
   if (!oldRoster) return null
-  const newRoster = { ...parsed, id: targetId }
+  // The file's own name is ignored: the list keeps whatever the user called it
+  // (renaming stays an explicit action via renameRoster).
+  const newRoster = { ...parsed, id: targetId, name: oldRoster.name }
   const oldPlan = loadPlan(targetId)
   if (oldPlan) {
     savePlan(reconcilePlan(oldRoster, newRoster, oldPlan), targetId)
