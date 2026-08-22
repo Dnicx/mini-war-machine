@@ -11,6 +11,7 @@ import { loadPlan, saveGameState, loadGameState, loadUnitImages, saveUnitImages,
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
 import { buildCommonAbilities, commonAbilityId, commonAbilityUnitId } from '../lib/commonAbilities'
 import { buildUnitAbilities } from '../lib/unitAbilityId'
+import { resolveAttachments } from '../lib/attachments'
 import { TIMINGS, TIMING_LABELS, normalizeTiming } from '../lib/timing'
 import { effectiveTurnOwner } from '../lib/turnOwnerHeuristics'
 import {
@@ -101,6 +102,8 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const [activeTab, setActiveTab] = useState<'phase' | 'unit' | 'stratagems'>('phase')
   const [unitImages, setUnitImages] = useState<Record<string, string>>(() => loadUnitImages())
   const [attachments, setAttachments] = useState<Record<string, string>>({})
+  // leaderUnitId → "Leading" / "Supporting", from the roster file's associations.
+  const [attachmentRoles, setAttachmentRoles] = useState<Record<string, string>>({})
   // Common abilities expanded per unit (keyed by unit id) for the unit view.
   const [commonAbilitiesByUnit, setCommonAbilitiesByUnit] = useState<Record<string, Ability[]>>({})
   // The pane sliding in during a drag or programmatic slide. Rendered
@@ -127,6 +130,13 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     const loadedPlan = loadPlan(roster.id)
     // Translate pre-shared-id unit-ability plan entries (see storage.ts).
     const plan = loadedPlan ? migratePlanUnitAbilityIds(loadedPlan, roster) : null
+
+    // Outside the `if (plan)` below: the file's own attachments must show even
+    // for a roster with no saved plan (e.g. a reload straight onto /play).
+    const resolved = resolveAttachments(roster, plan?.attachments)
+    setAttachments(resolved.attachments)
+    setAttachmentRoles(resolved.roles)
+
     if (plan) {
       // Collapse same-name units' abilities onto one shared-id entry so they
       // resolve the single saved plan entry and the phase view shows them once.
@@ -197,7 +207,6 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
       setAllAbilities([...withOverrides, ...commonExpanded])
       setCommonAbilitiesByUnit(commonByUnit)
       setCustomStratagems(plan.customStratagems || [])
-      setAttachments(plan.attachments ?? {})
 
       // Load core stratagems
       const coreStrats = getCoreStratagems()
@@ -630,6 +639,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
           unitImages={unitImages}
           onImagesChange={handleImagesChange}
           attachments={attachments}
+          attachmentRoles={attachmentRoles}
           commonAbilitiesByUnit={commonAbilitiesByUnit}
           // Notes live in the saved plan, not on roster abilities; pass them
           // so the unit detail can show the same notes as the phase view.

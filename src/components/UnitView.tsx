@@ -10,6 +10,9 @@ interface UnitViewProps {
   unitImages: Record<string, string>
   onImagesChange: (images: Record<string, string>) => void
   attachments?: Record<string, string>
+  // leaderUnitId → "Leading" / "Supporting", from the roster file's
+  // associations. Absent for attachments made by hand in the Planner.
+  attachmentRoles?: Record<string, string>
   // Ability notes keyed by ability id (from the saved plan).
   abilityNotes?: Record<string, string>
   // Ability phases keyed by ability id (from heuristics/plan) for phase icons.
@@ -78,7 +81,7 @@ function UnitStatBlock({ unit }: { unit: Unit }) {
   )
 }
 
-export function UnitView({ roster, unitImages, onImagesChange, attachments = {}, abilityNotes = {}, abilityPhases = {}, commonAbilitiesByUnit = {} }: UnitViewProps) {
+export function UnitView({ roster, unitImages, onImagesChange, attachments = {}, attachmentRoles = {}, abilityNotes = {}, abilityPhases = {}, commonAbilitiesByUnit = {} }: UnitViewProps) {
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null)
   const [keywordColors, setKeywordColors] = useState<Record<string, number>>(loadKeywordColors)
 
@@ -136,6 +139,7 @@ export function UnitView({ roster, unitImages, onImagesChange, attachments = {},
       <UnitDetail
         unit={selectedUnit}
         attachedUnits={attachedLeadersForSelected}
+        attachmentRoles={attachmentRoles}
         unitImages={unitImages}
         onImagesChange={onImagesChange}
         onBack={closeUnit}
@@ -167,6 +171,7 @@ export function UnitView({ roster, unitImages, onImagesChange, attachments = {},
                 {attachedLeaders.map(leader => (
                   <UnitCard key={leader.id} unit={leader} unitImages={unitImages} onSelect={selectUnit}
                     commonAbilities={commonAbilitiesByUnit[leader.id] ?? []}
+                    roleLabel={attachmentRoles[leader.id]}
                     keywordColors={keywordColors} onKeywordColor={setKeywordColor} />
                 ))}
               </div>
@@ -184,11 +189,13 @@ export function UnitView({ roster, unitImages, onImagesChange, attachments = {},
   )
 }
 
-function UnitCard({ unit, unitImages, onSelect, commonAbilities = [], keywordColors, onKeywordColor }: {
+function UnitCard({ unit, unitImages, onSelect, commonAbilities = [], roleLabel, keywordColors, onKeywordColor }: {
   unit: Unit
   unitImages: Record<string, string>
   onSelect: (id: string) => void
   commonAbilities?: Ability[]
+  // "Leading" / "Supporting" for a character attached via the roster file.
+  roleLabel?: string
   keywordColors: Record<string, number>
   onKeywordColor: (name: string, slot: number) => void
 }) {
@@ -219,7 +226,14 @@ function UnitCard({ unit, unitImages, onSelect, commonAbilities = [], keywordCol
 
       {/* Right: content */}
       <div className="flex-1 p-3 min-w-0">
-        <h3 className="text-text2 font-bold text-lg leading-tight">{unit.name}</h3>
+        <div className="flex items-baseline gap-2 min-w-0">
+          <h3 className="text-text2 font-bold text-lg leading-tight truncate">{unit.name}</h3>
+          {roleLabel && (
+            <span className="flex-shrink-0 text-[10px] font-semibold uppercase tracking-wider text-accent bg-surface2 px-1.5 py-0.5 rounded">
+              {roleLabel}
+            </span>
+          )}
+        </div>
         <div className="mt-1.5">
           <UnitStatBlock unit={unit} />
         </div>

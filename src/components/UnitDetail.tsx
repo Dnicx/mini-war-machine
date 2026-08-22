@@ -14,6 +14,9 @@ import { unitAbilityId } from '../lib/unitAbilityId'
 interface UnitDetailProps {
   unit: Unit
   attachedUnits?: Unit[]
+  // leaderUnitId → "Leading" / "Supporting", from the roster file's
+  // associations. Falls back to "Leader" for attachments made by hand.
+  attachmentRoles?: Record<string, string>
   unitImages: Record<string, string>
   onImagesChange: (images: Record<string, string>) => void
   onBack: () => void
@@ -292,9 +295,10 @@ function mergeIdenticalModels(models: Model[]): Model[] {
   return Array.from(merged.values())
 }
 
-function ModelsSubView({ unit, attachedUnits, collapsedModels, onToggleModel }: {
+function ModelsSubView({ unit, attachedUnits, attachmentRoles = {}, collapsedModels, onToggleModel }: {
   unit: Unit
   attachedUnits?: Unit[]
+  attachmentRoles?: Record<string, string>
   collapsedModels: Set<string>
   onToggleModel: (id: string) => void
 }) {
@@ -314,7 +318,9 @@ function ModelsSubView({ unit, attachedUnits, collapsedModels, onToggleModel }: 
       ))}
       {attachedUnits?.map(leader => (
         <div key={leader.id} className="pt-4 border-t border-surface2/50">
-          <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-3">Leader: {leader.name}</p>
+          <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-3">
+            {attachmentRoles[leader.id] ?? 'Leader'}: {leader.name}
+          </p>
           {leader.models.map(model => (
             <ModelBlock
               key={model.id}
@@ -330,7 +336,7 @@ function ModelsSubView({ unit, attachedUnits, collapsedModels, onToggleModel }: 
   )
 }
 
-export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, onBack, abilityNotes = {}, abilityPhases = {}, commonAbilitiesByUnit = {}, keywordColors = {}, onKeywordColor }: UnitDetailProps) {
+export function UnitDetail({ unit, attachedUnits, attachmentRoles = {}, unitImages, onImagesChange, onBack, abilityNotes = {}, abilityPhases = {}, commonAbilitiesByUnit = {}, keywordColors = {}, onKeywordColor }: UnitDetailProps) {
   const [activeContent, setActiveContent] = useState<'models' | 'weapons' | 'abilities'>('models')
   const [collapsedModels, setCollapsedModels] = useState<Set<string>>(new Set())
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -454,6 +460,7 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
         <ModelsSubView
           unit={unit}
           attachedUnits={attachedUnits}
+          attachmentRoles={attachmentRoles}
           collapsedModels={collapsedModels}
           onToggleModel={toggleModel}
         />
@@ -487,7 +494,9 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
             ))}
             {attachedUnits?.map(leader => (
               <div key={leader.id} className="pt-4 border-t border-surface2/50">
-                <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-2">Leader: {leader.name}</p>
+                <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-2">
+                  {attachmentRoles[leader.id] ?? 'Leader'}: {leader.name}
+                </p>
                 {leader.abilities.map(ability => {
                   const planId = unitAbilityId(leader.name, ability.name)
                   return (

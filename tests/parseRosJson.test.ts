@@ -58,6 +58,18 @@ describe('parseRosJsonFile with an 11th edition style .json export', () => {
     expect(roster.armyAbilities.map(a => a.name)).toEqual(['Test Army Rule', 'Detachment Rule'])
   })
 
+  it('parses the leader association into the character unit', () => {
+    const squadIds = roster.units.filter(u => u.name === 'Test Squad').map(u => u.id)
+    expect(unit(roster, 'Captain Testor').attachment)
+      .toEqual({ hostUnitId: squadIds[0], role: 'Leading' })
+  })
+
+  it('leaves units without an association unattached', () => {
+    for (const squad of roster.units.filter(u => u.name === 'Test Squad')) {
+      expect(squad.attachment).toBeUndefined()
+    }
+  })
+
   it('rejects files that are not a roster export', async () => {
     const notJson = new File(['<roster/>'], 'x.json', { type: 'application/json' })
     await expect(parseRosJsonFile(notJson)).rejects.toThrow('not valid JSON')
@@ -172,5 +184,59 @@ describe('parseRosJsonFile with same-name units of different loadouts', () => {
     // Abilities stay with the right unit: both have Hover, only drone1 has Barrage.
     expect(byWeapon('Plague Spitter').abilities.map(a => a.name).sort()).toEqual(['Barrage', 'Hover'])
     expect(byWeapon('Heavy Blaster').abilities.map(a => a.name)).toEqual(['Hover'])
+  })
+})
+
+describe('parseRosJsonFile attachment associations', () => {
+  // A minimal character/squad pair: `to` names the squad's selection id.
+  function attachmentRoster(associations: Array<Record<string, unknown>>): string {
+    const character = (id: string, assoc?: Record<string, unknown>) => ({
+      id, name: 'Test Character', type: 'model', from: 'entry', number: 1,
+      costs: [{ name: 'pts', value: 50 }],
+      ...(assoc ? { associations: [assoc] } : {})
+    })
+    return JSON.stringify({
+      roster: {
+        name: 'Attachment List',
+        costs: [{ name: 'pts', value: 0 }],
+        forces: [{
+          catalogueName: 'Test Faction',
+          selections: [
+            ...associations.map((assoc, i) => character(`ch${i + 1}`, assoc)),
+            { id: 'sq1', name: 'Test Squad', type: 'unit', from: 'entry', number: 1 },
+            { id: 'sq2', name: 'Test Squad', type: 'unit', from: 'entry', number: 1 }
+          ]
+        }]
+      }
+    })
+  }
+
+  async function parse(json: string) {
+    return parseRosJsonFile(new File([json], 'attach.json', { type: 'application/json' }))
+  }
+
+  it('keeps same-name hosts apart: each character attaches to the squad it names', async () => {
+    const roster = await parse(attachmentRoster([
+      { type: 'outgoing', to: 'sq2', name: 'Leading', action: 'group' },
+      { type: 'outgoing', to: 'sq1', name: 'Supporting', action: 'group' }
+    ]))
+    const characters = roster.units.filter(u => u.name === 'Test Character')
+    expect(characters).toHaveLength(2)
+    expect(characters[0].attachment).toEqual({ hostUnitId: 'sq2', role: 'Leading' })
+    expect(characters[1].attachment).toEqual({ hostUnitId: 'sq1', role: 'Supporting' })
+  })
+
+  it('drops an association pointing at an id the force does not contain', async () => {
+    const roster = await parse(attachmentRoster([
+      { type: 'outgoing', to: 'nope', name: 'Leading', action: 'group' }
+    ]))
+    expect(unit(roster, 'Test Character').attachment).toBeUndefined()
+  })
+
+  it('ignores the mirrored incoming side', async () => {
+    const roster = await parse(attachmentRoster([
+      { type: 'incoming', to: 'sq1', name: 'Leading', action: 'group' }
+    ]))
+    expect(unit(roster, 'Test Character').attachment).toBeUndefined()
   })
 })
