@@ -38,6 +38,19 @@ describe('parseRosJsonFile with an 11th edition style .json export', () => {
     expect(model.weapons.find(w => w.name === 'Test Blade')?.range).toBe('Melee')
   })
 
+  it('takes each weapon count from its wargear selection', () => {
+    const captain = unit(roster, 'Captain Testor').models[0]
+    const weaponCount = (name: string) => captain.weapons.find(w => w.name === name)?.count
+    // The wargear number is the total for the model group, not a per-model
+    // multiplier, so a single model can carry two of the same weapon
+    expect(weaponCount('Test Pistol')).toBe(2)
+    expect(weaponCount('Test Blade')).toBe(1)
+
+    const squad = roster.units.find(u => u.name === 'Test Squad')!
+    const trooper = squad.models.find(m => m.name === 'Squad Trooper')!
+    expect(trooper.weapons.find(w => w.name === 'Boltgun')?.count).toBe(4)
+  })
+
   it('includes enhancement costs in unit points', () => {
     expect(unit(roster, 'Captain Testor').points).toBe(95)
   })

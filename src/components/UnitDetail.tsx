@@ -88,15 +88,18 @@ function UnitWeaponsBlock({ units }: { units: Unit[] }) {
           weapon.damage,
           weapon.keywords.join(','),
         ].join('|')
+        // The parsed weapon count already covers the whole model group; rosters
+        // stored before that field existed fall back to the model count.
+        const weaponCount = weapon.count ?? model.count
         const existing = mergedMap.get(key)
         if (existing) {
-          existing.count += model.count
-          existing.carriers.set(model.name, (existing.carriers.get(model.name) ?? 0) + model.count)
+          existing.count += weaponCount
+          existing.carriers.set(model.name, (existing.carriers.get(model.name) ?? 0) + weaponCount)
         } else {
           mergedMap.set(key, {
             weapon,
-            count: model.count,
-            carriers: new Map([[model.name, model.count]]),
+            count: weaponCount,
+            carriers: new Map([[model.name, weaponCount]]),
           })
         }
       }
