@@ -30,6 +30,15 @@ interface JsonCost {
   value?: number | string
 }
 
+// Leader/support attachment: the character selection carries an outgoing
+// association whose `to` is the led unit's selection id. The led unit's
+// mirrored `incomingAssociations` are redundant, so only this side is read.
+interface JsonAssociation {
+  type?: string
+  to?: string
+  name?: string
+}
+
 interface JsonSelection {
   id?: string
   name?: string
@@ -42,6 +51,7 @@ interface JsonSelection {
   rules?: JsonRule[]
   profiles?: JsonProfile[]
   selections?: JsonSelection[]
+  associations?: JsonAssociation[]
 }
 
 interface JsonForce {
@@ -201,6 +211,17 @@ function extractKeywords(selection: JsonSelection, unitId: string, unitName: str
     }
   }
   return keywords
+}
+
+// A leader/support character carries one outgoing association naming the unit
+// it joins ("Leading" / "Supporting"). The host id is validated by the caller.
+function extractAttachment(selection: JsonSelection): Unit['attachment'] {
+  for (const association of selection.associations ?? []) {
+    if (association.type !== 'outgoing') continue
+    if (!association.to || !association.name) continue
+    return { hostUnitId: association.to, role: association.name }
+  }
+  return undefined
 }
 
 function extractRules(selection: JsonSelection, unitId: string, unitName: string): Rule[] {
@@ -377,6 +398,10 @@ export async function parseRosJsonFile(file: File, debug: boolean = false): Prom
     .filter((name): name is string => !!name)
 
   const units: Unit[] = []
+  // Association targets are selection ids, so only ids the file actually
+  // carries may be resolved: unitId below falls back to a name-derived id,
+  // which two same-name units would share.
+  const selectionIds = new Set<string>()
   for (const selection of force.selections ?? []) {
     const name = selection.name
     if (!name) continue
@@ -384,6 +409,7 @@ export async function parseRosJsonFile(file: File, debug: boolean = false): Prom
     if (selection.type === 'upgrade') continue
 
     const unitId = selection.id || `${rosterId}-${name}`
+    if (selection.id) selectionIds.add(selection.id)
     // A unit's cost is spread across its own costs plus nested selections
     // (enhancements, paid wargear), so sum every pts cost in the subtree
     let unitPoints = 0
@@ -403,8 +429,17 @@ export async function parseRosJsonFile(file: File, debug: boolean = false): Prom
       abilities: extractAbilities(selection, unitId, name),
       rules: extractRules(selection, unitId, name),
       keywords: extractKeywords(selection, unitId, name),
-      models: extractModels(selection, unitId, name, isCharacterUnit)
+      models: extractModels(selection, unitId, name, isCharacterUnit),
+      attachment: extractAttachment(selection)
     })
+  }
+
+  // Resolved after the loop so a character listed before its host still
+  // matches; an association pointing outside the force is dropped.
+  for (const unit of units) {
+    if (unit.attachment && !selectionIds.has(unit.attachment.hostUnitId)) {
+      delete unit.attachment
+    }
   }
 
   const roster: Roster = {

@@ -51,8 +51,15 @@ function reconcileAttachments(
   const result: Record<string, string> = {}
   for (const [leaderId, hostId] of Object.entries(attachments)) {
     const newLeader = remap(leaderId)
+    if (!newLeader) continue
+    // '' is an explicit detach, not a missing unit: it must survive the
+    // re-import, or the file's own association would silently re-attach.
+    if (hostId === '') {
+      result[newLeader] = ''
+      continue
+    }
     const newHost = remap(hostId)
-    if (newLeader && newHost) result[newLeader] = newHost
+    if (newHost) result[newLeader] = newHost
   }
   return result
 }

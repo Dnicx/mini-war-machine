@@ -87,6 +87,9 @@ export const syntheticRosJson = JSON.stringify({
           {
             id: 'c1', name: 'Captain Testor', type: 'model', from: 'entry', number: 1,
             rules: [{ id: 'ur1', name: 'Oath of Testing', hidden: false, description: 'Unit rule text' }],
+            associations: [
+              { type: 'outgoing', to: 's1', associationId: 'assoc-1', name: 'Leading', action: 'group' }
+            ],
             profiles: [
               profileJson('cp1', 'Captain Testor', 'Unit',
                 { M: '6"', T: '4', Sv: '2+', W: '5', LD: '6+', OC: '1', InSv: '4+' }),

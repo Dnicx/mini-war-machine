@@ -227,7 +227,10 @@ function UnitAbilityCard({
               .filter(u => u.id !== unitId)
               // Restrict to datasheets named in this leader's ability; if the
               // ability has no parseable list, allowedUnitNames is null → show all.
-              .filter(u => !allowedUnitNames || allowedUnitNames.has(normalizeUnitName(u.name)))
+              // The current attachment always stays listed: it can come from the
+              // roster file, and a filtered-out option renders the select blank.
+              .filter(u => u.id === currentAttachment
+                || !allowedUnitNames || allowedUnitNames.has(normalizeUnitName(u.name)))
               .map(u => <option key={u.id} value={u.id}>{u.name}</option>)
             }
           </select>
