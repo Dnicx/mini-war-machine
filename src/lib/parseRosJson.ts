@@ -86,13 +86,14 @@ function collectRules(selection: JsonSelection, acc: JsonRule[] = []): JsonRule[
   return acc
 }
 
-function extractWeaponFromProfile(profile: JsonProfile): Weapon | null {
+function extractWeaponFromProfile(profile: JsonProfile, count: number): Weapon | null {
   const weaponName = profile.name
   if (!weaponName) return null
 
   const chars = characteristicMap(profile)
   return {
     name: weaponName,
+    count,
     range: chars['Range'] ?? '-',
     attacks: chars['A'] ?? '-',
     damage: chars['D'] ?? '-',
@@ -107,15 +108,19 @@ function extractWeaponFromProfile(profile: JsonProfile): Weapon | null {
 }
 
 // Extract weapons from a wargear selection (ranged first, then melee,
-// matching the XML parser's output order)
-function extractWeaponsFromSelection(selection: JsonSelection): Weapon[] {
+// matching the XML parser's output order). The wargear's own number is the
+// total carried by the model group (a 1-model Land Raider can hold 2
+// Flamestorm Cannons), so it is not multiplied by the model count;
+// modelCount only stands in when the export omits the number.
+function extractWeaponsFromSelection(selection: JsonSelection, modelCount: number): Weapon[] {
   const weapons: Weapon[] = []
+  const count = Number(selection.number ?? modelCount)
   collectProfiles(selection, 'Ranged Weapons').forEach((profile) => {
-    const weapon = extractWeaponFromProfile(profile)
+    const weapon = extractWeaponFromProfile(profile, count)
     if (weapon) weapons.push(weapon)
   })
   collectProfiles(selection, 'Melee Weapons').forEach((profile) => {
-    const weapon = extractWeaponFromProfile(profile)
+    const weapon = extractWeaponFromProfile(profile, count)
     if (weapon) weapons.push({ ...weapon, range: 'Melee' })
   })
   return weapons
@@ -239,7 +244,7 @@ function extractModels(unitSelection: JsonSelection, unitId: string, unitName: s
     const modelWeapons: Weapon[] = []
     const modelRules: Rule[] = []
     for (const wargear of unitSelection.selections ?? []) {
-      modelWeapons.push(...extractWeaponsFromSelection(wargear))
+      modelWeapons.push(...extractWeaponsFromSelection(wargear, count))
       modelRules.push(...extractWargearRules(wargear, modelId, unitName))
     }
 
@@ -285,7 +290,7 @@ function extractModels(unitSelection: JsonSelection, unitId: string, unitName: s
       const modelWeapons: Weapon[] = []
       const modelRules: Rule[] = []
       for (const wargear of modelSelection.selections ?? []) {
-        modelWeapons.push(...extractWeaponsFromSelection(wargear))
+        modelWeapons.push(...extractWeaponsFromSelection(wargear, count))
         modelRules.push(...extractWargearRules(wargear, modelId, modelName))
       }
 

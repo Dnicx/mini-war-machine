@@ -94,7 +94,9 @@ export const syntheticRosJson = JSON.stringify({
             ],
             selections: [
               {
-                id: 'w1', name: 'Test Pistol', type: 'upgrade', from: 'entry', number: 1,
+                // Two of one weapon on a single model, like a Land Raider
+                // Redeemer's twin Flamestorm Cannons
+                id: 'w1', name: 'Test Pistol', type: 'upgrade', from: 'entry', number: 2,
                 profiles: [profileJson('wp1', 'Test Pistol', 'Ranged Weapons',
                   { Range: '12"', A: '1', BS: '2+', S: '4', AP: '-1', D: '2', Keywords: 'Pistol' })]
               },
