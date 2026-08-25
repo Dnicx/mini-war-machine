@@ -23,7 +23,7 @@ function extractAbilityFromProfile(profile: Element, unitId: string, sourceUnit:
 }
 
 // Helper function to extract weapon from profile
-function extractWeaponFromProfile(profile: Element): Weapon | null {
+function extractWeaponFromProfile(profile: Element, count: number): Weapon | null {
   const weaponName = profile.getAttribute('name')
   if (!weaponName) return null
 
@@ -55,6 +55,7 @@ function extractWeaponFromProfile(profile: Element): Weapon | null {
 
   return {
     name: weaponName,
+    count,
     range,
     attacks,
     damage,
@@ -131,20 +132,24 @@ function extractModelCharacteristics(profile: Element): {
 }
 
 // Helper function to extract weapons from any element (model selection, wargear selection, etc.)
-function extractWeaponsFromElement(element: Element): Weapon[] {
+// The element's own number attribute is the total carried by the model group (a
+// 1-model Land Raider can hold 2 Flamestorm Cannons), so it is not multiplied by
+// the model count; modelCount only stands in when the attribute is missing.
+function extractWeaponsFromElement(element: Element, modelCount: number): Weapon[] {
   const weapons: Weapon[] = []
+  const count = parseInt(element.getAttribute('number') || String(modelCount))
 
   // Extract from typeName="Ranged Weapons"
   const rangedProfiles = element.querySelectorAll('profiles > profile[typeName="Ranged Weapons"]')
   rangedProfiles.forEach((profile) => {
-    const weapon = extractWeaponFromProfile(profile)
+    const weapon = extractWeaponFromProfile(profile, count)
     if (weapon) weapons.push(weapon)
   })
 
   // Extract from typeName="Melee Weapons"
   const meleeProfiles = element.querySelectorAll('profiles > profile[typeName="Melee Weapons"]')
   meleeProfiles.forEach((profile) => {
-    const weapon = extractWeaponFromProfile(profile)
+    const weapon = extractWeaponFromProfile(profile, count)
     if (weapon) {
       // Override range for melee
       weapons.push({ ...weapon, range: 'Melee' })
@@ -253,7 +258,7 @@ function extractModels(unitSelection: Element, unitId: string, unitName: string,
     const modelRules: Rule[] = []
 
     wargearSelections.forEach((wargear) => {
-      modelWeapons.push(...extractWeaponsFromElement(wargear))
+      modelWeapons.push(...extractWeaponsFromElement(wargear, count))
       modelRules.push(...extractWargearRules(wargear, modelId, unitName))
     })
 
@@ -312,7 +317,7 @@ function extractModels(unitSelection: Element, unitId: string, unitName: string,
       const modelRules: Rule[] = []
 
       wargearSelections.forEach((wargear) => {
-        modelWeapons.push(...extractWeaponsFromElement(wargear))
+        modelWeapons.push(...extractWeaponsFromElement(wargear, count))
         modelRules.push(...extractWargearRules(wargear, modelId, modelName))
       })
 

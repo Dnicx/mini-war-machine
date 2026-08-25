@@ -50,6 +50,10 @@ export interface Keyword {
 
 export interface Weapon {
   name: string
+  // How many of this weapon the owning model group carries in total (the
+  // export's wargear count). Optional: rosters parsed before this field
+  // existed fall back to the model count.
+  count?: number
   range: string
   attacks: string
   damage: string
