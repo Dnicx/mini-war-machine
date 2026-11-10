@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { User } from 'lucide-react'
 import type { Roster, Unit, Ability, Phase } from '../types/roster'
 import { UnitDetail } from './UnitDetail'
@@ -93,10 +93,26 @@ export function UnitView({ roster, unitImages, onImagesChange, attachments = {},
     })
   }
 
+  // List scroll position captured when opening a unit; null when there is
+  // nothing to restore (initial mount, or already restored).
+  const listScrollYRef = useRef<number | null>(null)
+
   const selectUnit = (id: string) => {
+    listScrollYRef.current = window.scrollY
     window.history.pushState({ unitDetail: id }, '')
     setSelectedUnitId(id)
   }
+
+  // Layout effect so the jump happens before paint: otherwise the detail
+  // would flash at the list's scroll depth, and the list at the detail's.
+  useLayoutEffect(() => {
+    if (selectedUnitId) {
+      window.scrollTo(0, 0)
+    } else if (listScrollYRef.current !== null) {
+      window.scrollTo(0, listScrollYRef.current)
+      listScrollYRef.current = null
+    }
+  }, [selectedUnitId])
 
   const closeUnit = () => setSelectedUnitId(null)
 
