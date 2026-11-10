@@ -1,8 +1,8 @@
-import { useState, useEffect, useLayoutEffect, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { useCarouselDrag } from '../hooks/useCarouselDrag'
 import type { CarouselSide } from '../hooks/useCarouselDrag'
 import {
-  Swords, ChevronDown, ChevronUp, Users, Scroll, Flag
+  Swords, ChevronDown, ChevronUp, Users, Scroll, Flag, User
 } from 'lucide-react'
 import { appIcon } from '../config/icons'
 import { cardStyles } from '../styles/components'
@@ -449,6 +449,22 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   // filters as "your" abilities regardless of whose turn it is.
   const startOfGameAbilities = getActiveAbilities('Start of Game', 'yours')
 
+  // The phase view groups abilities by unit *name* while photos are keyed by
+  // unit id, so resolve a name to one photo here. Same-name units share a
+  // datasheet (see buildUnitAbilities), so any one of their photos stands for
+  // the group. Every roster unit name gets an entry -- '' when no photo is set
+  // yet -- which lets the phase view tell a real unit apart from the synthetic
+  // "Stratagems" / "Army Abilities" groups, which have no entry.
+  const unitImagesByName = useMemo(() => {
+    const byName: Record<string, string> = {}
+    roster.units.forEach(unit => {
+      // Keep the first photo found; stays '' until a same-name unit has one.
+      if (byName[unit.name]) return
+      byName[unit.name] = unitImages[unit.id] || ''
+    })
+    return byName
+  }, [roster.units, unitImages])
+
   const handleImagesChange = (images: Record<string, string>) => {
     setUnitImages(images)
     saveUnitImages(images)
@@ -595,6 +611,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
                       onToggleUnit={toggleUnit}
                       collapsedTimings={collapsedTimings}
                       onToggleTiming={toggleTiming}
+                      unitImagesByName={unitImagesByName}
                     />
                   </div>
                 )
@@ -609,6 +626,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
                 collapsedTimings={collapsedTimings}
                 onToggleTiming={toggleTiming}
                 onTimingChange={setActiveTiming}
+                unitImagesByName={unitImagesByName}
               />
             </div>
           </div>
@@ -690,11 +708,13 @@ interface PhaseContentProps {
   collapsedTimings: Set<Timing>
   onToggleTiming: (timing: Timing) => void
   onTimingChange?: (timing: Timing) => void
+  unitImagesByName: Record<string, string>
 }
 
 function PhaseContent({
   phase, turnOwner, activeAbilities, abilitiesByTiming,
-  collapsedUnits, onToggleUnit, collapsedTimings, onToggleTiming, onTimingChange
+  collapsedUnits, onToggleUnit, collapsedTimings, onToggleTiming, onTimingChange,
+  unitImagesByName
 }: PhaseContentProps) {
   const timingRefs = useRef<(HTMLDivElement | null)[]>([])
 
@@ -744,6 +764,7 @@ function PhaseContent({
                       abilities={abilities}
                       isCollapsed={collapsedUnits.has(unitName)}
                       onToggle={() => onToggleUnit(unitName)}
+                      unitImage={unitImagesByName[unitName]}
                     />
                   ))}
                 </div>
@@ -783,9 +804,26 @@ interface CollapsibleUnitSectionProps {
   abilities: Ability[]
   isCollapsed: boolean
   onToggle: () => void
+  // Resolved photo: a data URL, '' for a roster unit with no photo yet, or
+  // undefined when this group is not a roster unit at all.
+  unitImage?: string
 }
 
-function CollapsibleUnitSection({ unitName, abilities, isCollapsed, onToggle }: CollapsibleUnitSectionProps) {
+function CollapsibleUnitSection({
+  unitName, abilities, isCollapsed, onToggle, unitImage
+}: CollapsibleUnitSectionProps) {
+  const abilityCards = abilities.map(ability => (
+    <PlayAbilityCard
+      key={ability.id}
+      ability={ability}
+    />
+  ))
+  // The synthetic "Stratagems" / "Army Abilities" groups are not units, so they
+  // keep the original indented full-width list. A real unit gets a photo
+  // column; one with no photo yet still gets the placeholder, so ability cards
+  // line up at the same width across every unit section in the phase.
+  const hasImageColumn = unitImage !== undefined
+
   return (
     <div>
       <button
@@ -796,14 +834,29 @@ function CollapsibleUnitSection({ unitName, abilities, isCollapsed, onToggle }: 
         {unitName}
       </button>
       {!isCollapsed && (
-        <div className="space-y-2 ml-6">
-          {abilities.map(ability => (
-            <PlayAbilityCard
-              key={ability.id}
-              ability={ability}
-            />
-          ))}
-        </div>
+        hasImageColumn ? (
+          // The photo column replaces the old ml-6 indent, leaving as much
+          // width as possible for the (now narrower) ability cards. The fixed
+          // h-20 keeps the photo square at the top instead of letting flex
+          // stretch it down a tall ability stack and crop it to a sliver.
+          <div className="flex items-start gap-2">
+            {unitImage ? (
+              <img
+                src={unitImage}
+                alt={unitName}
+                className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-lg bg-surface2 flex items-center
+                justify-center flex-shrink-0">
+                <User size={28} className="text-text2 opacity-50" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0 space-y-2">{abilityCards}</div>
+          </div>
+        ) : (
+          <div className="space-y-2 ml-6">{abilityCards}</div>
+        )
       )}
     </div>
   )
