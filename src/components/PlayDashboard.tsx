@@ -342,10 +342,10 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     }
   })
 
-  // Programmatic navigation (Next buttons and phase strip) reuses the same
-  // track animation as finger drags so all phase changes feel identical.
-  // Compare the full step: "Next Turn" from a phase lands on the other
-  // player's copy of a phase — same phase name, different step.
+  // Programmatic navigation (phase strip taps) reuses the same track
+  // animation as finger drags so all phase changes feel identical.
+  // Compare the full step: re-tapping the current phase lands on the other
+  // player's copy of that phase — same phase name, different step.
   const goToStep = (step: GameStep, side: CarouselSide) => {
     if (incoming) return
     if (
@@ -356,14 +356,14 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     slide(side)
   }
 
-  // Jump to the start of the next player's turn from anywhere in this one.
-  const nextTurnStep = (): GameStep => ({
-    phase: 'Start of Battle Round',
-    turnOwner: otherPlayer(gameState.turnOwner)
-  })
-
   // Strip taps jump within the current turn: the owner is kept.
+  // Tapping the current phase again toggles the turn owner instead, staying
+  // on the same phase — this replaced the removed "Next Turn" button.
   const jumpToPhase = (phase: Phase) => {
+    if (phase === gameState.currentPhase) {
+      goToStep({ phase, turnOwner: otherPlayer(gameState.turnOwner) }, 'right')
+      return
+    }
     const side: CarouselSide =
       TURN_PHASES.indexOf(phase) > TURN_PHASES.indexOf(gameState.currentPhase)
         ? 'right' : 'left'
@@ -504,12 +504,13 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
             )}
           </div>
 
-          {/* Sticky control section: phase strip, advance buttons, and the
+          {/* Sticky control section: phase strip and the
               phase/timing header stay visible while scrolling abilities. */}
           <div ref={stickyHeaderRef} className="sticky top-0 z-30 bg-background border-b border-surface2 -mx-4 px-4 mb-4 pt-2">
             {/* Phase strip: the per-turn loop, all segments visible at once
                 so no horizontal scrolling is needed on narrow screens. Taps
-                jump within the current turn. */}
+                jump within the current turn; re-tapping the active phase
+                toggles the turn owner. */}
             <div className="flex gap-1 mb-2">
               {PHASE_STRIP.map(({ phase, label }) => {
                 const PhaseIcon = PHASE_ICONS[phase]
@@ -527,23 +528,6 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
                   {label}
                 </button>
               })}
-            </div>
-
-            {/* Advance controls */}
-            <div className="flex gap-2 mb-2">
-              <button
-                onClick={() => goToStep(nextStep(gameState), 'right')}
-                className="flex-1 py-2 bg-accent text-white rounded-lg font-semibold text-sm"
-              >
-                Next Phase ›
-              </button>
-              <button
-                onClick={() => goToStep(nextTurnStep(), 'right')}
-                className="flex-1 py-2 bg-surface2 text-text rounded-lg font-semibold text-sm
-                  hover:bg-surface2/80"
-              >
-                Next Turn »
-              </button>
             </div>
 
             <div className="flex items-center gap-2 py-2 border-t border-surface2">
