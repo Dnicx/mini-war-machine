@@ -31,7 +31,8 @@ if (Capacitor.isNativePlatform()) {
   }
 } else if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
+    // BASE_URL keeps the SW (and so its default scope) inside the app's sub-folder, if any.
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`)
       .then(reg => console.log('[SW] Service worker registered:', reg.scope))
       .catch(err => console.log('[SW] Service worker registration failed:', err))
   })
