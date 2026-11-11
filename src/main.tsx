@@ -20,7 +20,9 @@ createRoot(document.getElementById('root')!).render(
 // index.html that pointed at an outdated JS bundle (blank screen after update).
 // So on native we never register it and actively unregister any previously
 // installed SW + clear its caches to self-heal existing installs.
-if (Capacitor.isNativePlatform()) {
+// Same in `npm run dev`: dev source URLs (e.g. /src/App.tsx) have no content hash,
+// so a caching SW would serve stale code after a reload.
+if (Capacitor.isNativePlatform() || import.meta.env.DEV) {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations()
       .then(regs => regs.forEach(reg => reg.unregister()))
