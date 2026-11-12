@@ -853,9 +853,9 @@ function CollapsibleUnitSection({
       {!isCollapsed && (
         hasImageColumn ? (
           // The photo column replaces the old ml-6 indent, leaving as much
-          // width as possible for the (now narrower) ability cards. The fixed
-          // h-16 keeps the photo square at the top instead of letting flex
-          // stretch it down a tall ability stack and crop it to a sliver.
+          // width as possible for the (now narrower) ability cards. h-auto
+          // keeps the cropped aspect ratio; items-start stops flex from
+          // stretching the photo down a tall ability stack.
           // Sticky keeps the photo in view under the sticky header while
           // scrolling this unit's abilities; it leaves with the unit's row.
           <div className="flex items-start gap-2">
@@ -863,7 +863,7 @@ function CollapsibleUnitSection({
               <img
                 src={unitImage}
                 alt={unitName}
-                className="w-16 h-16 rounded-lg object-cover flex-shrink-0 sticky"
+                className="w-16 h-auto rounded-lg flex-shrink-0 sticky"
                 style={stickyPhotoStyle}
               />
             ) : (

@@ -10,6 +10,8 @@ import { KeywordPill } from './KeywordPill'
 import { normalizeKeyword } from '../lib/storage'
 import { findWeaponKeywordRule } from '../lib/commonAbilities'
 import { unitAbilityId } from '../lib/unitAbilityId'
+import { ImageCropModal } from './ImageCropModal'
+import { readFileAsDataUrl } from '../lib/readFileAsDataUrl'
 
 interface UnitDetailProps {
   unit: Unit
@@ -33,27 +35,6 @@ interface UnitDetailProps {
   // list view so a keyword's color is consistent everywhere.
   keywordColors?: Record<string, number>
   onKeywordColor?: (name: string, slot: number) => void
-}
-
-function resizeImage(file: File, maxPx: number, quality: number): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const img = new Image()
-      img.onload = () => {
-        const scale = Math.min(1, maxPx / Math.max(img.width, img.height))
-        const canvas = document.createElement('canvas')
-        canvas.width = Math.round(img.width * scale)
-        canvas.height = Math.round(img.height * scale)
-        canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
-        resolve(canvas.toDataURL('image/jpeg', quality))
-      }
-      img.onerror = reject
-      img.src = e.target!.result as string
-    }
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
 }
 
 type MergedWeapon = {
@@ -343,6 +324,8 @@ export function UnitDetail({ unit, attachedUnits, attachmentRoles = {}, unitImag
   const [activeContent, setActiveContent] = useState<'models' | 'weapons' | 'abilities'>('models')
   const [collapsedModels, setCollapsedModels] = useState<Set<string>>(new Set())
   const imageInputRef = useRef<HTMLInputElement>(null)
+  // Uncropped data URL of the picked file; non-null while the crop modal is open.
+  const [cropSource, setCropSource] = useState<string | null>(null)
 
   const contentTabs = ['models', 'weapons', 'abilities'] as const
   const activeIndex = contentTabs.indexOf(activeContent)
@@ -447,8 +430,7 @@ export function UnitDetail({ unit, attachedUnits, attachmentRoles = {}, unitImag
     const file = e.target.files?.[0]
     if (!file) return
     try {
-      const dataUrl = await resizeImage(file, 512, 0.7)
-      onImagesChange({ ...unitImages, [unit.id]: dataUrl })
+      setCropSource(await readFileAsDataUrl(file))
     } catch {
       alert('Failed to process image.')
     }
@@ -538,7 +520,7 @@ export function UnitDetail({ unit, attachedUnits, attachmentRoles = {}, unitImag
 
           <div className="relative cursor-pointer flex-shrink-0" onClick={handleImageClick}>
             {imageUrl ? (
-              <img src={imageUrl} alt={unit.name} className="w-12 h-12 rounded-lg object-cover" />
+              <img src={imageUrl} alt={unit.name} className="w-12 h-auto rounded-lg" />
             ) : (
               <div className="w-12 h-12 rounded-lg bg-surface2 flex items-center justify-center">
                 <User size={20} className="text-text2 opacity-50" />
@@ -555,6 +537,16 @@ export function UnitDetail({ unit, attachedUnits, attachmentRoles = {}, unitImag
               onChange={handleImageChange}
             />
           </div>
+          {cropSource && (
+            <ImageCropModal
+              source={cropSource}
+              onSave={dataUrl => {
+                onImagesChange({ ...unitImages, [unit.id]: dataUrl })
+                setCropSource(null)
+              }}
+              onClose={() => setCropSource(null)}
+            />
+          )}
 
           <h2 className="text-lg font-bold text-text flex-1 min-w-0 leading-tight">{unit.name}</h2>
         </div>
