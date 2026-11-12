@@ -1,4 +1,3 @@
-import React from 'react'
 import ReactMarkdown, { type Components } from 'react-markdown'
 
 interface SafeMarkdownRendererProps {
@@ -14,30 +13,15 @@ const markdownComponents: Components = {
 }
 
 export function SafeMarkdownRenderer({ content, className }: SafeMarkdownRendererProps) {
-  try {
-    if (!content || typeof content !== 'string') {
-      return <div className={className}>Invalid content</div>
-    }
-    
-    return (
-      <div className={`prose prose-invert max-w-none ${className || ''}`}>
-        <ReactMarkdown components={markdownComponents}>
-          {content}
-        </ReactMarkdown>
-      </div>
-    )
-  } catch (error) {
-    console.error('Markdown rendering error:', error)
-    // Fallback to regular text rendering with preserved newlines
-    return (
-      <div className={className}>
-        {content.split('\n').map((line, index) => (
-          <React.Fragment key={index}>
-            {line}
-            {index < content.split('\n').length - 1 && <br />}
-          </React.Fragment>
-        ))}
-      </div>
-    )
+  if (!content || typeof content !== 'string') {
+    return <div className={className}>Invalid content</div>
   }
+
+  return (
+    <div className={`prose prose-invert max-w-none ${className || ''}`}>
+      <ReactMarkdown components={markdownComponents}>
+        {content}
+      </ReactMarkdown>
+    </div>
+  )
 }
