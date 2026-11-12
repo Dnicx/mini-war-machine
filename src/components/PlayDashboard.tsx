@@ -823,8 +823,12 @@ interface CollapsibleUnitSectionProps {
   unitImage?: string
 }
 
-// 8px gap below the sticky header; the variable is set by PlayDashboard.
-const stickyPhotoStyle = { top: 'calc(var(--sticky-header-height, 0px) + 8px)' }
+// Stack below the sticky phase header (set by PlayDashboard) and the sticky
+// unit name row (set by CollapsibleUnitSection; its pb-2 gives the 8px gap).
+const stickyPhotoStyle = {
+  top: 'calc(var(--sticky-header-height, 0px) + var(--unit-name-height, 0px))'
+}
+const stickyUnitNameStyle = { top: 'var(--sticky-header-height, 0px)' }
 
 function CollapsibleUnitSection({
   unitName, abilities, isCollapsed, onToggle, unitImage
@@ -833,6 +837,7 @@ function CollapsibleUnitSection({
     <PlayAbilityCard
       key={ability.id}
       ability={ability}
+      stickyTitle
     />
   ))
   // The synthetic "Stratagems" / "Army Abilities" groups are not units, so they
@@ -841,22 +846,45 @@ function CollapsibleUnitSection({
   // line up at the same width across every unit section in the phase.
   const hasImageColumn = unitImage !== undefined
 
+  // Publish the unit name row's height so the photo and ability titles stick
+  // just below it. Observed (not assumed) because long unit names can wrap.
+  const sectionRef = useRef<HTMLDivElement | null>(null)
+  const unitNameRowRef = useRef<HTMLDivElement | null>(null)
+  useLayoutEffect(() => {
+    const section = sectionRef.current
+    const row = unitNameRowRef.current
+    if (!section || !row) return
+    const observer = new ResizeObserver(() => {
+      section.style.setProperty('--unit-name-height', `${row.offsetHeight}px`)
+    })
+    observer.observe(row)
+    return () => observer.disconnect()
+  }, [])
+
   return (
-    <div>
-      <button
-        onClick={onToggle}
-        className="flex items-center gap-2 text-sm font-semibold text-accent mb-2 hover:text-accent/80 transition-colors"
+    <div ref={sectionRef}>
+      {/* Sticky unit name: bg-surface3 matches the phase card so ability text
+          sliding under it is hidden; pb-2 (not mb-2) keeps that gap opaque. */}
+      <div
+        ref={unitNameRowRef}
+        className="sticky z-20 bg-surface3 pb-2"
+        style={stickyUnitNameStyle}
       >
-        {isCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-        {unitName}
-      </button>
+        <button
+          onClick={onToggle}
+          className="flex items-center gap-2 text-sm font-semibold text-accent hover:text-accent/80 transition-colors"
+        >
+          {isCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+          {unitName}
+        </button>
+      </div>
       {!isCollapsed && (
         hasImageColumn ? (
           // The photo column replaces the old ml-6 indent, leaving as much
           // width as possible for the (now narrower) ability cards. h-auto
           // keeps the cropped aspect ratio; items-start stops flex from
           // stretching the photo down a tall ability stack.
-          // Sticky keeps the photo in view under the sticky header while
+          // Sticky keeps the photo in view under the unit name while
           // scrolling this unit's abilities; it leaves with the unit's row.
           <div className="flex items-start gap-2">
             {unitImage ? (
