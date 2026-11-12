@@ -118,6 +118,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const [showStartOfGame, setShowStartOfGame] = useState(false)
   const trackRef = useRef<HTMLDivElement | null>(null)
   const stickyHeaderRef = useRef<HTMLDivElement | null>(null)
+  const pageRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     // Load saved game state
@@ -306,6 +307,21 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     return () => window.removeEventListener('resize', applyMinHeight)
   }, [activeTab, gameState.currentPhase, gameState.turnOwner])
 
+  // Publish the sticky header's height as a CSS variable so unit photos can
+  // stick just below it. A ResizeObserver (not state) tracks height changes
+  // such as wrapping or font scaling without re-rendering the dashboard.
+  useLayoutEffect(() => {
+    if (activeTab !== 'phase') return
+    const header = stickyHeaderRef.current
+    const page = pageRef.current
+    if (!header || !page) return
+    const observer = new ResizeObserver(() => {
+      page.style.setProperty('--sticky-header-height', `${header.offsetHeight}px`)
+    })
+    observer.observe(header)
+    return () => observer.disconnect()
+  }, [activeTab])
+
   // After a committed swipe, scroll back to the top of the phase content but
   // no further: scrolling to the very page top would pull the non-sticky
   // headers above the sticky bar back into view. Deferred to a microtask so
@@ -481,6 +497,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
 
   return (
     <div
+      ref={pageRef}
       className="max-w-4xl mx-auto px-2 sm:px-4 pt-4 pb-16"
       style={{ touchAction: 'pan-y' }}
       {...(activeTab === 'phase' ? swipeHandlers : {})}
@@ -578,7 +595,10 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
           {/* Draggable phase content area. The track's translateX follows
               the finger (written by useCarouselDrag); the incoming pane sits
               offset by ±100% so it slides in as the track moves. */}
-          <div style={{ overflow: 'hidden' }}>
+          {/* 'clip', not 'hidden': hidden would make this wrapper the scroll
+              container for sticky descendants, so unit photos would never
+              stick. clip clips the same way without creating one. */}
+          <div style={{ overflow: 'clip' }}>
             {/* select-none: long-pressing selectable ability text makes
                 Android hijack the touch (touchcancel), killing the swipe. */}
             <div ref={trackRef} className="select-none" style={{ position: 'relative' }}>
@@ -803,6 +823,9 @@ interface CollapsibleUnitSectionProps {
   unitImage?: string
 }
 
+// 8px gap below the sticky header; the variable is set by PlayDashboard.
+const stickyPhotoStyle = { top: 'calc(var(--sticky-header-height, 0px) + 8px)' }
+
 function CollapsibleUnitSection({
   unitName, abilities, isCollapsed, onToggle, unitImage
 }: CollapsibleUnitSectionProps) {
@@ -833,16 +856,22 @@ function CollapsibleUnitSection({
           // width as possible for the (now narrower) ability cards. h-auto
           // keeps the cropped aspect ratio; items-start stops flex from
           // stretching the photo down a tall ability stack.
+          // Sticky keeps the photo in view under the sticky header while
+          // scrolling this unit's abilities; it leaves with the unit's row.
           <div className="flex items-start gap-2">
             {unitImage ? (
               <img
                 src={unitImage}
                 alt={unitName}
-                className="w-16 h-auto rounded-lg flex-shrink-0"
+                className="w-16 h-auto rounded-lg flex-shrink-0 sticky"
+                style={stickyPhotoStyle}
               />
             ) : (
-              <div className="w-16 h-16 rounded-lg bg-surface2 flex items-center
-                justify-center flex-shrink-0">
+              <div
+                className="w-16 h-16 rounded-lg bg-surface2 flex items-center
+                justify-center flex-shrink-0 sticky"
+                style={stickyPhotoStyle}
+              >
                 <User size={24} className="text-text2 opacity-50" />
               </div>
             )}
