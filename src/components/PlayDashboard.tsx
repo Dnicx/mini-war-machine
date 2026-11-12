@@ -831,19 +831,19 @@ function CollapsibleUnitSection({
         hasImageColumn ? (
           // The photo column replaces the old ml-6 indent, leaving as much
           // width as possible for the (now narrower) ability cards. The fixed
-          // h-20 keeps the photo square at the top instead of letting flex
+          // h-16 keeps the photo square at the top instead of letting flex
           // stretch it down a tall ability stack and crop it to a sliver.
           <div className="flex items-start gap-2">
             {unitImage ? (
               <img
                 src={unitImage}
                 alt={unitName}
-                className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+                className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
               />
             ) : (
-              <div className="w-20 h-20 rounded-lg bg-surface2 flex items-center
+              <div className="w-16 h-16 rounded-lg bg-surface2 flex items-center
                 justify-center flex-shrink-0">
-                <User size={28} className="text-text2 opacity-50" />
+                <User size={24} className="text-text2 opacity-50" />
               </div>
             )}
             <div className="flex-1 min-w-0 space-y-2">{abilityCards}</div>
