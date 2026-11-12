@@ -481,7 +481,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
 
   return (
     <div
-      className="max-w-4xl mx-auto p-4 pb-16"
+      className="max-w-4xl mx-auto px-2 sm:px-4 pt-4 pb-16"
       style={{ touchAction: 'pan-y' }}
       {...(activeTab === 'phase' ? swipeHandlers : {})}
     >
@@ -531,7 +531,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
 
           {/* Sticky control section: phase strip and the
               phase/timing header stay visible while scrolling abilities. */}
-          <div ref={stickyHeaderRef} className="sticky top-0 z-30 bg-background border-b border-surface2 -mx-4 px-4 mb-4 pt-2">
+          <div ref={stickyHeaderRef} className="sticky top-0 z-30 bg-background border-b border-surface2 -mx-2 px-2 sm:-mx-4 sm:px-4 mb-4 pt-2">
             {/* Phase strip: the per-turn loop, all segments visible at once
                 so no horizontal scrolling is needed on narrow screens. Taps
                 jump within the current turn; re-tapping the active phase
@@ -741,7 +741,7 @@ function PhaseContent({
             // Hide timing sections that have no abilities in this phase
             if (Object.keys(abilitiesByTiming[timing]).length === 0) return null
             return (
-            <div key={timing} ref={el => { timingRefs.current[idx] = el }} className="bg-surface3 p-4 rounded-lg">
+            <div key={timing} ref={el => { timingRefs.current[idx] = el }} className="bg-surface3 p-2 sm:p-4 rounded-lg">
               <button
                 onClick={() => onToggleTiming(timing)}
                 className="flex items-center gap-2 font-semibold text-text mb-3 hover:text-accent transition-colors w-full text-left"
@@ -768,7 +768,7 @@ function PhaseContent({
           })}
         </div>
       ) : (
-        <div className="bg-surface3 p-4 rounded-lg">
+        <div className="bg-surface3 p-2 sm:p-4 rounded-lg">
           <div className="flex items-center gap-2 mb-3">
             <Swords className="text-accent" size={20} />
             <h3 className="font-semibold text-text">
