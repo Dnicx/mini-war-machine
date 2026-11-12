@@ -10,8 +10,6 @@ interface SafeMarkdownRendererProps {
 // render, so React remounts the rendered DOM nodes. That detaches the node a
 // touch gesture started on, which froze carousel swipes over ability text.
 const markdownComponents: Components = {
-  // Ensure newlines are preserved
-  br: ({ node, ...props }) => <br {...props} />,
   p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
 }
 
