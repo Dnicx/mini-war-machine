@@ -5,6 +5,8 @@ import { applyTheme, getThemePresets } from '../lib/theme'
 import type { ThemePreset } from '../lib/theme'
 import { loadThemeId, saveThemeId } from '../lib/storage'
 
+const SettingsIcon = appIcon('settings')
+
 // Settings gear + dropdown listing the theme presets from src/themes/.
 // Self-contained (own state, outside-click handling) so it can later be
 // dropped into other headers with a single line.
@@ -12,7 +14,6 @@ export function ThemePicker() {
   const [open, setOpen] = useState(false)
   const [activeId, setActiveId] = useState(() => loadThemeId() ?? 'default')
   const containerRef = useRef<HTMLDivElement>(null)
-  const SettingsIcon = appIcon('settings')
 
   useEffect(() => {
     if (!open) return
