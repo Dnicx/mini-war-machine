@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useLayoutEffect } from 'react'
 import { flushSync } from 'react-dom'
 
 // 'right' = the incoming pane slides in from the right (finger moves left).
@@ -38,7 +38,11 @@ export function useCarouselDrag(
 ) {
   // Latest-ref so the stable touch handlers always see current parent state.
   const callbacksRef = useRef(callbacks)
-  callbacksRef.current = callbacks
+  // Synced after commit, not during render, so callbacks from a discarded
+  // render never leak in. Layout effect runs before the next touch event.
+  useLayoutEffect(() => {
+    callbacksRef.current = callbacks
+  })
 
   const gesture = useRef({
     active: false,
