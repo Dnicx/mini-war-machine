@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<stratagems>
+  <stratagem>
+    <name>AGGRESSIVE DISEMBARKATION</name>
+    <cpCost>1CP</cpCost>
+    <type>GAUNTLET TASK FORCE</type>
+    <lore>Bursting out of their transport, the Space Marines are already on the move before their foes can react.</lore>
+    <when>Any phase, when a friendly ADEPTUS ASTARTES unit embarked within a TRANSPORT is selected to move.</when>
+    <target>That ADEPTUS ASTARTES unit.</target>
+    <effect>While making that move, each model in your unit can be set up within the set-up distance of that TRANSPORT.
+This allows you to set up your unit within the set-up distance of your TRANSPORT, instead of wholly within that distance.</effect>
+  </stratagem>
+  <stratagem>
+    <name>DUTY IS NEVER DONE</name>
+    <cpCost>1CP</cpCost>
+    <type>GAUNTLET TASK FORCE</type>
+    <lore>There is no time to rest upon laurels while any portion of the Emperor’s realm remains in enemy hands.</lore>
+    <when>End of the Fight phase.</when>
+    <target>One friendly unengaged ADEPTUS ASTARTES INFANTRY unit that was eligible to fight this phase, is wholly within 6" of a friendly TRANSPORT unit, and is eligible to embark within that TRANSPORT unit.</target>
+    <effect>Your unit embarks within that TRANSPORT unit.</effect>
+  </stratagem>
+  <stratagem>
+    <name>STORM AND SECURE</name>
+    <cpCost>1CP</cpCost>
+    <type>GAUNTLET TASK FORCE</type>
+    <lore>The advanced mechanised assault tactics employed by this force allow ground to be seized rapidly while on the move.</lore>
+    <when>End of your Movement phase.</when>
+    <target>One friendly ADEPTUS ASTARTES TRANSPORT unit that has an ADEPTUS ASTARTES BATTLELINE unit embarked within it.</target>
+    <effect>Select one objective your unit is controlling. That objective is secured.</effect>
+  </stratagem>
+</stratagems>

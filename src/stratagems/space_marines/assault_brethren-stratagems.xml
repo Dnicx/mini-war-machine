@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<stratagems>
+  <stratagem>
+    <name>ARMOUR OF CONTEMPT</name>
+    <cpCost>1CP</cpCost>
+    <type>ASSAULT BRETHREN</type>
+    <lore>The belligerence of the Adeptus Astartes combined with their post-human physiology makes them unyielding foes to face.</lore>
+    <when>Your opponent’s Shooting phase or the Fight phase, when an enemy unit targets a friendly ADEPTUS ASTARTES unit.</when>
+    <target>That ADEPTUS ASTARTES unit.</target>
+    <effect>Attacks that target your unit have -1 AP until that enemy unit has attacked.</effect>
+  </stratagem>
+  <stratagem>
+    <name>GENE-WROUGHT MIGHT</name>
+    <cpCost>1CP</cpCost>
+    <type>ASSAULT BRETHREN</type>
+    <lore>Space Marines are blessed with incredible strength.</lore>
+    <when>Fight phase, when a friendly ADEPTUS ASTARTES unit is selected to fight.</when>
+    <target>That ADEPTUS ASTARTES unit.</target>
+    <effect>Your unit’s melee attacks have:
+▪ [Lance].
+▪ Or: If the assault doctrine is active for your unit, [Lance] and +1 AP.</effect>
+  </stratagem>
+  <stratagem>
+    <name>DUTY IN DEATH</name>
+    <cpCost>1CP</cpCost>
+    <type>ASSAULT BRETHREN</type>
+    <lore>Imminent death does not prevent a Space Marine from enacting their final justice upon the Emperor’s foes.</lore>
+    <when>Fight phase, when an enemy unit targets a friendly ADEPTUS ASTARTES unit.</when>
+    <target>That ADEPTUS ASTARTES unit.</target>
+    <effect>When a model in your unit is destroyed, if your unit has not been selected to fight this phase, roll one D6, with +1 to that roll if the assault doctrine is active for your unit:
+▪ On a 4+, do not remove that model from the battlefield. When your unit has fought, or at the end of the phase (whichever comes first), that model is removed from the battlefield.</effect>
+  </stratagem>
+</stratagems>

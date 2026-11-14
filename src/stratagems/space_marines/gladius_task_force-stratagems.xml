@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<stratagems>
+  <stratagem>
+    <name>ARMOUR OF CONTEMPT</name>
+    <cpCost>1CP</cpCost>
+    <type>GLADIUS TASK FORCE</type>
+    <lore>The belligerence of the Adeptus Astartes combined with their post-human physiology makes them unyielding foes to face.</lore>
+    <when>Your opponent’s Shooting phase or the Fight phase, when an enemy unit targets a friendly ADEPTUS ASTARTES unit.</when>
+    <target>That ADEPTUS ASTARTES unit.</target>
+    <effect>Until the attacking unit has finished making its attacks, each time an attack targets your unit, worsen the Armour Penetration characteristic of that attack by 1.</effect>
+  </stratagem>
+  <stratagem>
+    <name>A WORTHY DEATH</name>
+    <cpCost>1CP</cpCost>
+    <type>GLADIUS TASK FORCE</type>
+    <lore>Those Space Marines who specialise in close assault are ready to fight to their last breath and beyond to cut down more foes.</lore>
+    <when>Fight phase, when an enemy unit targets a friendly ADEPTUS ASTARTES unit.</when>
+    <target>That ADEPTUS ASTARTES unit.</target>
+    <effect>When a model in your unit is destroyed, if your unit has not been selected to fight this phase, roll one D6:
+▪ On a 4+, do not remove that model from the battlefield. When your unit has fought, or at the end of the phase (whichever comes first), that model is removed from the battlefield.</effect>
+  </stratagem>
+  <stratagem>
+    <name>MIGHT OF ANGELS</name>
+    <cpCost>1CP</cpCost>
+    <type>GLADIUS TASK FORCE</type>
+    <lore>Relentless assault training allows these warriors to focus their already impressive might into a truly devastating close-quarters onslaught.</lore>
+    <when>Fight phase, when a friendly ADEPTUS ASTARTES unit is selected to fight.</when>
+    <target>That ADEPTUS ASTARTES unit.</target>
+    <effect>Your unit’s melee attacks have [Lance].</effect>
+  </stratagem>
+  <stratagem>
+    <name>ADAPTIVE STRATEGY</name>
+    <cpCost>1CP</cpCost>
+    <type>GLADIUS TASK FORCE</type>
+    <lore>The tenets of the Codex Astartes allow for unorthodox use of combat tactics and the employment of divergent doctrines if doing so will lead to victory.</lore>
+    <when>Your Command phase.</when>
+    <target>One friendly ADEPTUS ASTARTES unit.</target>
+    <effect>Select one combat doctrine. That combat doctrine is active for your unit until the start of your next Command phase.</effect>
+  </stratagem>
+  <stratagem>
+    <name>STORM OF DEVASTATION</name>
+    <cpCost>1CP</cpCost>
+    <type>GLADIUS TASK FORCE</type>
+    <lore>Masters of the art of long-ranged warfare, these warriors unleash utter devastation upon their enemies.</lore>
+    <when>Your Shooting phase, when a friendly ADEPTUS ASTARTES unit is selected to shoot.</when>
+    <target>That ADEPTUS ASTARTES unit.</target>
+    <effect>Your unit’s ranged attacks have [IGNORES COVER].</effect>
+  </stratagem>
+  <stratagem>
+    <name>RESPONSIVE TACTICS</name>
+    <cpCost>1CP</cpCost>
+    <type>GLADIUS TASK FORCE</type>
+    <lore>Space Marines know precisely when to give ground to leave enemies floundering, before surging back and driving them from the field in disarray.</lore>
+    <when>Your opponent’s Movement phase, when an enemy unit ends a move within 8" of a friendly unengaged ADEPTUS ASTARTES INFANTRY/MOUNTED unit.</when>
+    <target>That ADEPTUS ASTARTES INFANTRY/MOUNTED unit.</target>
+    <effect>Your unit can make a normal move of up to D6".</effect>
+  </stratagem>
+</stratagems>
