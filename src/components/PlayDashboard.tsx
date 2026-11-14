@@ -424,7 +424,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
 
 
   const focusUnits = buildFocusUnits(roster, attachments)
-  // Undefined when the key went stale (e.g. attachments changed): no filter.
+  // Undefined when nothing is focused: no filter.
   const focusedUnit = focusUnits.find(focusUnit => focusUnit.key === focusedUnitKey)
   const armyTerms = rosterTerms(roster)
   const rosterUnitNames = new Set(roster.units.map(unit => unit.name))
