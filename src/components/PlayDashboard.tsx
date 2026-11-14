@@ -1,8 +1,8 @@
-import { useState, useEffect, useLayoutEffect, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { useCarouselDrag } from '../hooks/useCarouselDrag'
 import type { CarouselSide } from '../hooks/useCarouselDrag'
 import {
-  Swords, ChevronDown, ChevronUp, Users, Scroll, Flag, Crosshair, X
+  Swords, ChevronDown, ChevronUp, Users, Scroll, Flag, User, Crosshair, X
 } from 'lucide-react'
 import { appIcon } from '../config/icons'
 import { cardStyles } from '../styles/components'
@@ -11,6 +11,7 @@ import { loadPlan, saveGameState, loadGameState, loadUnitImages, saveUnitImages,
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
 import { buildCommonAbilities, commonAbilityId, commonAbilityUnitId } from '../lib/commonAbilities'
 import { buildUnitAbilities } from '../lib/unitAbilityId'
+import { resolveAttachments } from '../lib/attachments'
 import { TIMINGS, TIMING_LABELS, normalizeTiming } from '../lib/timing'
 import { effectiveTurnOwner } from '../lib/turnOwnerHeuristics'
 import {
@@ -78,8 +79,159 @@ function prevStep(state: GameState): GameStep {
   return { phase: TURN_PHASES[idx - 1], turnOwner }
 }
 
+interface PlayState {
+  attachments: Record<string, string>
+  roles: Record<string, string>
+  abilities: Ability[]
+  commonByUnit: Record<string, Ability[]>
+  custom: Ability[]
+  core: Stratagem[]
+  detachment: Stratagem[]
+}
+
+// Build the dashboard's plan-derived state once per mount: App keys
+// PlayDashboard by roster.id, so a different roster always remounts. Without a
+// saved plan only the file's own attachments are filled; ability lists stay
+// empty (the Planner seeds a plan on first open).
+function loadPlayState(roster: Roster): PlayState {
+  // Load plan and get abilities
+  const loadedPlan = loadPlan(roster.id)
+  // Translate pre-shared-id unit-ability plan entries (see storage.ts).
+  const plan = loadedPlan ? migratePlanUnitAbilityIds(loadedPlan, roster) : null
+
+  // Outside the `if (plan)` below: the file's own attachments must show even
+  // for a roster with no saved plan (e.g. a reload straight onto /play).
+  const resolved = resolveAttachments(roster, plan?.attachments)
+  const state: PlayState = {
+    attachments: resolved.attachments,
+    roles: resolved.roles,
+    abilities: [],
+    commonByUnit: {},
+    custom: [],
+    core: [],
+    detachment: []
+  }
+
+  if (plan) {
+    // Collapse same-name units' abilities onto one shared-id entry so they
+    // resolve the single saved plan entry and the phase view shows them once.
+    // Same builder (and id scheme) the Planner saves under.
+    const abilities: Ability[] = [...roster.armyAbilities, ...buildUnitAbilities(roster.units)]
+
+    // Apply heuristics to get auto-detected phases
+    const withHeuristics = applyHeuristicsToAll(abilities)
+
+    // Apply plan overrides
+    const withOverrides = withHeuristics.map(ability => {
+      const planEntry = plan.phasePlans.find(p => p.abilityId === ability.id)
+      if (planEntry) {
+        return {
+          ...ability,
+          phases: planEntry.phases,
+          timing: normalizeTiming(planEntry.timing),
+          // Without this, the turn owner picked in the Planner is ignored and
+          // the filter falls back to the auto-detected default ('either').
+          turnOwner: planEntry.turnOwner,
+          notes: planEntry.notes
+        }
+      }
+      // If no plan entry, use auto-detected phases as default
+      return {
+        ...ability,
+        phases: ability.autoDetectedPhases
+      }
+    })
+
+    // Expand each shared common ability into a per-unit copy so it appears
+    // separately under every owning unit. The shared plan (keyed by the
+    // `common-<name>` id) drives phases/timing/turn; the per-unit rule
+    // supplies the description shown in each card.
+    const commonExpanded: Ability[] = []
+    const commonByUnit: Record<string, Ability[]> = {}
+    buildCommonAbilities(roster).forEach(({ ability, unitIds }) => {
+      const planEntry = plan.phasePlans.find(p => p.abilityId === ability.id)
+      const shared: Partial<Ability> = planEntry
+        ? {
+            phases: planEntry.phases,
+            timing: normalizeTiming(planEntry.timing),
+            turnOwner: planEntry.turnOwner,
+            notes: planEntry.notes
+          }
+        : { phases: ability.autoDetectedPhases }
+      // Resolve by id so every same-name unit that carries the ability gets
+      // its own expanded copy (find-by-name would only match the first).
+      unitIds.forEach(unitId => {
+        const unit = roster.units.find(u => u.id === unitId)
+        if (!unit) return
+        const rule = unit.rules.find(r => commonAbilityId(r.name) === ability.id)
+        const expanded: Ability = {
+          ...ability,
+          ...shared,
+          id: commonAbilityUnitId(unit.id, ability.name),
+          sourceUnit: unit.name,
+          // Restore this unit's full name+description ("Deadly Demise D6")
+          // while phases/timing come from the shared base card.
+          name: rule?.name ?? ability.name,
+          description: rule?.description ?? ability.description
+        }
+        commonExpanded.push(expanded)
+        ;(commonByUnit[unit.id] ??= []).push(expanded)
+      })
+    })
+
+    state.abilities = [...withOverrides, ...commonExpanded]
+    state.commonByUnit = commonByUnit
+    state.custom = plan.customStratagems || []
+
+    // Load core stratagems
+    const coreStrats = getCoreStratagems()
+    const coreOverrides = coreStrats.map(strat => {
+      const saved = plan.corePhasePlans?.find(p => p.abilityId === strat.id)
+      if (saved) {
+        return {
+          ...strat,
+          phases: saved.phases,
+          timing: normalizeTiming(saved.timing),
+          turnOwner: saved.turnOwner,
+          enabled: saved.enabled ?? true
+        }
+      }
+      return strat
+    })
+    state.core = coreOverrides
+
+    // Load stratagems for every detachment in the roster
+    const factionFolder = getStratagemFolderName(roster.faction)
+    if (factionFolder) {
+      const available = getAvailableDetachments(factionFolder)
+      const matched = [...new Set(
+        roster.detachments
+          .map(det => detectDetachment(det, available))
+          .filter((det): det is string => !!det)
+      )]
+      const detachmentStrats = matched.flatMap(det =>
+        getDetachmentStratagems(factionFolder, det)
+      )
+      const detachmentOverrides = detachmentStrats.map(strat => {
+        const saved = plan.detachmentPhasePlans?.find(p => p.abilityId === strat.id)
+        if (saved) {
+          return {
+            ...strat,
+            phases: saved.phases,
+            timing: normalizeTiming(saved.timing),
+            turnOwner: saved.turnOwner
+          }
+        }
+        return strat
+      })
+      state.detachment = detachmentOverrides
+    }
+  }
+  return state
+}
+
 export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
-  const [gameState, setGameState] = useState<GameState>({
+  const [gameState, setGameState] = useState<GameState>(() => loadGameState() ?? {
     battleRound: 1,
     turnOwner: 'yours',
     currentPhase: 'Start of Battle Round',
@@ -91,10 +243,20 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     usedAbilities: {}
   })
 
-  const [allAbilities, setAllAbilities] = useState<Ability[]>([])
-  const [customStratagems, setCustomStratagems] = useState<Ability[]>([])
-  const [coreStratagems, setCoreStratagems] = useState<Stratagem[]>([])
-  const [detachmentStratagems, setDetachmentStratagems] = useState<Stratagem[]>([])
+  // Loaded once; useState (not useMemo) so it is never recomputed mid-life.
+  // Play only reads these, so they are plain values rather than separate state.
+  const [playState] = useState(() => loadPlayState(roster))
+  const {
+    abilities: allAbilities,
+    custom: customStratagems,
+    core: coreStratagems,
+    detachment: detachmentStratagems,
+    attachments,
+    // leaderUnitId → "Leading" / "Supporting", from the roster file's associations.
+    roles: attachmentRoles,
+    // Common abilities expanded per unit (keyed by unit id) for the unit view.
+    commonByUnit: commonAbilitiesByUnit
+  } = playState
   const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
   // Lifted out of PhaseContent: during the slide animation two PhaseContent
   // copies mount (exiting + entering), so local state there would reset and
@@ -102,9 +264,6 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const [collapsedTimings, setCollapsedTimings] = useState<Set<Timing>>(new Set())
   const [activeTab, setActiveTab] = useState<'phase' | 'unit' | 'stratagems'>('phase')
   const [unitImages, setUnitImages] = useState<Record<string, string>>(() => loadUnitImages())
-  const [attachments, setAttachments] = useState<Record<string, string>>({})
-  // Common abilities expanded per unit (keyed by unit id) for the unit view.
-  const [commonAbilitiesByUnit, setCommonAbilitiesByUnit] = useState<Record<string, Ability[]>>({})
   // The pane sliding in during a drag or programmatic slide. Rendered
   // offset by ±100% inside the track; null when the carousel is at rest.
   // topOffset pushes the incoming pane down so its own top aligns with the
@@ -121,135 +280,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const [showFocusSheet, setShowFocusSheet] = useState(false)
   const trackRef = useRef<HTMLDivElement | null>(null)
   const stickyHeaderRef = useRef<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    // Load saved game state
-    const savedState = loadGameState()
-    if (savedState) {
-      setGameState(savedState)
-    }
-
-    // Load plan and get abilities
-    const loadedPlan = loadPlan(roster.id)
-    // Translate pre-shared-id unit-ability plan entries (see storage.ts).
-    const plan = loadedPlan ? migratePlanUnitAbilityIds(loadedPlan, roster) : null
-    if (plan) {
-      // Collapse same-name units' abilities onto one shared-id entry so they
-      // resolve the single saved plan entry and the phase view shows them once.
-      // Same builder (and id scheme) the Planner saves under.
-      const abilities: Ability[] = [...roster.armyAbilities, ...buildUnitAbilities(roster.units)]
-
-      // Apply heuristics to get auto-detected phases
-      const withHeuristics = applyHeuristicsToAll(abilities)
-
-      // Apply plan overrides
-      const withOverrides = withHeuristics.map(ability => {
-        const planEntry = plan.phasePlans.find(p => p.abilityId === ability.id)
-        if (planEntry) {
-          return {
-            ...ability,
-            phases: planEntry.phases,
-            timing: normalizeTiming(planEntry.timing),
-            // Without this, the turn owner picked in the Planner is ignored and
-            // the filter falls back to the auto-detected default ('either').
-            turnOwner: planEntry.turnOwner,
-            notes: planEntry.notes
-          }
-        }
-        // If no plan entry, use auto-detected phases as default
-        return {
-          ...ability,
-          phases: ability.autoDetectedPhases
-        }
-      })
-
-      // Expand each shared common ability into a per-unit copy so it appears
-      // separately under every owning unit. The shared plan (keyed by the
-      // `common-<name>` id) drives phases/timing/turn; the per-unit rule
-      // supplies the description shown in each card.
-      const commonExpanded: Ability[] = []
-      const commonByUnit: Record<string, Ability[]> = {}
-      buildCommonAbilities(roster).forEach(({ ability, unitIds }) => {
-        const planEntry = plan.phasePlans.find(p => p.abilityId === ability.id)
-        const shared: Partial<Ability> = planEntry
-          ? {
-              phases: planEntry.phases,
-              timing: normalizeTiming(planEntry.timing),
-              turnOwner: planEntry.turnOwner,
-              notes: planEntry.notes
-            }
-          : { phases: ability.autoDetectedPhases }
-        // Resolve by id so every same-name unit that carries the ability gets
-        // its own expanded copy (find-by-name would only match the first).
-        unitIds.forEach(unitId => {
-          const unit = roster.units.find(u => u.id === unitId)
-          if (!unit) return
-          const rule = unit.rules.find(r => commonAbilityId(r.name) === ability.id)
-          const expanded: Ability = {
-            ...ability,
-            ...shared,
-            id: commonAbilityUnitId(unit.id, ability.name),
-            sourceUnit: unit.name,
-            // Restore this unit's full name+description ("Deadly Demise D6")
-            // while phases/timing come from the shared base card.
-            name: rule?.name ?? ability.name,
-            description: rule?.description ?? ability.description
-          }
-          commonExpanded.push(expanded)
-          ;(commonByUnit[unit.id] ??= []).push(expanded)
-        })
-      })
-
-      setAllAbilities([...withOverrides, ...commonExpanded])
-      setCommonAbilitiesByUnit(commonByUnit)
-      setCustomStratagems(plan.customStratagems || [])
-      setAttachments(plan.attachments ?? {})
-
-      // Load core stratagems
-      const coreStrats = getCoreStratagems()
-      const coreOverrides = coreStrats.map(strat => {
-        const saved = plan.corePhasePlans?.find(p => p.abilityId === strat.id)
-        if (saved) {
-          return {
-            ...strat,
-            phases: saved.phases,
-            timing: normalizeTiming(saved.timing),
-            turnOwner: saved.turnOwner,
-            enabled: saved.enabled ?? true
-          }
-        }
-        return strat
-      })
-      setCoreStratagems(coreOverrides)
-
-      // Load stratagems for every detachment in the roster
-      const factionFolder = getStratagemFolderName(roster.faction)
-      if (factionFolder) {
-        const available = getAvailableDetachments(factionFolder)
-        const matched = [...new Set(
-          roster.detachments
-            .map(det => detectDetachment(det, available))
-            .filter((det): det is string => !!det)
-        )]
-        const detachmentStrats = matched.flatMap(det =>
-          getDetachmentStratagems(factionFolder, det)
-        )
-        const detachmentOverrides = detachmentStrats.map(strat => {
-          const saved = plan.detachmentPhasePlans?.find(p => p.abilityId === strat.id)
-          if (saved) {
-            return {
-              ...strat,
-              phases: saved.phases,
-              timing: normalizeTiming(saved.timing),
-              turnOwner: saved.turnOwner
-            }
-          }
-          return strat
-        })
-        setDetachmentStratagems(detachmentOverrides)
-      }
-    }
-  }, [roster])
+  const pageRef = useRef<HTMLDivElement | null>(null)
 
   const updateGameState = (updates: Partial<GameState>) => {
     const newState = { ...gameState, ...updates }
@@ -303,6 +334,21 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     return () => window.removeEventListener('resize', applyMinHeight)
   }, [activeTab, gameState.currentPhase, gameState.turnOwner])
 
+  // Publish the sticky header's height as a CSS variable so unit photos can
+  // stick just below it. A ResizeObserver (not state) tracks height changes
+  // such as wrapping or font scaling without re-rendering the dashboard.
+  useLayoutEffect(() => {
+    if (activeTab !== 'phase') return
+    const header = stickyHeaderRef.current
+    const page = pageRef.current
+    if (!header || !page) return
+    const observer = new ResizeObserver(() => {
+      page.style.setProperty('--sticky-header-height', `${header.offsetHeight}px`)
+    })
+    observer.observe(header)
+    return () => observer.disconnect()
+  }, [activeTab])
+
   // After a committed swipe, scroll back to the top of the phase content but
   // no further: scrolling to the very page top would pull the non-sticky
   // headers above the sticky bar back into view. Deferred to a microtask so
@@ -348,10 +394,10 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     }
   })
 
-  // Programmatic navigation (Next buttons and phase strip) reuses the same
-  // track animation as finger drags so all phase changes feel identical.
-  // Compare the full step: "Next Turn" from a phase lands on the other
-  // player's copy of a phase — same phase name, different step.
+  // Programmatic navigation (phase strip taps) reuses the same track
+  // animation as finger drags so all phase changes feel identical.
+  // Compare the full step: re-tapping the current phase lands on the other
+  // player's copy of that phase — same phase name, different step.
   const goToStep = (step: GameStep, side: CarouselSide) => {
     if (incoming) return
     if (
@@ -362,14 +408,14 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     slide(side)
   }
 
-  // Jump to the start of the next player's turn from anywhere in this one.
-  const nextTurnStep = (): GameStep => ({
-    phase: 'Start of Battle Round',
-    turnOwner: otherPlayer(gameState.turnOwner)
-  })
-
   // Strip taps jump within the current turn: the owner is kept.
+  // Tapping the current phase again toggles the turn owner instead, staying
+  // on the same phase — this replaced the removed "Next Turn" button.
   const jumpToPhase = (phase: Phase) => {
+    if (phase === gameState.currentPhase) {
+      goToStep({ phase, turnOwner: otherPlayer(gameState.turnOwner) }, 'right')
+      return
+    }
     const side: CarouselSide =
       TURN_PHASES.indexOf(phase) > TURN_PHASES.indexOf(gameState.currentPhase)
         ? 'right' : 'left'
@@ -467,6 +513,22 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   // Not focus-filtered: it is a pre-game reference, not a per-unit view.
   const startOfGameAbilities = getActiveAbilities('Start of Game', 'yours', false)
 
+  // The phase view groups abilities by unit *name* while photos are keyed by
+  // unit id, so resolve a name to one photo here. Same-name units share a
+  // datasheet (see buildUnitAbilities), so any one of their photos stands for
+  // the group. Every roster unit name gets an entry -- '' when no photo is set
+  // yet -- which lets the phase view tell a real unit apart from the synthetic
+  // "Stratagems" / "Army Abilities" groups, which have no entry.
+  const unitImagesByName = useMemo(() => {
+    const byName: Record<string, string> = {}
+    roster.units.forEach(unit => {
+      // Keep the first photo found; stays '' until a same-name unit has one.
+      if (byName[unit.name]) return
+      byName[unit.name] = unitImages[unit.id] || ''
+    })
+    return byName
+  }, [roster.units, unitImages])
+
   const handleImagesChange = (images: Record<string, string>) => {
     setUnitImages(images)
     saveUnitImages(images)
@@ -474,7 +536,8 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
 
   return (
     <div
-      className="max-w-4xl mx-auto p-4 pb-16"
+      ref={pageRef}
+      className="max-w-4xl mx-auto px-2 sm:px-4 pt-4 pb-16"
       style={{ touchAction: 'pan-y' }}
       {...(activeTab === 'phase' ? swipeHandlers : {})}
     >
@@ -522,12 +585,13 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
             )}
           </div>
 
-          {/* Sticky control section: phase strip, advance buttons, and the
+          {/* Sticky control section: phase strip and the
               phase/timing header stay visible while scrolling abilities. */}
-          <div ref={stickyHeaderRef} className="sticky top-0 z-30 bg-background border-b border-surface2 -mx-4 px-4 mb-4 pt-2">
+          <div ref={stickyHeaderRef} className="sticky top-0 z-30 bg-background border-b border-surface2 -mx-2 px-2 sm:-mx-4 sm:px-4 mb-4 pt-2">
             {/* Phase strip: the per-turn loop, all segments visible at once
                 so no horizontal scrolling is needed on narrow screens. Taps
-                jump within the current turn. */}
+                jump within the current turn; re-tapping the active phase
+                toggles the turn owner. */}
             <div className="flex gap-1 mb-2">
               {PHASE_STRIP.map(({ phase, label }) => {
                 const PhaseIcon = PHASE_ICONS[phase]
@@ -545,23 +609,6 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
                   {label}
                 </button>
               })}
-            </div>
-
-            {/* Advance controls */}
-            <div className="flex gap-2 mb-2">
-              <button
-                onClick={() => goToStep(nextStep(gameState), 'right')}
-                className="flex-1 py-2 bg-accent text-white rounded-lg font-semibold text-sm"
-              >
-                Next Phase ›
-              </button>
-              <button
-                onClick={() => goToStep(nextTurnStep(), 'right')}
-                className="flex-1 py-2 bg-surface2 text-text rounded-lg font-semibold text-sm
-                  hover:bg-surface2/80"
-              >
-                Next Turn »
-              </button>
             </div>
 
             <div className="flex items-center gap-2 py-2 border-t border-surface2">
@@ -615,7 +662,10 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
           {/* Draggable phase content area. The track's translateX follows
               the finger (written by useCarouselDrag); the incoming pane sits
               offset by ±100% so it slides in as the track moves. */}
-          <div style={{ overflow: 'hidden' }}>
+          {/* 'clip', not 'hidden': hidden would make this wrapper the scroll
+              container for sticky descendants, so unit photos would never
+              stick. clip clips the same way without creating one. */}
+          <div style={{ overflow: 'clip' }}>
             {/* select-none: long-pressing selectable ability text makes
                 Android hijack the touch (touchcancel), killing the swipe. */}
             <div ref={trackRef} className="select-none" style={{ position: 'relative' }}>
@@ -641,6 +691,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
                       onToggleUnit={toggleUnit}
                       collapsedTimings={collapsedTimings}
                       onToggleTiming={toggleTiming}
+                      unitImagesByName={unitImagesByName}
                     />
                   </div>
                 )
@@ -655,6 +706,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
                 collapsedTimings={collapsedTimings}
                 onToggleTiming={toggleTiming}
                 onTimingChange={setActiveTiming}
+                unitImagesByName={unitImagesByName}
               />
             </div>
           </div>
@@ -689,6 +741,7 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
           unitImages={unitImages}
           onImagesChange={handleImagesChange}
           attachments={attachments}
+          attachmentRoles={attachmentRoles}
           commonAbilitiesByUnit={commonAbilitiesByUnit}
           // Notes live in the saved plan, not on roster abilities; pass them
           // so the unit detail can show the same notes as the phase view.
@@ -749,11 +802,13 @@ interface PhaseContentProps {
   collapsedTimings: Set<Timing>
   onToggleTiming: (timing: Timing) => void
   onTimingChange?: (timing: Timing) => void
+  unitImagesByName: Record<string, string>
 }
 
 function PhaseContent({
   phase, turnOwner, activeAbilities, abilitiesByTiming,
-  collapsedUnits, onToggleUnit, collapsedTimings, onToggleTiming, onTimingChange
+  collapsedUnits, onToggleUnit, collapsedTimings, onToggleTiming, onTimingChange,
+  unitImagesByName
 }: PhaseContentProps) {
   const timingRefs = useRef<(HTMLDivElement | null)[]>([])
 
@@ -786,7 +841,7 @@ function PhaseContent({
             // Hide timing sections that have no abilities in this phase
             if (Object.keys(abilitiesByTiming[timing]).length === 0) return null
             return (
-            <div key={timing} ref={el => { timingRefs.current[idx] = el }} className="bg-surface3 p-4 rounded-lg">
+            <div key={timing} ref={el => { timingRefs.current[idx] = el }} className="bg-surface3 p-2 sm:p-4 rounded-lg">
               <button
                 onClick={() => onToggleTiming(timing)}
                 className="flex items-center gap-2 font-semibold text-text mb-3 hover:text-accent transition-colors w-full text-left"
@@ -803,6 +858,7 @@ function PhaseContent({
                       abilities={abilities}
                       isCollapsed={collapsedUnits.has(unitName)}
                       onToggle={() => onToggleUnit(unitName)}
+                      unitImage={unitImagesByName[unitName]}
                     />
                   ))}
                 </div>
@@ -812,7 +868,7 @@ function PhaseContent({
           })}
         </div>
       ) : (
-        <div className="bg-surface3 p-4 rounded-lg">
+        <div className="bg-surface3 p-2 sm:p-4 rounded-lg">
           <div className="flex items-center gap-2 mb-3">
             <Swords className="text-accent" size={20} />
             <h3 className="font-semibold text-text">
@@ -842,27 +898,96 @@ interface CollapsibleUnitSectionProps {
   abilities: Ability[]
   isCollapsed: boolean
   onToggle: () => void
+  // Resolved photo: a data URL, '' for a roster unit with no photo yet, or
+  // undefined when this group is not a roster unit at all.
+  unitImage?: string
 }
 
-function CollapsibleUnitSection({ unitName, abilities, isCollapsed, onToggle }: CollapsibleUnitSectionProps) {
+// Stack below the sticky phase header (set by PlayDashboard) and the sticky
+// unit name row (set by CollapsibleUnitSection; its pb-2 gives the 8px gap).
+const stickyPhotoStyle = {
+  top: 'calc(var(--sticky-header-height, 0px) + var(--unit-name-height, 0px))'
+}
+const stickyUnitNameStyle = { top: 'var(--sticky-header-height, 0px)' }
+
+function CollapsibleUnitSection({
+  unitName, abilities, isCollapsed, onToggle, unitImage
+}: CollapsibleUnitSectionProps) {
+  const abilityCards = abilities.map(ability => (
+    <PlayAbilityCard
+      key={ability.id}
+      ability={ability}
+      stickyTitle
+    />
+  ))
+  // The synthetic "Stratagems" / "Army Abilities" groups are not units, so they
+  // keep the original indented full-width list. A real unit gets a photo
+  // column; one with no photo yet still gets the placeholder, so ability cards
+  // line up at the same width across every unit section in the phase.
+  const hasImageColumn = unitImage !== undefined
+
+  // Publish the unit name row's height so the photo and ability titles stick
+  // just below it. Observed (not assumed) because long unit names can wrap.
+  const sectionRef = useRef<HTMLDivElement | null>(null)
+  const unitNameRowRef = useRef<HTMLDivElement | null>(null)
+  useLayoutEffect(() => {
+    const section = sectionRef.current
+    const row = unitNameRowRef.current
+    if (!section || !row) return
+    const observer = new ResizeObserver(() => {
+      section.style.setProperty('--unit-name-height', `${row.offsetHeight}px`)
+    })
+    observer.observe(row)
+    return () => observer.disconnect()
+  }, [])
+
   return (
-    <div>
-      <button
-        onClick={onToggle}
-        className="flex items-center gap-2 text-sm font-semibold text-accent mb-2 hover:text-accent/80 transition-colors"
+    <div ref={sectionRef}>
+      {/* Sticky unit name: bg-surface3 matches the phase card so ability text
+          sliding under it is hidden; pb-2 (not mb-2) keeps that gap opaque. */}
+      <div
+        ref={unitNameRowRef}
+        className="sticky z-20 bg-surface3 pb-2"
+        style={stickyUnitNameStyle}
       >
-        {isCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-        {unitName}
-      </button>
+        <button
+          onClick={onToggle}
+          className="flex items-center gap-2 text-sm font-semibold text-accent hover:text-accent/80 transition-colors"
+        >
+          {isCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+          {unitName}
+        </button>
+      </div>
       {!isCollapsed && (
-        <div className="space-y-2 ml-6">
-          {abilities.map(ability => (
-            <PlayAbilityCard
-              key={ability.id}
-              ability={ability}
-            />
-          ))}
-        </div>
+        hasImageColumn ? (
+          // The photo column replaces the old ml-6 indent, leaving as much
+          // width as possible for the (now narrower) ability cards. h-auto
+          // keeps the cropped aspect ratio; items-start stops flex from
+          // stretching the photo down a tall ability stack.
+          // Sticky keeps the photo in view under the unit name while
+          // scrolling this unit's abilities; it leaves with the unit's row.
+          <div className="flex items-start gap-2">
+            {unitImage ? (
+              <img
+                src={unitImage}
+                alt={unitName}
+                className="w-16 h-auto rounded-lg flex-shrink-0 sticky"
+                style={stickyPhotoStyle}
+              />
+            ) : (
+              <div
+                className="w-16 h-16 rounded-lg bg-surface2 flex items-center
+                justify-center flex-shrink-0 sticky"
+                style={stickyPhotoStyle}
+              >
+                <User size={24} className="text-text2 opacity-50" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0 space-y-2">{abilityCards}</div>
+          </div>
+        ) : (
+          <div className="space-y-2 ml-6">{abilityCards}</div>
+        )
       )}
     </div>
   )

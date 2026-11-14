@@ -100,6 +100,15 @@ describe('reconcilePlan', () => {
       expect(result.attachments).toEqual({})
     })
 
+    it('preserves an explicit detach across the re-import', () => {
+      // '' means the user detached the leader by hand. Dropping it would let
+      // the roster file's own association silently re-attach the character.
+      const old = mkRoster('o', [mkUnit('u1', 'Captain', []), mkUnit('i1', 'Intercessors', [])])
+      const next = mkRoster('n', [mkUnit('x9', 'Captain', []), mkUnit('y2', 'Intercessors', [])])
+      const result = reconcilePlan(old, next, mkPlan('o', [], { u1: '' }))
+      expect(result.attachments).toEqual({ x9: '' })
+    })
+
     it('pairs same-name units one-to-one instead of collapsing them', () => {
       // Two leaders and two hosts sharing datasheet names, all ids changed.
       const old = mkRoster('o', [

@@ -73,6 +73,16 @@ All core features are implemented and functional. The application can:
 - Keywords are read-only in Planner
 - No multiplayer/sync features
 - No export of plans back to .ros format
+- **Web hosting origin (temporary, resolve later):** web build is hosted on GitHub Pages at
+  `https://dnicx.github.io/mini-war-machine/`. Two consequences:
+  - Shared storage: every GitHub Pages project under `dnicx.github.io` shares the same origin,
+    so they share `localStorage`. Another project there could read/overwrite this app's data.
+    Current mitigation is only the `wh40k_` key prefix (prevents accidental clashes, not access).
+  - Moving the address later (new org site or custom domain) is a new origin: users' saved
+    rosters/plans/games stay behind on the old address and the installed PWA must be reinstalled.
+  - Proper fixes: (A) host from a dedicated GitHub org site, e.g. `<org>.github.io` served
+    from root (also removes the sub-folder base path), or (D) a custom domain. Do this before
+    real users store data, or add roster/plan export-import first so data can be migrated.
 
 ---
 

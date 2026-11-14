@@ -84,9 +84,13 @@ function AppContent() {
   )
 }
 
+// BASE_URL comes from Vite's `base` and ends with "/" (e.g. "/mini-war-machine/"). The router
+// would then not match "/mini-war-machine" without the slash, so strip it. Root "/" is kept.
+const routerBasename = import.meta.env.BASE_URL.replace(/(.)\/$/, '$1')
+
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={routerBasename}>
       <AppContent />
     </BrowserRouter>
   )

@@ -10,10 +10,15 @@ import { KeywordPill } from './KeywordPill'
 import { normalizeKeyword } from '../lib/storage'
 import { findWeaponKeywordRule } from '../lib/commonAbilities'
 import { unitAbilityId } from '../lib/unitAbilityId'
+import { ImageCropModal } from './ImageCropModal'
+import { readFileAsDataUrl } from '../lib/readFileAsDataUrl'
 
 interface UnitDetailProps {
   unit: Unit
   attachedUnits?: Unit[]
+  // leaderUnitId → "Leading" / "Supporting", from the roster file's
+  // associations. Falls back to "Leader" for attachments made by hand.
+  attachmentRoles?: Record<string, string>
   unitImages: Record<string, string>
   onImagesChange: (images: Record<string, string>) => void
   onBack: () => void
@@ -30,27 +35,6 @@ interface UnitDetailProps {
   // list view so a keyword's color is consistent everywhere.
   keywordColors?: Record<string, number>
   onKeywordColor?: (name: string, slot: number) => void
-}
-
-function resizeImage(file: File, maxPx: number, quality: number): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const img = new Image()
-      img.onload = () => {
-        const scale = Math.min(1, maxPx / Math.max(img.width, img.height))
-        const canvas = document.createElement('canvas')
-        canvas.width = Math.round(img.width * scale)
-        canvas.height = Math.round(img.height * scale)
-        canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
-        resolve(canvas.toDataURL('image/jpeg', quality))
-      }
-      img.onerror = reject
-      img.src = e.target!.result as string
-    }
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
 }
 
 type MergedWeapon = {
@@ -295,9 +279,10 @@ function mergeIdenticalModels(models: Model[]): Model[] {
   return Array.from(merged.values())
 }
 
-function ModelsSubView({ unit, attachedUnits, collapsedModels, onToggleModel }: {
+function ModelsSubView({ unit, attachedUnits, attachmentRoles = {}, collapsedModels, onToggleModel }: {
   unit: Unit
   attachedUnits?: Unit[]
+  attachmentRoles?: Record<string, string>
   collapsedModels: Set<string>
   onToggleModel: (id: string) => void
 }) {
@@ -317,7 +302,9 @@ function ModelsSubView({ unit, attachedUnits, collapsedModels, onToggleModel }: 
       ))}
       {attachedUnits?.map(leader => (
         <div key={leader.id} className="pt-4 border-t border-surface2/50">
-          <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-3">Leader: {leader.name}</p>
+          <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-3">
+            {attachmentRoles[leader.id] ?? 'Leader'}: {leader.name}
+          </p>
           {leader.models.map(model => (
             <ModelBlock
               key={model.id}
@@ -333,10 +320,12 @@ function ModelsSubView({ unit, attachedUnits, collapsedModels, onToggleModel }: 
   )
 }
 
-export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, onBack, abilityNotes = {}, abilityPhases = {}, commonAbilitiesByUnit = {}, keywordColors = {}, onKeywordColor }: UnitDetailProps) {
+export function UnitDetail({ unit, attachedUnits, attachmentRoles = {}, unitImages, onImagesChange, onBack, abilityNotes = {}, abilityPhases = {}, commonAbilitiesByUnit = {}, keywordColors = {}, onKeywordColor }: UnitDetailProps) {
   const [activeContent, setActiveContent] = useState<'models' | 'weapons' | 'abilities'>('models')
   const [collapsedModels, setCollapsedModels] = useState<Set<string>>(new Set())
   const imageInputRef = useRef<HTMLInputElement>(null)
+  // Uncropped data URL of the picked file; non-null while the crop modal is open.
+  const [cropSource, setCropSource] = useState<string | null>(null)
 
   const contentTabs = ['models', 'weapons', 'abilities'] as const
   const activeIndex = contentTabs.indexOf(activeContent)
@@ -430,7 +419,8 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
   const toggleModel = (id: string) => {
     setCollapsedModels(prev => {
       const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
       return next
     })
   }
@@ -441,8 +431,7 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
     const file = e.target.files?.[0]
     if (!file) return
     try {
-      const dataUrl = await resizeImage(file, 512, 0.7)
-      onImagesChange({ ...unitImages, [unit.id]: dataUrl })
+      setCropSource(await readFileAsDataUrl(file))
     } catch {
       alert('Failed to process image.')
     }
@@ -457,6 +446,7 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
         <ModelsSubView
           unit={unit}
           attachedUnits={attachedUnits}
+          attachmentRoles={attachmentRoles}
           collapsedModels={collapsedModels}
           onToggleModel={toggleModel}
         />
@@ -490,7 +480,9 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
             ))}
             {attachedUnits?.map(leader => (
               <div key={leader.id} className="pt-4 border-t border-surface2/50">
-                <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-2">Leader: {leader.name}</p>
+                <p className="text-xs font-semibold text-accent uppercase tracking-wider mb-2">
+                  {attachmentRoles[leader.id] ?? 'Leader'}: {leader.name}
+                </p>
                 {leader.abilities.map(ability => {
                   const planId = unitAbilityId(leader.name, ability.name)
                   return (
@@ -529,7 +521,7 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
 
           <div className="relative cursor-pointer flex-shrink-0" onClick={handleImageClick}>
             {imageUrl ? (
-              <img src={imageUrl} alt={unit.name} className="w-12 h-12 rounded-lg object-cover" />
+              <img src={imageUrl} alt={unit.name} className="w-12 h-auto rounded-lg" />
             ) : (
               <div className="w-12 h-12 rounded-lg bg-surface2 flex items-center justify-center">
                 <User size={20} className="text-text2 opacity-50" />
@@ -546,6 +538,16 @@ export function UnitDetail({ unit, attachedUnits, unitImages, onImagesChange, on
               onChange={handleImageChange}
             />
           </div>
+          {cropSource && (
+            <ImageCropModal
+              source={cropSource}
+              onSave={dataUrl => {
+                onImagesChange({ ...unitImages, [unit.id]: dataUrl })
+                setCropSource(null)
+              }}
+              onClose={() => setCropSource(null)}
+            />
+          )}
 
           <h2 className="text-lg font-bold text-text flex-1 min-w-0 leading-tight">{unit.name}</h2>
         </div>

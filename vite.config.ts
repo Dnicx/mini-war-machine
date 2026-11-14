@@ -16,6 +16,9 @@ function git(cmd: string): string {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  // GitHub Pages serves the site from a sub-folder (/mini-war-machine/), so the CI web build
+  // sets BASE_PATH. Local and Android (Capacitor) builds must stay at root, hence the default.
+  base: process.env.BASE_PATH || '/',
   define: {
     __GIT_BRANCH__: JSON.stringify(git('rev-parse --abbrev-ref HEAD')),
     __GIT_COMMIT__: JSON.stringify(git('rev-parse --short HEAD')),

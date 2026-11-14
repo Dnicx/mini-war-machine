@@ -1,9 +1,11 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { ChevronDown, ChevronUp, Camera } from 'lucide-react'
 import type { Ability, Phase, Timing, TurnOwner } from '../types/roster'
 import { effectiveTurnOwner } from '../lib/turnOwnerHeuristics'
 import { TIMINGS, TIMING_LABELS } from '../lib/timing'
 import { SafeMarkdownRenderer } from './SafeMarkdownRenderer'
+import { ImageCropModal } from './ImageCropModal'
+import { readFileAsDataUrl } from '../lib/readFileAsDataUrl'
 
 // Normalize a unit/datasheet name for comparison: strip the emphasis markup the
 // export wraps datasheet names in (e.g. "^^**Blightlord Terminators^^**"), then
@@ -29,27 +31,6 @@ function extractAttachableUnitNames(abilities: Ability[]): Set<string> | null {
     if (match) names.add(normalizeUnitName(match[1]))
   }
   return names.size > 0 ? names : null
-}
-
-function resizeImage(file: File, maxPx: number, quality: number): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const img = new Image()
-      img.onload = () => {
-        const scale = Math.min(1, maxPx / Math.max(img.width, img.height))
-        const canvas = document.createElement('canvas')
-        canvas.width = Math.round(img.width * scale)
-        canvas.height = Math.round(img.height * scale)
-        canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
-        resolve(canvas.toDataURL('image/jpeg', quality))
-      }
-      img.onerror = reject
-      img.src = e.target!.result as string
-    }
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
 }
 
 interface UnitAbilitiesSectionProps {
@@ -165,13 +146,14 @@ function UnitAbilityCard({
   onAttachmentChange
 }: UnitAbilityCardProps) {
   const imageInputRef = useRef<HTMLInputElement>(null)
+  // Uncropped data URL of the picked file; non-null while the crop modal is open.
+  const [cropSource, setCropSource] = useState<string | null>(null)
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !onImageChange) return
     try {
-      const dataUrl = await resizeImage(file, 512, 0.7)
-      onImageChange(dataUrl)
+      setCropSource(await readFileAsDataUrl(file))
     } catch {
       alert('Failed to process image.')
     }
@@ -187,7 +169,7 @@ function UnitAbilityCard({
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           {unitImage ? (
-            <img src={unitImage} alt={unitName} className="w-8 h-8 rounded object-cover flex-shrink-0" />
+            <img src={unitImage} alt={unitName} className="w-8 h-auto rounded flex-shrink-0" />
           ) : null}
           <button
             onClick={() => onToggleCollapse(unitId)}
@@ -205,6 +187,16 @@ function UnitAbilityCard({
                 <Camera size={14} />
               </button>
               <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+              {cropSource && (
+                <ImageCropModal
+                  source={cropSource}
+                  onSave={dataUrl => {
+                    onImageChange(dataUrl)
+                    setCropSource(null)
+                  }}
+                  onClose={() => setCropSource(null)}
+                />
+              )}
             </>
           )}
         </div>
@@ -227,7 +219,10 @@ function UnitAbilityCard({
               .filter(u => u.id !== unitId)
               // Restrict to datasheets named in this leader's ability; if the
               // ability has no parseable list, allowedUnitNames is null → show all.
-              .filter(u => !allowedUnitNames || allowedUnitNames.has(normalizeUnitName(u.name)))
+              // The current attachment always stays listed: it can come from the
+              // roster file, and a filtered-out option renders the select blank.
+              .filter(u => u.id === currentAttachment
+                || !allowedUnitNames || allowedUnitNames.has(normalizeUnitName(u.name)))
               .map(u => <option key={u.id} value={u.id}>{u.name}</option>)
             }
           </select>

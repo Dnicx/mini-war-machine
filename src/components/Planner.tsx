@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
-import type { Roster, Ability, Phase, Timing, Stratagem, TurnOwner } from '../types/roster'
+import type { Roster, Ability, Phase, Timing, Stratagem, TurnOwner, Plan } from '../types/roster'
 import { applyHeuristicsToAll } from '../lib/phaseHeuristics'
 import { buildCommonAbilities } from '../lib/commonAbilities'
 import { buildUnitAbilities } from '../lib/unitAbilityId'
+import { resolveAttachments } from '../lib/attachments'
 import { normalizeTiming } from '../lib/timing'
 import { savePlan, loadPlan, loadUnitImages, saveUnitImages, migratePlanUnitAbilityIds } from '../lib/storage'
 import { getCoreStratagems, getAvailableDetachments, getDetachmentStratagems } from '../lib/stratagemRegistry'
@@ -32,22 +33,163 @@ const PLANNER_SECTION_LABELS: Record<PlannerSection, string> = {
   abilities: 'Abilities',
 }
 
-export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }: PlannerProps) {
-  const [allAbilities, setAllAbilities] = useState<Ability[]>([])
-  const [customStratagems, setCustomStratagems] = useState<Ability[]>([])
-  const [coreStratagems, setCoreStratagems] = useState<Stratagem[]>([])
-  const [detachmentStratagems, setDetachmentStratagems] = useState<Stratagem[]>([])
-  const [currentEmptyIndex, setCurrentEmptyIndex] = useState(0)
-  const abilityRefs = useRef<Record<string, HTMLDivElement>>({})
-  const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
-  const [unitImages, setUnitImages] = useState<Record<string, string>>(() => loadUnitImages())
-  const [attachments, setAttachments] = useState<Record<string, string>>(() => loadPlan(roster.id)?.attachments ?? {})
-  const [activeSection, setActiveSection] = useState<PlannerSection>('core')
-  const [isAbilitiesCollapsed, setIsAbilitiesCollapsed] = useState(false)
-  const coreStratagemRef = useRef<HTMLDivElement>(null)
-  const detachmentStratagemRef = useRef<HTMLDivElement>(null)
-  const abilitiesRef = useRef<HTMLDivElement>(null)
+// Shape the planner's working state into a stored Plan. Module-level and pure
+// so the load effect can seed a plan without depending on the component's
+// `save` closure (which would re-run the effect on every render).
+function buildPlan(rosterId: string, parts: {
+  abilities: Ability[]
+  custom: Ability[]
+  core: Stratagem[]
+  detachment: Stratagem[]
+  att: Record<string, string>
+}): Plan {
+  return {
+    rosterId,
+    phasePlans: parts.abilities.map(a => ({
+      abilityId: a.id,
+      phases: a.phases || [],
+      timing: (a.timing || '') as Timing,
+      turnOwner: a.turnOwner,
+      notes: a.notes || ''
+    })),
+    customStratagems: parts.custom,
+    corePhasePlans: parts.core.map(s => ({
+      abilityId: s.id,
+      phases: s.phases || [],
+      timing: (s.timing || '') as Timing,
+      notes: '',
+      turnOwner: s.turnOwner,
+      enabled: s.enabled
+    })),
+    detachmentPhasePlans: parts.detachment.map(s => ({
+      abilityId: s.id,
+      phases: s.phases || [],
+      timing: (s.timing || '') as Timing,
+      notes: '',
+      turnOwner: s.turnOwner
+    })),
+    attachments: parts.att
+  }
+}
 
+// Build the planner's starting state from the saved plan, or seed it from
+// heuristics when there is none. Runs once per mount: App keys Planner by
+// roster.id, so a different roster always remounts. Kept pure; the caller
+// persists a seeded plan in an effect.
+function loadPlannerState(
+  roster: Roster,
+  factionFolder: string | undefined,
+  matchedDetachments: string[]
+): { isSeeded: boolean; parts: Parameters<typeof buildPlan>[1] } {
+  const loadedPlan = loadPlan(roster.id)
+  // Translate pre-shared-id unit-ability plan entries so existing plans keep
+  // their phases/timing/notes instead of resetting.
+  const savedPlan = loadedPlan ? migratePlanUnitAbilityIds(loadedPlan, roster) : null
+
+
+  // Same-name units share a datasheet, so their abilities collapse onto one
+  // shared-id entry (buildUnitAbilities). One planner card, one saved plan
+  // entry, and editing it updates every copy. The roster/unit view stay
+  // separate.
+  const allAbilitiesList = [...roster.armyAbilities, ...buildUnitAbilities(roster.units)]
+
+  // Common abilities are deduped across units and already heuristic-applied;
+  // append them so plan overrides/save treat them like any other ability.
+  const commonAbilities = buildCommonAbilities(roster).map(g => g.ability)
+  const withHeuristics = [...applyHeuristicsToAll(allAbilitiesList), ...commonAbilities]
+  const coreStrats = getCoreStratagems()
+
+  const detachmentStrats: Stratagem[] = factionFolder
+    ? matchedDetachments.flatMap(det => getDetachmentStratagems(factionFolder, det))
+    : []
+
+  if (savedPlan && savedPlan.rosterId === roster.id) {
+      const withOverrides = withHeuristics.map(ability => {
+      const saved = savedPlan.phasePlans.find(p => p.abilityId === ability.id)
+      if (saved) {
+        return {
+          ...ability,
+          phases: saved.phases,
+          timing: normalizeTiming(saved.timing),
+          turnOwner: saved.turnOwner,
+          notes: saved.notes
+        }
+      }
+      // Ability new since the plan was saved (e.g. a unit added by an
+      // in-place update): seed from heuristics like the no-plan branch.
+      return {
+        ...ability,
+        phases: ability.autoDetectedPhases,
+        timing: ability.autoDetectedTiming
+      }
+    })
+
+    const coreOverrides = coreStrats.map(strat => {
+      const saved = savedPlan.corePhasePlans?.find(p => p.abilityId === strat.id)
+      if (saved) {
+        return {
+          ...strat,
+          phases: saved.phases,
+          timing: normalizeTiming(saved.timing),
+          turnOwner: saved.turnOwner,
+          enabled: saved.enabled ?? true
+        }
+      }
+      return strat
+    })
+
+    const detachmentOverrides = detachmentStrats.map(strat => {
+      const saved = savedPlan.detachmentPhasePlans?.find(p => p.abilityId === strat.id)
+      if (saved) {
+        return {
+          ...strat,
+          phases: saved.phases,
+          timing: normalizeTiming(saved.timing),
+          turnOwner: saved.turnOwner
+        }
+      }
+      return strat
+    })
+    return {
+      isSeeded: false,
+      parts: {
+        abilities: withOverrides,
+        custom: savedPlan.customStratagems || [],
+        core: coreOverrides,
+        detachment: detachmentOverrides,
+        att: savedPlan.attachments ?? {}
+      }
+    }
+  } else {
+    const seededAbilities = withHeuristics.map(ability => ({
+      ...ability,
+      phases: ability.autoDetectedPhases,
+      timing: ability.autoDetectedTiming
+    }))
+    const seededCore = coreStrats.map(s => ({
+      ...s,
+      phases: s.autoDetectedPhases,
+      timing: s.autoDetectedTiming
+    }))
+    const seededDetachment = detachmentStrats.map(s => ({
+      ...s,
+      phases: s.autoDetectedPhases,
+      timing: s.autoDetectedTiming
+    }))
+    return {
+      isSeeded: true,
+      parts: {
+        abilities: seededAbilities,
+        custom: [],
+        core: seededCore,
+        detachment: seededDetachment,
+        att: {}
+      }
+    }
+  }
+}
+
+export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }: PlannerProps) {
   const factionFolder = useMemo(() => getStratagemFolderName(roster.faction), [roster.faction])
   const availableDetachments = useMemo(() => factionFolder ? getAvailableDetachments(factionFolder) : [], [factionFolder])
   // Registry folder names for each detachment in the roster (unmatched ones dropped)
@@ -58,10 +200,36 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
     return [...new Set(matched)]
   }, [roster.detachments, availableDetachments])
 
+  // Loaded once; useState (not useMemo) so it is never recomputed mid-life.
+  const [initialState] = useState(
+    () => loadPlannerState(roster, factionFolder, matchedDetachments)
+  )
+  const [allAbilities, setAllAbilities] = useState<Ability[]>(initialState.parts.abilities)
+  const [customStratagems, setCustomStratagems] = useState<Ability[]>(initialState.parts.custom)
+  const [coreStratagems, setCoreStratagems] = useState<Stratagem[]>(initialState.parts.core)
+  const [detachmentStratagems, setDetachmentStratagems] = useState<Stratagem[]>(
+    initialState.parts.detachment
+  )
+  const [currentEmptyIndex, setCurrentEmptyIndex] = useState(0)
+  const abilityRefs = useRef<Record<string, HTMLDivElement>>({})
+  const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
+  const [unitImages, setUnitImages] = useState<Record<string, string>>(() => loadUnitImages())
+  const [attachments, setAttachments] = useState<Record<string, string>>(initialState.parts.att)
+  const [activeSection, setActiveSection] = useState<PlannerSection>('core')
+  const [isAbilitiesCollapsed, setIsAbilitiesCollapsed] = useState(false)
+  const coreStratagemRef = useRef<HTMLDivElement>(null)
+  const detachmentStratagemRef = useRef<HTMLDivElement>(null)
+  const abilitiesRef = useRef<HTMLDivElement>(null)
+
   const handleImagesChange = (images: Record<string, string>) => {
     setUnitImages(images)
     saveUnitImages(images)
   }
+
+  const { attachments: effectiveAttachments } = useMemo(
+    () => resolveAttachments(roster, attachments),
+    [roster, attachments]
+  )
 
   useEffect(() => {
     const STICKY_OFFSET = 48
@@ -84,99 +252,11 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
   }, [])
 
   useEffect(() => {
-    const loadedPlan = loadPlan(roster.id)
-    // Translate pre-shared-id unit-ability plan entries so existing plans keep
-    // their phases/timing/notes instead of resetting.
-    const savedPlan = loadedPlan ? migratePlanUnitAbilityIds(loadedPlan, roster) : null
-
-
-    // Same-name units share a datasheet, so their abilities collapse onto one
-    // shared-id entry (buildUnitAbilities). One planner card, one saved plan
-    // entry, and editing it updates every copy. The roster/unit view stay
-    // separate.
-    const allAbilitiesList = [...roster.armyAbilities, ...buildUnitAbilities(roster.units)]
-
-    // Common abilities are deduped across units and already heuristic-applied;
-    // append them so plan overrides/save treat them like any other ability.
-    const commonAbilities = buildCommonAbilities(roster).map(g => g.ability)
-    const withHeuristics = [...applyHeuristicsToAll(allAbilitiesList), ...commonAbilities]
-    const coreStrats = getCoreStratagems()
-
-    const detachmentStrats: Stratagem[] = factionFolder
-      ? matchedDetachments.flatMap(det => getDetachmentStratagems(factionFolder, det))
-      : []
-
-    if (savedPlan && savedPlan.rosterId === roster.id) {
-      setAttachments(savedPlan.attachments ?? {})
-
-      const withOverrides = withHeuristics.map(ability => {
-        const saved = savedPlan.phasePlans.find(p => p.abilityId === ability.id)
-        if (saved) {
-          return {
-            ...ability,
-            phases: saved.phases,
-            timing: normalizeTiming(saved.timing),
-            turnOwner: saved.turnOwner,
-            notes: saved.notes
-          }
-        }
-        // Ability new since the plan was saved (e.g. a unit added by an
-        // in-place update): seed from heuristics like the no-plan branch.
-        return {
-          ...ability,
-          phases: ability.autoDetectedPhases,
-          timing: ability.autoDetectedTiming
-        }
-      })
-      setAllAbilities(withOverrides)
-      setCustomStratagems(savedPlan.customStratagems || [])
-
-      const coreOverrides = coreStrats.map(strat => {
-        const saved = savedPlan.corePhasePlans?.find(p => p.abilityId === strat.id)
-        if (saved) {
-          return {
-            ...strat,
-            phases: saved.phases,
-            timing: normalizeTiming(saved.timing),
-            turnOwner: saved.turnOwner,
-            enabled: saved.enabled ?? true
-          }
-        }
-        return strat
-      })
-      setCoreStratagems(coreOverrides)
-
-      const detachmentOverrides = detachmentStrats.map(strat => {
-        const saved = savedPlan.detachmentPhasePlans?.find(p => p.abilityId === strat.id)
-        if (saved) {
-          return {
-            ...strat,
-            phases: saved.phases,
-            timing: normalizeTiming(saved.timing),
-            turnOwner: saved.turnOwner
-          }
-        }
-        return strat
-      })
-      setDetachmentStratagems(detachmentOverrides)
-    } else {
-      setAllAbilities(withHeuristics.map(ability => ({
-        ...ability,
-        phases: ability.autoDetectedPhases,
-        timing: ability.autoDetectedTiming
-      })))
-      setCoreStratagems(coreStrats.map(s => ({
-        ...s,
-        phases: s.autoDetectedPhases,
-        timing: s.autoDetectedTiming
-      })))
-      setDetachmentStratagems(detachmentStrats.map(s => ({
-        ...s,
-        phases: s.autoDetectedPhases,
-        timing: s.autoDetectedTiming
-      })))
-    }
-  }, [roster, factionFolder, matchedDetachments])
+    // Persist the seeded plan immediately. The play view only builds its
+    // abilities when a plan exists, so without this a roster taken straight
+    // to Play without touching the Planner comes up empty.
+    if (initialState.isSeeded) savePlan(buildPlan(roster.id, initialState.parts), roster.id)
+  }, [initialState, roster.id])
 
   const save = (
     overrides: {
@@ -188,38 +268,13 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
     } = {},
     debug = false
   ) => {
-    const abilities = overrides.abilities ?? allAbilities
-    const custom = overrides.custom ?? customStratagems
-    const core = overrides.core ?? coreStratagems
-    const detachment = overrides.detachment ?? detachmentStratagems
-    const att = overrides.att ?? attachments
-    savePlan({
-      rosterId: roster.id,
-      phasePlans: abilities.map(a => ({
-        abilityId: a.id,
-        phases: a.phases || [],
-        timing: (a.timing || '') as Timing,
-        turnOwner: a.turnOwner,
-        notes: a.notes || ''
-      })),
-      customStratagems: custom,
-      corePhasePlans: core.map(s => ({
-        abilityId: s.id,
-        phases: s.phases || [],
-        timing: (s.timing || '') as Timing,
-        notes: '',
-        turnOwner: s.turnOwner,
-        enabled: s.enabled
-      })),
-      detachmentPhasePlans: detachment.map(s => ({
-        abilityId: s.id,
-        phases: s.phases || [],
-        timing: (s.timing || '') as Timing,
-        notes: '',
-        turnOwner: s.turnOwner
-      })),
-      attachments: att
-    }, roster.id, debug)
+    savePlan(buildPlan(roster.id, {
+      abilities: overrides.abilities ?? allAbilities,
+      custom: overrides.custom ?? customStratagems,
+      core: overrides.core ?? coreStratagems,
+      detachment: overrides.detachment ?? detachmentStratagems,
+      att: overrides.att ?? attachments
+    }), roster.id, debug)
   }
 
   const handleDebugDump = () => save({}, true)
@@ -501,7 +556,11 @@ export function Planner({ roster, onPlayMode, onBackToImport, onRosterRenamed }:
                 unitImages={unitImages}
                 onImagesChange={handleImagesChange}
                 attachableUnits={roster.units.map(u => ({ id: u.id, name: u.name }))}
-                attachments={attachments}
+                // Merged for display so the dropdown shows the file's pairing;
+                // `attachments` itself stays override-only, since save() writes
+                // it straight back and would otherwise freeze the file's values
+                // into the plan.
+                attachments={effectiveAttachments}
                 onAttachmentChange={(leaderId, hostId) => {
                   const updated = { ...attachments, [leaderId]: hostId }
                   setAttachments(updated)

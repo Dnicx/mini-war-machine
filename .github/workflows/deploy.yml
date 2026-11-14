@@ -1,0 +1,70 @@
+# Builds the web app and publishes it to GitHub Pages at https://dnicx.github.io/mini-war-machine/
+# Requires: repo Settings > Pages > Source = "GitHub Actions".
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # Adds a "Run workflow" button in the Actions tab for manual redeploys.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one deploy at a time; a newer push cancels a deploy that has not finished yet.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Non-blocking for now: main has pre-existing lint errors. Make this blocking once fixed.
+      - name: Lint (non-blocking)
+        run: npm run lint
+        continue-on-error: true
+
+      - run: npm test
+
+      # The site lives in a sub-folder on GitHub Pages; see vite.config.ts.
+      - name: Build
+        run: npm run build
+        env:
+          BASE_PATH: /mini-war-machine/
+
+      # GitHub Pages serves 404.html for unknown paths. Making it a copy of the app lets
+      # refreshes and deep links (e.g. /mini-war-machine/plan) load the app instead of a 404 page.
+      - name: SPA fallback
+        run: cp dist/index.html dist/404.html
+
+      # New cache name per deploy so the service worker drops the previous deploy's cache.
+      - name: Stamp service worker build id
+        run: sed -i "s/__BUILD_ID__/${GITHUB_SHA}/" dist/sw.js
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

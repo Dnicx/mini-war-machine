@@ -86,6 +86,10 @@ export interface Unit {
   rules: Rule[]
   keywords: Keyword[]
   models: Model[]
+  // Set from the export's outgoing association: which unit this character is
+  // attached to and in what role ("Leading" / "Supporting"). Absent for units
+  // the file left unattached, and for .ros imports.
+  attachment?: { hostUnitId: string; role: string }
 }
 
 export interface Roster {
