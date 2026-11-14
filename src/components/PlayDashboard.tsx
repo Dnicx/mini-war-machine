@@ -2,7 +2,7 @@ import { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { useCarouselDrag } from '../hooks/useCarouselDrag'
 import type { CarouselSide } from '../hooks/useCarouselDrag'
 import {
-  Swords, ChevronDown, ChevronUp, Users, Scroll, Flag, User
+  Swords, ChevronDown, ChevronUp, Users, Scroll, Flag, User, Crosshair, X
 } from 'lucide-react'
 import { appIcon } from '../config/icons'
 import { cardStyles } from '../styles/components'
@@ -23,6 +23,8 @@ import { PlayAbilityCard } from './PlayAbilityCard'
 import { UnitView } from './UnitView'
 import { StratagemsView } from './StratagemsView'
 import { PHASE_ICONS } from '../lib/phaseIcons'
+import { buildFocusUnits, rosterTerms, abilityMatchesFocus } from '../lib/unitFocus'
+import { UnitFocusSheet } from './UnitFocusSheet'
 
 const BackIcon = appIcon('back')
 
@@ -272,6 +274,10 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   // 'Start of Game' reference panel, collapsed by default: needed rarely,
   // so it stays out of the phase sequence entirely.
   const [showStartOfGame, setShowStartOfGame] = useState(false)
+  // Unit focus filter for the phase view. Component state on purpose: it
+  // persists across phases and turns, and resets when leaving Play mode.
+  const [focusedUnitKey, setFocusedUnitKey] = useState<string | null>(null)
+  const [showFocusSheet, setShowFocusSheet] = useState(false)
   const trackRef = useRef<HTMLDivElement | null>(null)
   const stickyHeaderRef = useRef<HTMLDivElement | null>(null)
   const pageRef = useRef<HTMLDivElement | null>(null)
@@ -417,14 +423,25 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   }
 
 
-  const getActiveAbilities = (phase: Phase, turnOwner: TurnOwner) => {
+  const focusUnits = buildFocusUnits(roster, attachments)
+  // Undefined when nothing is focused: no filter.
+  const focusedUnit = focusUnits.find(focusUnit => focusUnit.key === focusedUnitKey)
+  const armyTerms = rosterTerms(roster)
+  const rosterUnitNames = new Set(roster.units.map(unit => unit.name))
+
+  const getActiveAbilities = (phase: Phase, turnOwner: TurnOwner, applyFocus = true) => {
     // Filter core stratagems (only enabled ones)
     const enabledCoreStrats = coreStratagems.filter(s => s.enabled !== false)
 
     // Combine all abilities and stratagems
     const allItems = [...allAbilities, ...customStratagems, ...enabledCoreStrats, ...detachmentStratagems]
 
-    return allItems.filter(ability => {
+    const focusedItems = applyFocus && focusedUnit
+      ? allItems.filter(ability =>
+        abilityMatchesFocus(ability, focusedUnit, armyTerms, rosterUnitNames))
+      : allItems
+
+    return focusedItems.filter(ability => {
       const abilityPhases = ability.phases || ability.autoDetectedPhases || []
 
       // Show if phase matches (any of the selected phases)
@@ -493,7 +510,8 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const abilitiesByTiming = getAbilitiesByTiming(gameState.currentPhase, gameState.turnOwner)
   // Reference panel is about the player's own pre-game setup, so it always
   // filters as "your" abilities regardless of whose turn it is.
-  const startOfGameAbilities = getActiveAbilities('Start of Game', 'yours')
+  // Not focus-filtered: it is a pre-game reference, not a per-unit view.
+  const startOfGameAbilities = getActiveAbilities('Start of Game', 'yours', false)
 
   // The phase view groups abilities by unit *name* while photos are keyed by
   // unit id, so resolve a name to one photo here. Same-name units share a
@@ -600,6 +618,34 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
               }`}>
                 {gameState.turnOwner === 'yours' ? 'Your Turn' : "Opponent's Turn"}
               </span>
+              {focusedUnit ? (
+                <span className="ml-auto flex items-center min-w-0 text-xs rounded-full
+                  bg-accent/20 text-accent">
+                  <button
+                    onClick={() => setShowFocusSheet(true)}
+                    className="flex items-center gap-1 min-w-0 pl-2 py-0.5"
+                  >
+                    <Crosshair size={14} className="shrink-0" />
+                    <span className="truncate">{focusedUnit.key}</span>
+                  </button>
+                  <button
+                    onClick={() => setFocusedUnitKey(null)}
+                    className="px-1.5 py-0.5"
+                    aria-label="Clear unit focus"
+                  >
+                    <X size={14} />
+                  </button>
+                </span>
+              ) : (
+                <button
+                  onClick={() => setShowFocusSheet(true)}
+                  className="ml-auto flex items-center gap-1 text-xs px-2 py-0.5 rounded-full
+                    bg-surface2 text-text2 hover:bg-surface2/80"
+                >
+                  <Crosshair size={14} />
+                  Focus
+                </button>
+              )}
             </div>
             {/* Always render this row so the sticky bar keeps a constant
                 height across phases: a swipe into/out of Start of Battle Round
@@ -665,6 +711,19 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
             </div>
           </div>
         </>
+      )}
+
+      {activeTab === 'phase' && showFocusSheet && (
+        <UnitFocusSheet
+          focusUnits={focusUnits}
+          unitImages={unitImages}
+          focusedKey={focusedUnit?.key ?? null}
+          onSelect={key => {
+            setFocusedUnitKey(key)
+            setShowFocusSheet(false)
+          }}
+          onClose={() => setShowFocusSheet(false)}
+        />
       )}
 
       {/* Stratagems View content */}
