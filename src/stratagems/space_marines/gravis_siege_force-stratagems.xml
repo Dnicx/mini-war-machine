@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<stratagems>
+  <stratagem>
+    <name>ANNIHILATING FORCE</name>
+    <cpCost>1CP</cpCost>
+    <type>GRAVIS SIEGE FORCE</type>
+    <lore>Knowing well their duty to shatter the foe’s lines, these warriors strike with devastating strength.</lore>
+    <when>Your Shooting phase or the Fight phase, when a friendly GRAVIS unit is selected to attack.</when>
+    <target>That GRAVIS unit.</target>
+    <effect>Your unit’s attacks have [Lethal Hits].</effect>
+  </stratagem>
+  <stratagem>
+    <name>STAND UNYIELDING</name>
+    <cpCost>1CP</cpCost>
+    <type>GRAVIS SIEGE FORCE</type>
+    <lore>Ground claimed by Gravis-clad Adeptus Astartes cannot be taken back with ease.</lore>
+    <when>End of your Movement phase.</when>
+    <target>One friendly GRAVIS unit.</target>
+    <effect>Select one objective your unit is controlling. That objective is secured.</effect>
+  </stratagem>
+  <stratagem>
+    <name>SUPPRESSION VOLLEYS</name>
+    <cpCost>1CP</cpCost>
+    <type>GRAVIS SIEGE FORCE</type>
+    <lore>Laying down hails of heavy fire, these warriors pin or drive back the foe.</lore>
+    <when>Your Shooting phase, when a friendly GRAVIS unit has shot.</when>
+    <target>That GRAVIS unit.</target>
+    <effect>Select one enemy unit hit by those attacks. That enemy unit makes a battle-shock roll, with -1 to that battle-shock roll.</effect>
+  </stratagem>
+</stratagems>

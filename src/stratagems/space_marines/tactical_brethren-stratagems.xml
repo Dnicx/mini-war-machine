@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<stratagems>
+  <stratagem>
+    <name>ARMOUR OF CONTEMPT</name>
+    <cpCost>1CP</cpCost>
+    <type>TACTICAL BRETHREN</type>
+    <lore>The belligerence of the Adeptus Astartes combined with their post-human physiology makes them unyielding foes to face.</lore>
+    <when>Your opponent’s Shooting phase or the Fight phase, when an enemy unit targets a friendly ADEPTUS ASTARTES unit.</when>
+    <target>That ADEPTUS ASTARTES unit.</target>
+    <effect>Attacks that target your unit have -1 AP until that enemy unit has attacked.</effect>
+  </stratagem>
+  <stratagem>
+    <name>DOMINATION FIRE</name>
+    <cpCost>1CP</cpCost>
+    <type>TACTICAL BRETHREN</type>
+    <lore>The Codex Astartes dictates when firepower is best used to dismay, disrupt and debilitate the enemy.</lore>
+    <when>Your Shooting phase, when a friendly ADEPTUS ASTARTES unit has shot.</when>
+    <target>That ADEPTUS ASTARTES unit.</target>
+    <effect>Select one enemy unit hit by those attacks. That enemy unit is suppressed until the start of your next turn:
+▪ While a unit is suppressed, that unit’s attacks have -1 to hit rolls.</effect>
+  </stratagem>
+  <stratagem>
+    <name>MASTERFUL TACTICS</name>
+    <cpCost>1CP</cpCost>
+    <type>TACTICAL BRETHREN</type>
+    <lore>Such is the Space Marines’ grasp of adaptive tactics that even the most canny enemies soon find themselves out of position.</lore>
+    <when>Your opponent’s Movement phase, when an enemy unit ends a move within 8" of a friendly unengaged ADEPTUS ASTARTES INFANTRY/MOUNTED unit.</when>
+    <target>That ADEPTUS ASTARTES INFANTRY/MOUNTED unit.</target>
+    <effect>Your unit can make a normal move of:
+▪ Up to D6".
+▪ Or: If the tactical doctrine is active for your unit, up to 6".</effect>
+  </stratagem>
+</stratagems>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<stratagems>
+  <stratagem>
+    <name>ANNIHILATING FORCE</name>
+    <cpCost>1CP</cpCost>
+    <type>GRAVIS LINEBREAKER FORCE</type>
+    <lore>Knowing well their duty to shatter the foe’s lines, these warriors strike with devastating strength.</lore>
+    <when>Your Shooting phase or the Fight phase, when a friendly GRAVIS unit is selected to attack.</when>
+    <target>That GRAVIS unit.</target>
+    <effect>Your unit’s attacks have [Lethal Hits].</effect>
+  </stratagem>
+  <stratagem>
+    <name>PURGATION PUSH</name>
+    <cpCost>1CP</cpCost>
+    <type>GRAVIS LINEBREAKER FORCE</type>
+    <lore>Gravis assault tactics stipulate a relentless advance coupled with unfaltering firepower.</lore>
+    <when>Your Shooting phase, when a friendly GRAVIS unit has shot.</when>
+    <target>That GRAVIS unit.</target>
+    <effect>▪ If your unit is unengaged, your unit can make a normal move of up to 5", and must end that move within range of an objective.
+▪ Your unit is not eligible to declare a charge or embark within a TRANSPORT until the end of the turn.</effect>
+  </stratagem>
+  <stratagem>
+    <name>ARMOURED IMPACT</name>
+    <cpCost>1CP</cpCost>
+    <type>GRAVIS LINEBREAKER FORCE</type>
+    <lore>Throwing their armoured mass into an assault, a Space Marine in Gravis armour can crush and trample their foe.</lore>
+    <when>Your Charge phase, when a friendly GRAVIS unit ends a charge move.</when>
+    <target>That GRAVIS unit.</target>
+    <effect>When your unit ends a charge move, you can select one enemy unit engaged with your unit. If you do, roll one D6 for each model in your unit engaged with that enemy unit:
+▪ For each 3+, that enemy unit suffers 1 mortal wound.</effect>
+  </stratagem>
+</stratagems>

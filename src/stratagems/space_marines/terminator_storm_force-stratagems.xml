@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<stratagems>
+  <stratagem>
+    <name>TACTICAL DREADNOUGHT FORTITUDE</name>
+    <cpCost>2CP</cpCost>
+    <type>TERMINATOR STORM FORCE</type>
+    <lore>The combination of Tactical Dreadnought armour and transhuman physiology is redoubtable indeed.</lore>
+    <when>Your opponent’s Shooting phase or the Fight phase, when an enemy unit targets a friendly ADEPTUS ASTARTES TERMINATOR unit.</when>
+    <target>That ADEPTUS ASTARTES TERMINATOR unit.</target>
+    <effect>Attacks that target your unit have -1 D until that enemy unit has attacked.</effect>
+  </stratagem>
+  <stratagem>
+    <name>MERCILESS VETERANS</name>
+    <cpCost>1CP</cpCost>
+    <type>TERMINATOR STORM FORCE</type>
+    <lore>Cumulative centuries of military experience help these veterans’ firepower hit home with murderous precision.</lore>
+    <when>Your Shooting phase, when a friendly ADEPTUS ASTARTES TERMINATOR unit is selected to shoot.</when>
+    <target>That ADEPTUS ASTARTES TERMINATOR unit.</target>
+    <effect>Your unit’s ranged attacks have:
+▪ [Lethal Hits].
+▪ [Sustained Hits 1].</effect>
+  </stratagem>
+  <stratagem>
+    <name>GUNSHIP EXTRACTION</name>
+    <cpCost>1CP</cpCost>
+    <type>TERMINATOR STORM FORCE</type>
+    <lore>Armoured gunships are often assigned to swoop in and relocate Terminator Squads in the midst of battle.</lore>
+    <when>End of your opponent’s Fight phase.</when>
+    <target>One friendly unengaged ADEPTUS ASTARTES TERMINATOR unit.</target>
+    <effect>Place your unit in strategic reserves.</effect>
+  </stratagem>
+</stratagems>

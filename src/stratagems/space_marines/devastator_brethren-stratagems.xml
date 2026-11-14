@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<stratagems>
+  <stratagem>
+    <name>ARMOUR OF CONTEMPT</name>
+    <cpCost>1CP</cpCost>
+    <type>DEVASTATOR BRETHREN</type>
+    <lore>The belligerence of the Adeptus Astartes combined with their post-human physiology makes them unyielding foes to face.</lore>
+    <when>Your opponent’s Shooting phase or the Fight phase, when an enemy unit targets a friendly ADEPTUS ASTARTES unit.</when>
+    <target>That ADEPTUS ASTARTES unit.</target>
+    <effect>Attacks that target your unit have -1 AP until that enemy unit has attacked.</effect>
+  </stratagem>
+  <stratagem>
+    <name>STORM OF FIRE</name>
+    <cpCost>1CP</cpCost>
+    <type>DEVASTATOR BRETHREN</type>
+    <lore>There is no escaping the wrath of the Space Marines, and they use their weapons to bring swift death to their foes wherever they may hide.</lore>
+    <when>Your Shooting phase, when a friendly ADEPTUS ASTARTES unit is selected to shoot.</when>
+    <target>That ADEPTUS ASTARTES unit.</target>
+    <effect>Your unit’s ranged attacks have:
+▪ [Ignores Cover].
+▪ Or: If the devastator doctrine is active for your unit, [Ignores Cover] and +1 AP.</effect>
+  </stratagem>
+  <stratagem>
+    <name>HAIL OF VENGEANCE</name>
+    <cpCost>2CP</cpCost>
+    <type>DEVASTATOR BRETHREN</type>
+    <lore>Space Marines’ incredible battlefield awareness enables them to instinctively identify the origin of any enemy fire and punish their attackers.</lore>
+    <when>Your opponent’s Shooting phase, when an enemy unit has shot, if those attacks destroyed a model in a friendly ADEPTUS ASTARTES unit.</when>
+    <target>That ADEPTUS ASTARTES unit.</target>
+    <effect>Your unit shoots using normal shooting, but while doing so your unit can only target that enemy unit.</effect>
+  </stratagem>
+</stratagems>

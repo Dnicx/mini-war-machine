@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<stratagems>
+  <stratagem>
+    <name>ADAMANTINE TERROR</name>
+    <cpCost>1CP</cpCost>
+    <type>IRONCLAD CHAMPIONS</type>
+    <lore>Booming war cries through his vox-amplifiers, this Dreadnought rampages through the terrified foe.</lore>
+    <when>Start of the Fight phase.</when>
+    <target>One friendly DREADNOUGHT unit.</target>
+    <effect>Each enemy unit engaged with your unit makes a battle-shock roll, with -1 to that battle-shock roll.</effect>
+  </stratagem>
+  <stratagem>
+    <name>MERCY IS WEAKNESS</name>
+    <cpCost>1CP</cpCost>
+    <type>IRONCLAD CHAMPIONS</type>
+    <lore>Once a foe is marked for destruction, the Angels of Death must not relent until the target is annihilated.</lore>
+    <when>Your Shooting phase or the Fight phase, when a friendly DREADNOUGHT unit is selected to attack.</when>
+    <target>That DREADNOUGHT unit.</target>
+    <effect>Your unit’s attacks have:
+▪ [lethal hits].
+▪ Or: [Sustained Hits 1].</effect>
+  </stratagem>
+  <stratagem>
+    <name>UNSTOPPABLE ADVANCE</name>
+    <cpCost>1CP</cpCost>
+    <type>IRONCLAD CHAMPIONS</type>
+    <lore>Ruins, barricades, bunkers; few such structures can impede the relentless advance of an Adeptus Astartes Dreadnought.</lore>
+    <when>Your Movement/Charge phase, when a friendly DREADNOUGHT unit is selected to move or declares a charge.</when>
+    <target>That DREADNOUGHT unit.</target>
+    <effect>Your unit has MOBILE.</effect>
+  </stratagem>
+</stratagems>

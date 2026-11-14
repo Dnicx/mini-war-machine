@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<stratagems>
+  <stratagem>
+    <name>WIND-SWIFT EVASION</name>
+    <cpCost>1CP</cpCost>
+    <type>STORMLANCE TASK FORCE</type>
+    <lore>Employing their steeds’ pace to utmost effect, these warriors stay ever on the move.</lore>
+    <when>End of the Fight phase.</when>
+    <target>One friendly ADEPTUS ASTARTES MOUNTED unit that was eligible to fight this phase.</target>
+    <effect>▪ If your unit is unengaged, your unit can make a normal move.
+▪ Or: If your unit is engaged, your unit can make a fall-back move.</effect>
+  </stratagem>
+  <stratagem>
+    <name>SUDDEN ONSLAUGHT</name>
+    <cpCost>1CP</cpCost>
+    <type>STORMLANCE TASK FORCE</type>
+    <lore>Speed and shock are key to the Space Marine way of war: never more so than on rapid-strike missions.</lore>
+    <when>Your Movement phase, when a friendly ADEPTUS ASTARTES MOUNTED/SPEEDER unit is selected to make an advance move.</when>
+    <target>That ADEPTUS ASTARTES MOUNTED/SPEEDER unit.</target>
+    <effect>Your unit can change its advance rolls to a 6.</effect>
+  </stratagem>
+  <stratagem>
+    <name>HURTLING TARGETS</name>
+    <cpCost>1CP</cpCost>
+    <type>STORMLANCE TASK FORCE</type>
+    <lore>With nerves of steel and transhuman reactions, the Space Marines jink and weave cooly through incoming fire.</lore>
+    <when>Your opponent’s Shooting phase, when an enemy unit targets a friendly ADEPTUS ASTARTES MOUNTED/SPEEDER unit.</when>
+    <target>That ADEPTUS ASTARTES MOUNTED/SPEEDER unit.</target>
+    <effect>Ranged attacks that target your unit have -1 to hit rolls.</effect>
+  </stratagem>
+</stratagems>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<stratagems>
+  <stratagem>
+    <name>FOR THE EMPEROR!</name>
+    <cpCost>1CP</cpCost>
+    <type>TACTICUS FIRESTORM FORCE</type>
+    <lore>Unflinching in their loyalty to Chapter and Primarch, battle-brothers seize and hold their objectives with unrelenting determination and zealous fury.</lore>
+    <when>Command phase.</when>
+    <target>One friendly TACTICUS unit that is within range of an objective.</target>
+    <effect>Your unit has +1 OC until the end of the turn.</effect>
+  </stratagem>
+  <stratagem>
+    <name>RELENTLESS ASSAULT</name>
+    <cpCost>1CP</cpCost>
+    <type>TACTICUS FIRESTORM FORCE</type>
+    <lore>Pressing mercilessly forward, these warriors place shots and blows perfectly, no matter their targets.</lore>
+    <when>Your Shooting phase or the Fight phase, when a friendly TACTICUS unit is selected to attack.</when>
+    <target>That TACTICUS unit.</target>
+    <effect>Your unit’s attacks have:
+▪ [Sustained Hits 1: non-Monster/Vehicle].
+▪ Or: [Lethal Hits: Monster/Vehicle].</effect>
+  </stratagem>
+  <stratagem>
+    <name>POINT-BLANK BRUTALITY</name>
+    <cpCost>1CP</cpCost>
+    <type>TACTICUS FIRESTORM FORCE</type>
+    <lore>Transhuman skill and reaction times render these Space Marines’ firearms as deadly up close as any blade.</lore>
+    <when>Your Shooting phase, when a friendly engaged TACTICUS unit is selected to shoot.</when>
+    <target>That TACTICUS unit.</target>
+    <effect>Your unit’s ranged attacks (excluding [Blast] attacks) have:
+▪ [Close-Quarters].
+▪ [Ignores Cover].</effect>
+  </stratagem>
+</stratagems>

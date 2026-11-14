@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<stratagems>
+  <stratagem>
+    <name>LAYERED CERAMITE</name>
+    <cpCost>1CP</cpCost>
+    <type>IRONSTORM SPEARHEAD</type>
+    <lore>The labours of artisans in the Chapter armoury now bear fruit.</lore>
+    <when>Any phase, when a friendly ADEPTUS ASTARTES VEHICLE unit suffers a mortal wound.</when>
+    <target>That ADEPTUS ASTARTES VEHICLE unit.</target>
+    <effect>Your unit has Feel No Pain 5+ against mortal wounds.</effect>
+  </stratagem>
+  <stratagem>
+    <name>MIGHT OF THE MACHINE SPIRIT</name>
+    <cpCost>1CP</cpCost>
+    <type>IRONSTORM SPEARHEAD</type>
+    <lore>There are many tales of machine spirits wreaking havoc on the foe, even after the crews of their vehicles are slain.</lore>
+    <when>Your Command phase.</when>
+    <target>One friendly ADEPTUS ASTARTES VEHICLE unit (excluding DEDICATED TRANSPORT/FLY/WALKER units).</target>
+    <effect>Until the start of your next Command phase, your unit can ignore modifiers to your unit’s:
+▪ M.
+▪ BS.
+▪ Hit rolls and wound rolls.</effect>
+  </stratagem>
+  <stratagem>
+    <name>HEADHUNTER DOCTRINE</name>
+    <cpCost>1CP</cpCost>
+    <type>IRONSTORM SPEARHEAD</type>
+    <lore>Exhaustive tactical training aids Space Marine gunners in exploiting any weakness in their targets’ armour.</lore>
+    <when>Your Shooting phase, when a friendly ADEPTUS ASTARTES VEHICLE unit (excluding DEDICATED TRANSPORT/FLY/WALKER units) is selected to shoot.</when>
+    <target>That ADEPTUS ASTARTES VEHICLE unit.</target>
+    <effect>Your unit’s ranged attacks have [Lethal Hits: Monster/Vehicle].</effect>
+  </stratagem>
+</stratagems>

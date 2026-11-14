@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<stratagems>
+  <stratagem>
+    <name>STRIKE FROM THE SHADOWS</name>
+    <cpCost>1CP</cpCost>
+    <type>PHOBOS SHADOW FORCE</type>
+    <lore>To evade one’s enemies and sow confusion can be a deadly weapon in itself.</lore>
+    <when>Your Shooting phase or the Fight phase, when a friendly hidden PHOBOS unit is selected to attack.</when>
+    <target>That PHOBOS unit.</target>
+    <effect>Your unit’s attacks have:
+▪ +1 S.
+▪ [Lethal Hits].</effect>
+  </stratagem>
+  <stratagem>
+    <name>MORTIS SNARES</name>
+    <cpCost>1CP</cpCost>
+    <type>PHOBOS SHADOW FORCE</type>
+    <lore>These stealth operatives lace the battlefield with explosive devices that trigger by mico-auspex and las- wire when foes blunder into them.</lore>
+    <when>End of your Movement phase.</when>
+    <target>One friendly unengaged PHOBOS/SCOUT SQUAD unit.</target>
+    <effect>If your unit is controlling an objective, that objective is snared. While an objective is snared, when an enemy unit ends a move within range of that objective, roll one D6:
+▪ On a 2+, that enemy unit suffers D6 mortal wounds.
+▪ That objective is no longer snared.</effect>
+  </stratagem>
+  <stratagem>
+    <name>TACTICAL WITHDRAWAL</name>
+    <cpCost>1CP</cpCost>
+    <type>PHOBOS SHADOW FORCE</type>
+    <lore>At an opportune moment, Space Marine infiltration units slip away from battle, only to relocate ready to strike the foe again.</lore>
+    <when>End of your opponent’s Fight phase.</when>
+    <target>One friendly unengaged PHOBOS/SCOUT SQUAD unit.</target>
+    <effect>Place your unit in strategic reserves.</effect>
+  </stratagem>
+</stratagems>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<stratagems>
+  <stratagem>
+    <name>KRAKEN ROUNDS</name>
+    <cpCost>1CP</cpCost>
+    <type>DEATHWATCH SUPPORT</type>
+    <lore>Kraken rounds utilise adamantine cores and improved propellants to penetrate the thickest hide.</lore>
+    <when>Your Shooting phase when a KILL TEAM unit is selected to shoot.</when>
+    <target>That KILL TEAM unit.</target>
+    <effect>Your unit’s ranged attacks have:
+▪ Have +6" R.
+▪ Have +1 S.</effect>
+  </stratagem>
+  <stratagem>
+    <name>DRAGONFIRE ROUNDS</name>
+    <cpCost>1CP</cpCost>
+    <type>DEATHWATCH SUPPORT</type>
+    <lore>Dragonfire rounds are designed to explode just before contact, saturating foes in cover with searing gas and flames.</lore>
+    <when>Your Shooting phase when a KILL TEAM unit is selected to shoot.</when>
+    <target>That KILL TEAM unit.</target>
+    <effect>Your unit’s ranged attacks:
+▪ Can re-roll wound rolls of 1.
+▪ Have [IGNORES COVER].</effect>
+  </stratagem>
+  <stratagem>
+    <name>HELLFIRE ROUNDS</name>
+    <cpCost>1CP</cpCost>
+    <type>DEATHWATCH SUPPORT</type>
+    <lore>Hellfire rounds douse their targets in voracious acids that are utterly lethal to organic life.</lore>
+    <when>Your Shooting phase when a KILL TEAM unit is selected to shoot.</when>
+    <target>That KILL TEAM unit.</target>
+    <effect>Your unit’s ranged attacks (excluding [DEVASTATING WOUNDS] attacks) have [ANTI-non-VEHICLE 4+].</effect>
+  </stratagem>
+  <stratagem>
+    <name>BLACKSTAR EXTRACTION</name>
+    <cpCost>1CP</cpCost>
+    <type>DEATHWATCH SUPPORT</type>
+    <lore>Swooping low with transport bays yawning wide, Corvus Blackstar gunships extract Deathwatch warriors from the battlefield and convey them to locations where their lethal talents are most required.</lore>
+    <when>End of your opponent’s Fight phase.</when>
+    <target>One friendly unengaged KILL TEAM unit.</target>
+    <effect>Place your unit in strategic reserves.</effect>
+  </stratagem>
+</stratagems>

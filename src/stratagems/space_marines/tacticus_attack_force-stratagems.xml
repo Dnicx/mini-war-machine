@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<stratagems>
+  <stratagem>
+    <name>RELENTLESS ASSAULT</name>
+    <cpCost>1CP</cpCost>
+    <type>TACTICUS ATTACK FORCE</type>
+    <lore>Pressing mercilessly forward, these warriors place shots and blows perfectly, no matter their targets.</lore>
+    <when>Your Shooting phase or the Fight phase, when a friendly TACTICUS unit is selected to attack.</when>
+    <target>That TACTICUS unit.</target>
+    <effect>Your unit’s attacks have:
+▪ [Sustained Hits 1: non-Monster/Vehicle].
+▪ Or: [Lethal Hits: Monster/Vehicle].</effect>
+  </stratagem>
+  <stratagem>
+    <name>TRANSHUMAN SWIFTNESS</name>
+    <cpCost>1CP</cpCost>
+    <type>TACTICUS ATTACK FORCE</type>
+    <lore>Poised and aware of their foes’ every move, these warriors strike at the most tactically advantageous moment.</lore>
+    <when>Fight phase, when an enemy unit has fought.</when>
+    <target>One friendly TACTICUS unit that is within range of an objective and is eligible to fight.</target>
+    <effect>Your unit has Fights First and must be the next unit you select to fight.</effect>
+  </stratagem>
+  <stratagem>
+    <name>TACTICAL FOCUS</name>
+    <cpCost>1CP</cpCost>
+    <type>TACTICUS ATTACK FORCE</type>
+    <lore>Even amidst the fiercest fighting, this squad retains sight of their assigned mission.</lore>
+    <when>Fight phase, when a friendly TACTICUS unit is selected to make a consolidation move.</when>
+    <target>That TACTICUS unit.</target>
+    <effect>When making that consolidation move, your unit can move up to D3+3".</effect>
+  </stratagem>
+</stratagems>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<stratagems>
+  <stratagem>
+    <name>STRIKE FROM THE SHADOWS</name>
+    <cpCost>1CP</cpCost>
+    <type>PHOBOS SHOCK FORCE</type>
+    <lore>To evade one’s enemies and sow confusion can be a deadly weapon in itself.</lore>
+    <when>Your Shooting phase or the Fight phase, when a friendly hidden PHOBOS unit is selected to attack.</when>
+    <target>That PHOBOS unit.</target>
+    <effect>Your unit’s attacks have:
+▪ +1 S.
+▪ [Lethal Hits].</effect>
+  </stratagem>
+  <stratagem>
+    <name>TRANSHUMAN REACTIONS</name>
+    <cpCost>1CP</cpCost>
+    <type>PHOBOS SHOCK FORCE</type>
+    <lore>Seemingly with the speed of instinct, these warriors reposition in response to the enemy’s movements.</lore>
+    <when>Your opponent’s Movement phase, when an enemy unit ends a move within 8" of a friendly unengaged PHOBOS unit.</when>
+    <target>That PHOBOS unit.</target>
+    <effect>Your unit can make a normal move of:
+▪ Up to D6".
+▪ Or: If the tactical doctrine is active for your unit, up to 6".</effect>
+  </stratagem>
+  <stratagem>
+    <name>UMBRAL EVASION</name>
+    <cpCost>1CP</cpCost>
+    <type>PHOBOS SHOCK FORCE</type>
+    <lore>A combination of technological arcana and expert training help these warriors to evade the eyes of the foe.</lore>
+    <when>Your opponent’s Shooting phase, when an enemy unit targets a friendly PHOBOS unit.</when>
+    <target>That PHOBOS unit.</target>
+    <effect>Ranged attacks that target your unit have -1 to hit rolls.</effect>
+  </stratagem>
+</stratagems>
