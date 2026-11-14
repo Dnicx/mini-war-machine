@@ -77,8 +77,159 @@ function prevStep(state: GameState): GameStep {
   return { phase: TURN_PHASES[idx - 1], turnOwner }
 }
 
+interface PlayState {
+  attachments: Record<string, string>
+  roles: Record<string, string>
+  abilities: Ability[]
+  commonByUnit: Record<string, Ability[]>
+  custom: Ability[]
+  core: Stratagem[]
+  detachment: Stratagem[]
+}
+
+// Build the dashboard's plan-derived state once per mount: App keys
+// PlayDashboard by roster.id, so a different roster always remounts. Without a
+// saved plan only the file's own attachments are filled; ability lists stay
+// empty (the Planner seeds a plan on first open).
+function loadPlayState(roster: Roster): PlayState {
+  // Load plan and get abilities
+  const loadedPlan = loadPlan(roster.id)
+  // Translate pre-shared-id unit-ability plan entries (see storage.ts).
+  const plan = loadedPlan ? migratePlanUnitAbilityIds(loadedPlan, roster) : null
+
+  // Outside the `if (plan)` below: the file's own attachments must show even
+  // for a roster with no saved plan (e.g. a reload straight onto /play).
+  const resolved = resolveAttachments(roster, plan?.attachments)
+  const state: PlayState = {
+    attachments: resolved.attachments,
+    roles: resolved.roles,
+    abilities: [],
+    commonByUnit: {},
+    custom: [],
+    core: [],
+    detachment: []
+  }
+
+  if (plan) {
+    // Collapse same-name units' abilities onto one shared-id entry so they
+    // resolve the single saved plan entry and the phase view shows them once.
+    // Same builder (and id scheme) the Planner saves under.
+    const abilities: Ability[] = [...roster.armyAbilities, ...buildUnitAbilities(roster.units)]
+
+    // Apply heuristics to get auto-detected phases
+    const withHeuristics = applyHeuristicsToAll(abilities)
+
+    // Apply plan overrides
+    const withOverrides = withHeuristics.map(ability => {
+      const planEntry = plan.phasePlans.find(p => p.abilityId === ability.id)
+      if (planEntry) {
+        return {
+          ...ability,
+          phases: planEntry.phases,
+          timing: normalizeTiming(planEntry.timing),
+          // Without this, the turn owner picked in the Planner is ignored and
+          // the filter falls back to the auto-detected default ('either').
+          turnOwner: planEntry.turnOwner,
+          notes: planEntry.notes
+        }
+      }
+      // If no plan entry, use auto-detected phases as default
+      return {
+        ...ability,
+        phases: ability.autoDetectedPhases
+      }
+    })
+
+    // Expand each shared common ability into a per-unit copy so it appears
+    // separately under every owning unit. The shared plan (keyed by the
+    // `common-<name>` id) drives phases/timing/turn; the per-unit rule
+    // supplies the description shown in each card.
+    const commonExpanded: Ability[] = []
+    const commonByUnit: Record<string, Ability[]> = {}
+    buildCommonAbilities(roster).forEach(({ ability, unitIds }) => {
+      const planEntry = plan.phasePlans.find(p => p.abilityId === ability.id)
+      const shared: Partial<Ability> = planEntry
+        ? {
+            phases: planEntry.phases,
+            timing: normalizeTiming(planEntry.timing),
+            turnOwner: planEntry.turnOwner,
+            notes: planEntry.notes
+          }
+        : { phases: ability.autoDetectedPhases }
+      // Resolve by id so every same-name unit that carries the ability gets
+      // its own expanded copy (find-by-name would only match the first).
+      unitIds.forEach(unitId => {
+        const unit = roster.units.find(u => u.id === unitId)
+        if (!unit) return
+        const rule = unit.rules.find(r => commonAbilityId(r.name) === ability.id)
+        const expanded: Ability = {
+          ...ability,
+          ...shared,
+          id: commonAbilityUnitId(unit.id, ability.name),
+          sourceUnit: unit.name,
+          // Restore this unit's full name+description ("Deadly Demise D6")
+          // while phases/timing come from the shared base card.
+          name: rule?.name ?? ability.name,
+          description: rule?.description ?? ability.description
+        }
+        commonExpanded.push(expanded)
+        ;(commonByUnit[unit.id] ??= []).push(expanded)
+      })
+    })
+
+    state.abilities = [...withOverrides, ...commonExpanded]
+    state.commonByUnit = commonByUnit
+    state.custom = plan.customStratagems || []
+
+    // Load core stratagems
+    const coreStrats = getCoreStratagems()
+    const coreOverrides = coreStrats.map(strat => {
+      const saved = plan.corePhasePlans?.find(p => p.abilityId === strat.id)
+      if (saved) {
+        return {
+          ...strat,
+          phases: saved.phases,
+          timing: normalizeTiming(saved.timing),
+          turnOwner: saved.turnOwner,
+          enabled: saved.enabled ?? true
+        }
+      }
+      return strat
+    })
+    state.core = coreOverrides
+
+    // Load stratagems for every detachment in the roster
+    const factionFolder = getStratagemFolderName(roster.faction)
+    if (factionFolder) {
+      const available = getAvailableDetachments(factionFolder)
+      const matched = [...new Set(
+        roster.detachments
+          .map(det => detectDetachment(det, available))
+          .filter((det): det is string => !!det)
+      )]
+      const detachmentStrats = matched.flatMap(det =>
+        getDetachmentStratagems(factionFolder, det)
+      )
+      const detachmentOverrides = detachmentStrats.map(strat => {
+        const saved = plan.detachmentPhasePlans?.find(p => p.abilityId === strat.id)
+        if (saved) {
+          return {
+            ...strat,
+            phases: saved.phases,
+            timing: normalizeTiming(saved.timing),
+            turnOwner: saved.turnOwner
+          }
+        }
+        return strat
+      })
+      state.detachment = detachmentOverrides
+    }
+  }
+  return state
+}
+
 export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
-  const [gameState, setGameState] = useState<GameState>({
+  const [gameState, setGameState] = useState<GameState>(() => loadGameState() ?? {
     battleRound: 1,
     turnOwner: 'yours',
     currentPhase: 'Start of Battle Round',
@@ -90,10 +241,20 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
     usedAbilities: {}
   })
 
-  const [allAbilities, setAllAbilities] = useState<Ability[]>([])
-  const [customStratagems, setCustomStratagems] = useState<Ability[]>([])
-  const [coreStratagems, setCoreStratagems] = useState<Stratagem[]>([])
-  const [detachmentStratagems, setDetachmentStratagems] = useState<Stratagem[]>([])
+  // Loaded once; useState (not useMemo) so it is never recomputed mid-life.
+  // Play only reads these, so they are plain values rather than separate state.
+  const [playState] = useState(() => loadPlayState(roster))
+  const {
+    abilities: allAbilities,
+    custom: customStratagems,
+    core: coreStratagems,
+    detachment: detachmentStratagems,
+    attachments,
+    // leaderUnitId → "Leading" / "Supporting", from the roster file's associations.
+    roles: attachmentRoles,
+    // Common abilities expanded per unit (keyed by unit id) for the unit view.
+    commonByUnit: commonAbilitiesByUnit
+  } = playState
   const [collapsedUnits, setCollapsedUnits] = useState<Set<string>>(new Set())
   // Lifted out of PhaseContent: during the slide animation two PhaseContent
   // copies mount (exiting + entering), so local state there would reset and
@@ -101,11 +262,6 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const [collapsedTimings, setCollapsedTimings] = useState<Set<Timing>>(new Set())
   const [activeTab, setActiveTab] = useState<'phase' | 'unit' | 'stratagems'>('phase')
   const [unitImages, setUnitImages] = useState<Record<string, string>>(() => loadUnitImages())
-  const [attachments, setAttachments] = useState<Record<string, string>>({})
-  // leaderUnitId → "Leading" / "Supporting", from the roster file's associations.
-  const [attachmentRoles, setAttachmentRoles] = useState<Record<string, string>>({})
-  // Common abilities expanded per unit (keyed by unit id) for the unit view.
-  const [commonAbilitiesByUnit, setCommonAbilitiesByUnit] = useState<Record<string, Ability[]>>({})
   // The pane sliding in during a drag or programmatic slide. Rendered
   // offset by ±100% inside the track; null when the carousel is at rest.
   // topOffset pushes the incoming pane down so its own top aligns with the
@@ -119,141 +275,6 @@ export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const trackRef = useRef<HTMLDivElement | null>(null)
   const stickyHeaderRef = useRef<HTMLDivElement | null>(null)
   const pageRef = useRef<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    // Load saved game state
-    const savedState = loadGameState()
-    if (savedState) {
-      setGameState(savedState)
-    }
-
-    // Load plan and get abilities
-    const loadedPlan = loadPlan(roster.id)
-    // Translate pre-shared-id unit-ability plan entries (see storage.ts).
-    const plan = loadedPlan ? migratePlanUnitAbilityIds(loadedPlan, roster) : null
-
-    // Outside the `if (plan)` below: the file's own attachments must show even
-    // for a roster with no saved plan (e.g. a reload straight onto /play).
-    const resolved = resolveAttachments(roster, plan?.attachments)
-    setAttachments(resolved.attachments)
-    setAttachmentRoles(resolved.roles)
-
-    if (plan) {
-      // Collapse same-name units' abilities onto one shared-id entry so they
-      // resolve the single saved plan entry and the phase view shows them once.
-      // Same builder (and id scheme) the Planner saves under.
-      const abilities: Ability[] = [...roster.armyAbilities, ...buildUnitAbilities(roster.units)]
-
-      // Apply heuristics to get auto-detected phases
-      const withHeuristics = applyHeuristicsToAll(abilities)
-
-      // Apply plan overrides
-      const withOverrides = withHeuristics.map(ability => {
-        const planEntry = plan.phasePlans.find(p => p.abilityId === ability.id)
-        if (planEntry) {
-          return {
-            ...ability,
-            phases: planEntry.phases,
-            timing: normalizeTiming(planEntry.timing),
-            // Without this, the turn owner picked in the Planner is ignored and
-            // the filter falls back to the auto-detected default ('either').
-            turnOwner: planEntry.turnOwner,
-            notes: planEntry.notes
-          }
-        }
-        // If no plan entry, use auto-detected phases as default
-        return {
-          ...ability,
-          phases: ability.autoDetectedPhases
-        }
-      })
-
-      // Expand each shared common ability into a per-unit copy so it appears
-      // separately under every owning unit. The shared plan (keyed by the
-      // `common-<name>` id) drives phases/timing/turn; the per-unit rule
-      // supplies the description shown in each card.
-      const commonExpanded: Ability[] = []
-      const commonByUnit: Record<string, Ability[]> = {}
-      buildCommonAbilities(roster).forEach(({ ability, unitIds }) => {
-        const planEntry = plan.phasePlans.find(p => p.abilityId === ability.id)
-        const shared: Partial<Ability> = planEntry
-          ? {
-              phases: planEntry.phases,
-              timing: normalizeTiming(planEntry.timing),
-              turnOwner: planEntry.turnOwner,
-              notes: planEntry.notes
-            }
-          : { phases: ability.autoDetectedPhases }
-        // Resolve by id so every same-name unit that carries the ability gets
-        // its own expanded copy (find-by-name would only match the first).
-        unitIds.forEach(unitId => {
-          const unit = roster.units.find(u => u.id === unitId)
-          if (!unit) return
-          const rule = unit.rules.find(r => commonAbilityId(r.name) === ability.id)
-          const expanded: Ability = {
-            ...ability,
-            ...shared,
-            id: commonAbilityUnitId(unit.id, ability.name),
-            sourceUnit: unit.name,
-            // Restore this unit's full name+description ("Deadly Demise D6")
-            // while phases/timing come from the shared base card.
-            name: rule?.name ?? ability.name,
-            description: rule?.description ?? ability.description
-          }
-          commonExpanded.push(expanded)
-          ;(commonByUnit[unit.id] ??= []).push(expanded)
-        })
-      })
-
-      setAllAbilities([...withOverrides, ...commonExpanded])
-      setCommonAbilitiesByUnit(commonByUnit)
-      setCustomStratagems(plan.customStratagems || [])
-
-      // Load core stratagems
-      const coreStrats = getCoreStratagems()
-      const coreOverrides = coreStrats.map(strat => {
-        const saved = plan.corePhasePlans?.find(p => p.abilityId === strat.id)
-        if (saved) {
-          return {
-            ...strat,
-            phases: saved.phases,
-            timing: normalizeTiming(saved.timing),
-            turnOwner: saved.turnOwner,
-            enabled: saved.enabled ?? true
-          }
-        }
-        return strat
-      })
-      setCoreStratagems(coreOverrides)
-
-      // Load stratagems for every detachment in the roster
-      const factionFolder = getStratagemFolderName(roster.faction)
-      if (factionFolder) {
-        const available = getAvailableDetachments(factionFolder)
-        const matched = [...new Set(
-          roster.detachments
-            .map(det => detectDetachment(det, available))
-            .filter((det): det is string => !!det)
-        )]
-        const detachmentStrats = matched.flatMap(det =>
-          getDetachmentStratagems(factionFolder, det)
-        )
-        const detachmentOverrides = detachmentStrats.map(strat => {
-          const saved = plan.detachmentPhasePlans?.find(p => p.abilityId === strat.id)
-          if (saved) {
-            return {
-              ...strat,
-              phases: saved.phases,
-              timing: normalizeTiming(saved.timing),
-              turnOwner: saved.turnOwner
-            }
-          }
-          return strat
-        })
-        setDetachmentStratagems(detachmentOverrides)
-      }
-    }
-  }, [roster])
 
   const updateGameState = (updates: Partial<GameState>) => {
     const newState = { ...gameState, ...updates }
