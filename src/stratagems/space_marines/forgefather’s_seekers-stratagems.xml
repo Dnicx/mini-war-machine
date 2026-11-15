@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<stratagems>
+  <stratagem>
+    <name>BLAZING EARTH</name>
+    <cpCost>1CP</cpCost>
+    <type>FORGEFATHER’S SEEKERS</type>
+    <lore>When faced with an onrushing horde, the Forgefather’s warriors set fire to the earth beneath their feet, impeding their advance and throwing them into confusion.</lore>
+    <when>Start of your opponent’s Charge phase.</when>
+    <target>One friendly unengaged ADEPTUS ASTARTES unit equipped with one or more Torrent/Melta weapons.</target>
+    <effect>Select one visible enemy unit within 12" of your unit. That enemy unit has -1 to charge rolls.</effect>
+  </stratagem>
+  <stratagem>
+    <name>WRATH AND RUIN</name>
+    <cpCost>1CP</cpCost>
+    <type>FORGEFATHER’S SEEKERS</type>
+    <lore>Having drawn their enemies in, Space Marine battle-brothers fall back and open fire at point- blank range before thundering forward to put any survivors to death.</lore>
+    <when>Your Command phase.</when>
+    <target>One friendly ADEPTUS ASTARTES INFANTRY unit.</target>
+    <effect>The assault doctrine or tactical doctrine is active for your unit, until the start of your next Command phase.</effect>
+  </stratagem>
+  <stratagem>
+    <name>FORGED IN FIRE</name>
+    <cpCost>1CP</cpCost>
+    <type>FORGEFATHER’S SEEKERS</type>
+    <lore>The Salamanders are masters of the flamer, wielding such weapons with supreme precision and utilising them even in the press of melee combat.</lore>
+    <when>Your Shooting phase, when a friendly engaged ADEPTUS ASTARTES unit is selected to shoot.</when>
+    <target>That ADEPTUS ASTARTES unit.</target>
+    <effect>Your unit’s Torrent weapons:
+▪ Do not have [Blast].
+▪ Have [Close-Quarters].
+▪ Have +1 A.</effect>
+  </stratagem>
+  <stratagem>
+    <name>IMMOLATION PROTOCOLS</name>
+    <cpCost>1CP</cpCost>
+    <type>FORGEFATHER’S SEEKERS</type>
+    <lore>Salvo after salvo of burning promethium unleashed in synchronised waves will leave almost any foe as smouldering ash.</lore>
+    <when>Your Shooting phase, when a friendly ADEPTUS ASTARTES INFANTRY unit is selected to attack.</when>
+    <target>That ADEPTUS ASTARTES INFANTRY.</target>
+    <effect>Your unit’s ranged [TORRENT] attacks have +1 AP.</effect>
+  </stratagem>
+  <stratagem>
+    <name>CRUCIBLE OF BATTLE</name>
+    <cpCost>1CP</cpCost>
+    <type>FORGEFATHER’S SEEKERS</type>
+    <lore>Only where the enemy can be faced eye to eye can a Space Marine be truly tested.</lore>
+    <when>Your Shooting phase or the Fight phase, when a friendly ADEPTUS ASTARTES INFANTRY unit is selected to attack an enemy unit within 6".</when>
+    <target>That ADEPTUS ASTARTES INFANTRY unit.</target>
+    <effect>Your unit’s attacks can:
+▪ Re-roll hit rolls of 1.
+▪ Re-roll wound rolls of 1.</effect>
+  </stratagem>
+  <stratagem>
+    <name>BURNING VENGEANCE</name>
+    <cpCost>1CP</cpCost>
+    <type>FORGEFATHER’S SEEKERS</type>
+    <lore>To open fire on warriors of the Salamanders is merely to invite one’s own swift destruction.</lore>
+    <when>Your opponent’s Shooting phase, when an enemy unit has shot a friendly ADEPTUS ASTARTES TRANSPORT unit.</when>
+    <target>One friendly ADEPTUS ASTARTES unit embarked within that ADEPTUS ASTARTES TRANSPORT unit.</target>
+    <effect>Your ADEPTUS ASTARTES unit can:
+▪ Make a disembark move.
+▪ Shoot using normal shooting, but when doing so your unit can only target that enemy unit.</effect>
+  </stratagem>
+</stratagems>
