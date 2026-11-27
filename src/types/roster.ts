@@ -134,13 +134,7 @@ export interface Plan {
 }
 
 export interface GameState {
-  battleRound: number
   turnOwner: TurnOwner
   currentPhase: Phase
   currentTiming: Timing
-  yourScore: number
-  opponentScore: number
-  yourCP: number
-  opponentCP: number
-  usedAbilities: Record<string, number>
 }

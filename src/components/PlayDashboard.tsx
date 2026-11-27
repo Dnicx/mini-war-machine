@@ -232,15 +232,9 @@ function loadPlayState(roster: Roster): PlayState {
 
 export function PlayDashboard({ roster, onBackToPlanner }: PlayDashboardProps) {
   const [gameState, setGameState] = useState<GameState>(() => loadGameState() ?? {
-    battleRound: 1,
     turnOwner: 'yours',
     currentPhase: 'Start of Battle Round',
-    currentTiming: 'start',
-    yourScore: 0,
-    opponentScore: 0,
-    yourCP: 5,
-    opponentCP: 5,
-    usedAbilities: {}
+    currentTiming: 'start'
   })
 
   // Loaded once; useState (not useMemo) so it is never recomputed mid-life.

@@ -112,6 +112,7 @@ All core features are implemented and functional. The application can:
 - collapse ability card shows Notes
 - abilities in unit detail show Notes
 - show weapon keyword details
+- remove unused GameState fields (battleRound, scores, CP, usedAbilities)
 
 ## Bug
 
@@ -210,12 +211,6 @@ Add support for importing rosters exported from the official Warhammer 40k app b
 # NOTE
 
 [
-  {
-    "file": "src/components/PlayDashboard.tsx",
-    "line": 78,
-    "summary": "Removed round-boundary reset leaves usedAbilities/battleRound/score/CP as write-only dead state.",
-    "failure_scenario": "The old nextTurn() incremented battleRound and reset usedAbilities:{} at the round boundary; the new flow drops both. Grep confirms battleRound, yourScore, opponentScore, yourCP, opponentCP, and usedAbilities are now written once in the initial state and never read anywhere. Harmless today, but any future code that marks an ability 'used' will never see it cleared per round — the reset invariant was silently deleted, and 6 GameState fields are now dead. Consider trimming the type/state or restoring the reset intentionally."
-  },
   {
     "file": "src/components/PlayDashboard.tsx",
     "line": 419,

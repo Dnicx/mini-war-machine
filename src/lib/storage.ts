@@ -228,7 +228,18 @@ export function saveGameState(gameState: GameState): void {
 export function loadGameState(): GameState | null {
   const data = localStorage.getItem(GAME_STATE_KEY)
   if (!data) return null
-  try { return JSON.parse(data) as GameState } catch { return null }
+  let parsed: GameState
+  try { parsed = JSON.parse(data) as GameState } catch { return null }
+  // States saved by older versions still carry these removed fields. Strip them because
+  // updateGameState spreads the loaded object, which would otherwise re-save them forever.
+  const staleKeys = [
+    'battleRound', 'yourScore', 'opponentScore', 'yourCP', 'opponentCP', 'usedAbilities'
+  ]
+  // Guard: JSON.parse can return null or a primitive, and delete on null would throw.
+  if (parsed && typeof parsed === 'object') {
+    for (const key of staleKeys) delete (parsed as unknown as Record<string, unknown>)[key]
+  }
+  return parsed
 }
 
 export function clearGameState(): void {
